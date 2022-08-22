@@ -1,0 +1,14 @@
+# Virtual Environment Aliases
+.env
+.winenv
+.pyenv
+env/
+winenv/
+pyenv/
+ENV/
+WINENV/
+PYENV/
+
+# Compiled Python
+__pycache__/
+*.pyc
