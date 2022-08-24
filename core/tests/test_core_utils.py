@@ -1,7 +1,24 @@
-from x_io.axona.axona_utils import make_time_index_version_1
+import os
+import sys
+PROJECT_PATH = os.getcwd()
+sys.path.append(PROJECT_PATH)
+print(PROJECT_PATH)
+
+from core.core_utils import make_time_index_from_rate
 
 from datetime import datetime
 
+def _get_seconds(string_time):
+    return float(string_time.split(':')[-1])
+
 def test_make_time_index_from_rate():
-    time_index = make_time_index_from_rate('09:15:56', 10, 250)
-    print(time_index)
+    for n_samples in [2, 15, 40, 200]:
+        for sample_rate in [50, 250, 1000, 10000]:
+            time_index = make_time_index_from_rate('09:15:56', n_samples, sample_rate)
+            print(time_index)
+            start = _get_seconds(time_index[0])
+            second = _get_seconds(time_index[1])
+            end = _get_seconds(time_index[-1])
+            r = lambda n: round(n, 6)
+            assert r(second - start) == r(1/sample_rate)
+            assert r(end - start) == r((n_samples-1)/sample_rate)
