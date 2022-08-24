@@ -103,21 +103,22 @@ def _read_tetrode_header(tetrode_file):
         spike_format t,ch1,t,ch2,t,ch3,t,ch4
         num_spikes 200492
     """
-    int_fields = ['duration', 'num_chans', 'bytes_per_timestamp', 'samples_per_spike', 'bytes_per_sample', 'num_spikes']
-    float_with_unit_fields = ['timebase', 'sample_rate']
-    comma_lists = ['spike_format']
-    header = {}
+    int_fields = {'duration', 'num_chans', 'bytes_per_timestamp', 'samples_per_spike', 'bytes_per_sample', 'num_spikes'}
+    float_with_unit_fields = {'timebase', 'sample_rate'}
+    comma_lists = {'spike_format'}
+    header = dict()
     for line in tetrode_file:
         if 'data_start' in str(line):
             return header
         else:
             field, value = line.decode(encoding='UTF-8').split(' ', 1)
-            if field == any(float_with_unit_fields):
-                rate, unit = value.split(' ')
-                header[field] = (float(rate), unit)
-            elif field == any(int_fields):
+            field, value = field.strip(), value.strip()
+            if field in float_with_unit_fields:
+                numeric, unit = value.split(' ')
+                header[field] = (float(numeric), unit)
+            elif field in int_fields:
                 header[field] = int(value)
-            elif field == any(comma_lists):
+            elif field in comma_lists:
                 header[field] = value.split(',')
             else:
                 header[field] = value
