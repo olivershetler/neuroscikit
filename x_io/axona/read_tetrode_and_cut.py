@@ -151,14 +151,16 @@ def _read_tetrode(tetrode_file):
             duration = int(line.decode(encoding='UTF-8').split(" ")[1])
         elif 'sample_rate' in str(line):
             samp_rate = int(line.decode(encoding='UTF-8').split(" ")[1])
+        elif 'num_chans' in str(line):
+            num_chans = int(line.decode(encoding='UTF-8').split(" ")[1])
 
-            # calculating the big-endian and little endian matrices so we can convert from bytes -> decimal
+    # calculating the big-endian and little endian matrices so we can convert from bytes -> decimal
 
     big_endian_vector = 256 ** np.arange(bytes_per_timestamp - 1, -1, -1)
     little_endian_matrix = np.arange(0, bytes_per_sample).reshape(bytes_per_sample, 1)
     little_endian_matrix = 256 ** np.tile(little_endian_matrix, (1, samples_per_spike))
 
-    number_channels = 4 # should this be hardcoded?
+    number_channels = num_chans # should this be hardcoded?
     # can it be detected?
 
     # calculating the timestamps
