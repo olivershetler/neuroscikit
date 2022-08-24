@@ -325,4 +325,3 @@ def load_spike_train_from_paths(cut_path: str, tetrode_path: str, channel_no: in
         channel, empty_cell = get_spike_trains_from_channel(cut_file, tetrode_file, 1)
 
     return channel, empty_cell
-
