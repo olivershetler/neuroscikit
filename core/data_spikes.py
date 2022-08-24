@@ -14,6 +14,8 @@ class SpikeTrain():
 
 
 class SpatialSpikeTrain2D(TimeStampSpikeTrain):
+    def __init__():
+        pass
 
 
 class Spike():
