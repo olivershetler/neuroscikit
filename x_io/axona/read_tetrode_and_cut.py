@@ -108,16 +108,16 @@ def _read_tetrode_header(tetrode_file):
     comma_lists = ['spike_format']
     header = {}
     for line in tetrode_file:
-        if 'data_start' in line:
+        if 'data_start' in str(line):
             return header
         else:
-            field, value = line.split(' ', 1)
-            if field == float_with_unit_fields.any():
+            field, value = line.decode(encoding='UTF-8').split(' ', 1)
+            if field == any(float_with_unit_fields):
                 rate, unit = value.split(' ')
                 header[field] = (float(rate), unit)
-            elif field == int_fields.any():
+            elif field == any(int_fields):
                 header[field] = int(value)
-            elif field == comma_lists.any():
+            elif field == any(comma_lists):
                 header[field] = value.split(',')
             else:
                 header[field] = value
@@ -318,10 +318,10 @@ def load_spike_train_from_paths(cut_path: str, tetrode_path: str, channel_no: in
     assert os.path.exists(cut_path), "Cut file does not exist"
     assert os.path.exists(tetrode_path), "Tetrode file does not exist"
     assert cut_path[-4:] == ".cut", "Cut file is not a .cut file"
-    with os.path.splittext(tetrode_path) as (root, extension):
-        assert int(extension) >= 0, "Tetrode file is not a valid tetrode file"
-    with open(test_cut_file_path, 'r') as cut_file, open(test_tetrode_file_path, 'rb') as tetrode_file:
-        channel, empty_cell = load_spike_train(cut_file, tetrode_file, 1)
+    #extension = tetrode_path.split('.')[-1]
+    #assert int(extension) >= 0, "Tetrode file path does not lead to a valid tetrode file. The extension must be a positive integer (n>=0)."
+    with open(cut_path, 'r') as cut_file, open(tetrode_path, 'rb') as tetrode_file:
+        channel, empty_cell = get_spike_trains_from_channel(cut_file, tetrode_file, 1)
 
     return channel, empty_cell
 

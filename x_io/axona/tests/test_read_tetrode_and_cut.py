@@ -41,7 +41,7 @@ def test__read_cut():
 def test__read_tetrode_header():
     with open(test_tetrode_file_path, 'rb') as tetrode_file:
         tetrode_header = _read_tetrode_header(tetrode_file)
-    assert type(tetrode_values) == dict
+    assert type(tetrode_header) == dict
     print(tetrode_header)
 
 def test__read_tetrode():
