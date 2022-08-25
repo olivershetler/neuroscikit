@@ -2,6 +2,40 @@
 This module contains methods for reading and writing to the .X (tetrode) and .cut file formats, which store extracted spikes and spike cluster data.
 
 We get spike trains from these two files combined.
+
+Axona .X files are binary files that contain spike data. They contain a header that contains information about the spike data, and the spike data itself.
+
+After the header, there is a string that starts with 'data_start'. This is followed by the spike data.
+
+The spike data are stored as bytes in the following format:
+    timestamp (4 bytes)
+    channel_1 (1 byte x 50 samples)
+    timestamp (4 bytes)
+    channel_2 (1 byte x 50 samples)
+    timestamp (4 bytes)
+    channel_3 (1 byte x 50 samples)
+    timestamp (4 bytes)
+    channel_4 (1 byte x 50 samples)
+    .
+    .
+    .
+    timestamp (4 bytes)
+    channel_n (1 byte x 50 samples)
+    ---
+    timestamp (4 bytes)
+    channel_1 (1 byte x 50 samples)
+    timestamp (4 bytes)
+    channel_2 (1 byte x 50 samples)
+    .
+    .
+    .
+    timestamp (4 bytes)
+    channel_n (1 byte x 50 samples)
+    ---
+    And the pattern repeats for every spike.
+
+    For the data we use at Hussaini Lab, the timestamps are identical.
+    ...
 """
 from __future__ import division, print_function
 
