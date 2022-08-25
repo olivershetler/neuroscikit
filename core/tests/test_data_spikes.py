@@ -46,7 +46,7 @@ def make_1D_timestamps(T=2, dt=0.02):
     time = np.arange(0,T,dt)
 
     spk_count = np.random.choice(len(time), size=1)
-    spk_time = np.random.choice(time, size=spk_count)
+    spk_time = np.random.choice(time, size=spk_count, replace=False)
 
     return list(spk_time)
 
@@ -56,17 +56,16 @@ def make_2D_timestamps(count=20, T=2, dt=0.02):
 
     for i in range(count):
         spk_count = np.random.choice(len(time), size=1)
-        spk_times[i] = list(np.random.choice(time, size=spk_count))
+        spk_times[i] = list(np.random.choice(time, size=spk_count, replace=False))
 
 
     return list(spk_times)
 
-def test_spike_train_class():
+def test_spike_train_init():
 
     spike_times = make_1D_timestamps()
     T = 2
     dt = .02
-
     time = np.arange(0,T,dt)
 
     spike_train = SpikeTrain(time, spike_times=spike_times)
@@ -89,8 +88,34 @@ def test_spike_train_class():
 
     spike_ids, spike_times, spikes_raw = spike_train.__getitem__(5)
 
-    return spike_train
+def test_spike_train_rate_functions():
+
+    spike_times = make_1D_timestamps()
+    T = 2
+    dt = .02
+    time = np.arange(0,T,dt)
+
+    spike_train = SpikeTrain(time, spike_times=spike_times)
+
+    rate1 = spike_train.spike_rate()
+
+    assert type(rate1) == float
+
+    spikes_raw = make_1D_binary_spikes()
+
+    spike_train = SpikeTrain(time, spikes_raw=spikes_raw)
+
+    rate2 = spike_train.spike_rate()
+    
+    assert type(rate2) == float
+
+
+
+
+
+
+
     
 if __name__ == '__main__':
-    test_spike_train_class()
+    test_spike_train_rate_functions()
 

@@ -1,5 +1,5 @@
+import numpy as np
 
-# @dataclass
 class SpikeTrain():
     """Single spike train
     """
@@ -35,10 +35,13 @@ class SpikeTrain():
                     spike_ids.append(i)
                     spike_times.append(self.timestamps[i])
 
+        assert sum(spikes_raw) == len(spike_times)
+
         self.spike_times = spike_times
         self.spikes_raw = spikes_raw
         self.spike_ids = spike_ids
         self.spike_features = spike_features
+        self._spike_rate = None
 
     def __len__(self):
         return len(self.spike_ids)
@@ -72,7 +75,24 @@ class SpikeTrain():
         return self.spike_times <= other.spike_times
 
     def __gt__(self, other):
-        pass
+        return self.spike_times > other.spike_times
+
+    def __ge__(self, other):
+        return self.spike_times >= other.spike_times
+
+    def spike_rate(self):
+        if self._spike_rate == None:
+            T = (self.timestamps[-1] - self.timestamps[0])
+            self._spike_rate = float(sum(self.spikes_raw) / T)
+            # assert self._spike_rate == float(len(self.spike_times) / T), 'binary vs timestamps returning different spike rate'
+            return self._spike_rate
+        else:
+            return self._spike_rate
+
+    
+
+
+    
 
 
     # check if the spike train is in time-stamp format or binary format
