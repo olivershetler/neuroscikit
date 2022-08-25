@@ -199,6 +199,7 @@ def _read_tetrode(tetrode_file):
     for chan in range(number_channels):
         ephys_data['ch%d' % (chan + 1)] = np.asarray(waveform_data[chan][:][:])
 
+    # ephys data = dictionary of sptimes, channels (NxM where N is num spieks, M is samples per spike)
     return ephys_data, spikeparam
 
 
@@ -265,26 +266,30 @@ def get_spike_trains_from_channel(open_cut_file, open_tetrode_file, channel_no: 
 
     # Read cut and tetrode data
     cut_data = _read_cut(open_cut_file)
+    # ts (Nx1), ch1 (NxM), ch2 (NxM), ch3 (NxM), ch4 (NxM), spikeparam dict
+    # function computes channel data for one specificied channel
     tetrode_data = _format_spikes(open_tetrode_file)
     number_of_neurons = max(cut_data) + 1
 
     # Organize neuron data into list
     channel = [[[] for x in range(2)] for x in range(number_of_neurons)]
 
+    # iterate through every spike time
     for i in range(len(tetrode_data[0])):
+        # N x M array of spikes and samples per spike, generally ~50 samples per spike 
+        # each element appended is an array of the 50 samples for that spike
         channel[cut_data[i]][0].append(tetrode_data[channel_no][i])
+        # second bin holds raw spike times (not the 50 waveform samples per channel at that spike)
         channel[cut_data[i]][1].append(float(tetrode_data[0][i]))
 
     # Find where there is a break in the neuron data
     # and assign the empty space number as the empty cell
-
     for i, element in enumerate(channel):
         if (len(element[0]) == 0 or len(element[1]) == 0) and i != 0:
             empty_cell = i
             break
         else:
             empty_cell = i + 1
-
 
     return channel, empty_cell
 
