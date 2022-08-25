@@ -11,3 +11,5 @@ This module contains methods for reading and writing data to the .eeg and .egf f
 # Other Dependencies
 
 
+def _read_eeg_or_egf():
+    pass

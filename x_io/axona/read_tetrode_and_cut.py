@@ -74,6 +74,110 @@ def _find_unit(tetrode_list):
     return cut_list
 '''
 
+
+
+def _read_tetrode(tetrode_file):
+    """Reads through the tetrode file as an input and returns two things, a dictionary containing the following:
+    timestamps, ch1-ch4 waveforms, and it also returns a dictionary containing the spike parameters"""
+
+    for line in tetrode_file:
+        if 'data_start' in str(line):
+            data_string = (line + tetrode_file.read())[len('data_start'):-len('\r\ndata_end\r\n')]
+            spike_data = np.frombuffer(data_string, dtype='uint8')
+            break
+        elif 'num_spikes' in str(line):
+            num_spikes = int(line.decode(encoding='UTF-8').split(" ")[1])
+        elif 'bytes_per_timestamp' in str(line):
+            bytes_per_timestamp = int(line.decode(encoding='UTF-8').split(" ")[1])
+        elif 'samples_per_spike' in str(line):
+            samples_per_spike = int(line.decode(encoding='UTF-8').split(" ")[1])
+        elif 'bytes_per_sample' in str(line):
+            bytes_per_sample = int(line.decode(encoding='UTF-8').split(" ")[1])
+        elif 'timebase' in str(line):
+            timebase = int(line.decode(encoding='UTF-8').split(" ")[1])
+        elif 'duration' in str(line):
+            duration = int(line.decode(encoding='UTF-8').split(" ")[1])
+        elif 'sample_rate' in str(line):
+            samp_rate = int(line.decode(encoding='UTF-8').split(" ")[1])
+        elif 'num_chans' in str(line):
+            num_chans = int(line.decode(encoding='UTF-8').split(" ")[1])
+
+    # calculating the big-endian and little endian matrices so we can convert from bytes -> decimal
+    big_endian_vector = 256 ** np.arange(bytes_per_timestamp - 1, -1, -1)
+    little_endian_matrix = np.arange(0, bytes_per_sample).reshape(bytes_per_sample, 1)
+    little_endian_matrix = 256 ** np.tile(little_endian_matrix, (1, samples_per_spike))
+
+    number_channels = num_chans
+    # can it be detected?
+
+    # calculating the timestamps
+    step = (bytes_per_sample * samples_per_spike * 4 + bytes_per_timestamp * 4)
+
+    t_start_indices = np.arange(0, step*num_spikes, step).astype(int).reshape(num_spikes, 1)
+
+    #print("\n\n",[index for index in t_start_indices[0:100]])
+
+    t_indices = t_start_indices
+
+    for chan in np.arange(1, number_channels):
+        t_indices = np.hstack((t_indices, t_start_indices + chan))
+
+    #print("\n\n",[index for index in t_indices[0:100]])
+
+    t = spike_data[t_indices].reshape(num_spikes, bytes_per_timestamp)  # acquiring the time bytes
+    t = np.sum(np.multiply(t, big_endian_vector), axis=1) / timebase  # converting from bytes to float values
+
+    '''
+    for i in range(0, num_spikes):
+        assert t[i] == t3[i]
+    print("\n\n",[index for index in t[0:100]])
+    assert len(t) == len(t_indices)
+    count = 0
+    for i in range(len(t)-1):
+        assert t[i] <= t[i + 1], "t_i == {} !< t_i+1 == {} at index {}".format(t[i], t[i + 1], i)
+        assert t[i] >= 0, "t_i == {} < 0 at index {}".format(t[i], i)
+        if t[i] == t[i + 1]:
+            count += 1
+    '''
+
+    #print("repeated timestamps: ", count)
+    t_indices = None
+
+    waveform_data = np.zeros((number_channels, num_spikes, samples_per_spike))  # (dimensions, rows, columns)
+
+    bytes_offset = 0
+    # read the t,ch1,t,ch2,t,ch3,t,ch4
+
+    for chan in range(number_channels):  # only really care about the first time that gets written
+        chan_start_indices = t_start_indices + bytes_per_timestamp * (chan + 1) + samples_per_spike * chan
+        #print(chan_start_indices[0:100])
+        for spike_sample in np.arange(1, samples_per_spike):
+            chan_start_indices = np.hstack((chan_start_indices, t_start_indices + chan * samples_per_spike + bytes_per_timestamp * (chan+1) + spike_sample))
+        waveform_data[chan][:][:] = spike_data[chan_start_indices].reshape(num_spikes, samples_per_spike).astype(
+            'int8')  # acquiring the channel bytes
+        waveform_data[chan][:][:][np.where(waveform_data[chan][:][:] > 127)] -= 256
+        waveform_data[chan][:][:] = np.multiply(waveform_data[chan][:][:], little_endian_matrix)
+
+    spikeparam = {'timebase': timebase, 'bytes_per_sample': bytes_per_sample, 'samples_per_spike': samples_per_spike,
+                  'bytes_per_timestamp': bytes_per_timestamp, 'duration': duration, 'num_spikes': num_spikes,
+                  'sample_rate': samp_rate}
+    ephys_data = {'t': t.reshape(num_spikes, 1)}
+    for chan in range(number_channels):
+        ephys_data['ch%d' % (chan + 1)] = np.asarray(waveform_data[chan][:][:])
+
+    # ephys data = dictionary of sptimes, channels (NxM where N is num spieks, M is samples per spike)
+    return ephys_data, spikeparam
+
+
+def __extract_spike_data_list(tetrode_file):
+    pass
+
+def __extract_timestamps_from_ephys_bytes(spike_data_bytes, bytes_per_timestamp):
+    pass
+
+def __extract_waveforms_from_ephys_bytes(spike_data_bytes, bytes_per_timestamp, bytes_per_sample, samples_per_spike):
+    pass
+
 def _read_tetrode_header(tetrode_file):
     """
     This function will return the header values from the Tint tetrode file.
@@ -123,84 +227,6 @@ def _read_tetrode_header(tetrode_file):
             else:
                 header[field] = value
     return header
-
-def _read_tetrode_data(tetrode_file):
-    pass
-
-
-def _read_tetrode(tetrode_file):
-    """Reads through the tetrode file as an input and returns two things, a dictionary containing the following:
-    timestamps, ch1-ch4 waveforms, and it also returns a dictionary containing the spike parameters"""
-
-    for line in tetrode_file:
-        if 'data_start' in str(line):
-            data_string = (line + tetrode_file.read())[len('data_start'):-len('\r\ndata_end\r\n')]
-            spike_data = np.frombuffer(data_string, dtype='uint8')
-            break
-        elif 'num_spikes' in str(line):
-            num_spikes = int(line.decode(encoding='UTF-8').split(" ")[1])
-        elif 'bytes_per_timestamp' in str(line):
-            bytes_per_timestamp = int(line.decode(encoding='UTF-8').split(" ")[1])
-        elif 'samples_per_spike' in str(line):
-            samples_per_spike = int(line.decode(encoding='UTF-8').split(" ")[1])
-        elif 'bytes_per_sample' in str(line):
-            bytes_per_sample = int(line.decode(encoding='UTF-8').split(" ")[1])
-        elif 'timebase' in str(line):
-            timebase = int(line.decode(encoding='UTF-8').split(" ")[1])
-        elif 'duration' in str(line):
-            duration = int(line.decode(encoding='UTF-8').split(" ")[1])
-        elif 'sample_rate' in str(line):
-            samp_rate = int(line.decode(encoding='UTF-8').split(" ")[1])
-        elif 'num_chans' in str(line):
-            num_chans = int(line.decode(encoding='UTF-8').split(" ")[1])
-
-    # calculating the big-endian and little endian matrices so we can convert from bytes -> decimal
-
-    big_endian_vector = 256 ** np.arange(bytes_per_timestamp - 1, -1, -1)
-    little_endian_matrix = np.arange(0, bytes_per_sample).reshape(bytes_per_sample, 1)
-    little_endian_matrix = 256 ** np.tile(little_endian_matrix, (1, samples_per_spike))
-
-    number_channels = num_chans # should this be hardcoded?
-    # can it be detected?
-
-    # calculating the timestamps
-    t_start_indices = np.linspace(0, num_spikes * (bytes_per_sample * samples_per_spike * 4 +
-                                                   bytes_per_timestamp * 4), num=num_spikes, endpoint=False).astype(
-        int).reshape(num_spikes, 1)
-    t_indices = t_start_indices
-
-    for chan in np.arange(1, number_channels):
-        t_indices = np.hstack((t_indices, t_start_indices + chan))
-
-    t = spike_data[t_indices].reshape(num_spikes, bytes_per_timestamp)  # acquiring the time bytes
-    t = np.sum(np.multiply(t, big_endian_vector), axis=1) / timebase  # converting from bytes to float values
-    t_indices = None
-
-    waveform_data = np.zeros((number_channels, num_spikes, samples_per_spike))  # (dimensions, rows, columns)
-
-    bytes_offset = 0
-    # read the t,ch1,t,ch2,t,ch3,t,ch4
-
-    for chan in range(number_channels):  # only really care about the first time that gets written
-        chan_start_indices = t_start_indices + chan * samples_per_spike + bytes_per_timestamp + bytes_per_timestamp * chan
-        for spike_sample in np.arange(1, samples_per_spike):
-            chan_start_indices = np.hstack((chan_start_indices, t_start_indices +
-                                            chan * samples_per_spike + bytes_per_timestamp +
-                                            bytes_per_timestamp * chan + spike_sample))
-        waveform_data[chan][:][:] = spike_data[chan_start_indices].reshape(num_spikes, samples_per_spike).astype(
-            'int8')  # acquiring the channel bytes
-        waveform_data[chan][:][:][np.where(waveform_data[chan][:][:] > 127)] -= 256
-        waveform_data[chan][:][:] = np.multiply(waveform_data[chan][:][:], little_endian_matrix)
-
-    spikeparam = {'timebase': timebase, 'bytes_per_sample': bytes_per_sample, 'samples_per_spike': samples_per_spike,
-                  'bytes_per_timestamp': bytes_per_timestamp, 'duration': duration, 'num_spikes': num_spikes,
-                  'sample_rate': samp_rate}
-    ephys_data = {'t': t.reshape(num_spikes, 1)}
-    for chan in range(number_channels):
-        ephys_data['ch%d' % (chan + 1)] = np.asarray(waveform_data[chan][:][:])
-
-    # ephys data = dictionary of sptimes, channels (NxM where N is num spieks, M is samples per spike)
-    return ephys_data, spikeparam
 
 
 def _format_spikes(tetrode_file):
@@ -266,17 +292,19 @@ def get_spike_trains_from_channel(open_cut_file, open_tetrode_file, channel_no: 
 
     # Read cut and tetrode data
     cut_data = _read_cut(open_cut_file)
-    # ts (Nx1), ch1 (NxM), ch2 (NxM), ch3 (NxM), ch4 (NxM), spikeparam dict
-    # function computes channel data for one specificied channel
+
     tetrode_data = _format_spikes(open_tetrode_file)
     number_of_neurons = max(cut_data) + 1
+    # ts (Nx1), ch1 (NxM), ch2 (NxM), ch3 (NxM), ch4 (NxM), spikeparam dict
+    # function computes channel data for one specificied channel
 
     # Organize neuron data into list
     channel = [[[] for x in range(2)] for x in range(number_of_neurons)]
 
     # iterate through every spike time
+    assert len(tetrode_data[0]) == len(cut_data), "Number of spikes in tetrode file {} and cut file {} do not match".format(len(tetrode_data[0]), len(cut_data))
     for i in range(len(tetrode_data[0])):
-        # N x M array of spikes and samples per spike, generally ~50 samples per spike 
+        # N x M array of spikes and samples per spike, generally ~50 samples per spike
         # each element appended is an array of the 50 samples for that spike
         channel[cut_data[i]][0].append(tetrode_data[channel_no][i])
         # second bin holds raw spike times (not the 50 waveform samples per channel at that spike)
