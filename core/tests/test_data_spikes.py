@@ -6,6 +6,11 @@ PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
 print(PROJECT_PATH)
 
+from core.core_utils import (
+    SpikeKeys, 
+    SpikeTypes
+)
+
 from core.data_spikes import (
     SpikeTrain
 )
@@ -61,61 +66,57 @@ def make_2D_timestamps(count=20, T=2, dt=0.02):
 
     return list(spk_times)
 
-def test_spike_train_init():
+def test_spike_train_class():
+
+    spike_keys = SpikeKeys()
+    spike_types = SpikeTypes()
+
+    spike_train_init_keys = spike_keys.get_spike_train_init_keys()
+    input_dict = spike_types.format_keys(spike_train_init_keys)
 
     spike_times = make_1D_timestamps()
+
     T = 2
     dt = .02
-    time = np.arange(0,T,dt)
+    
+    input_dict1 = input_dict.copy()
+    input_dict1['sample_length'] = int(T / dt)
+    input_dict1['sample_rate'] = float(T / dt)
+    input_dict1['spikes_binary'] = []
+    input_dict1['spike_times'] = spike_times
 
-    spike_train = SpikeTrain(time, spike_times=spike_times)
+    spike_train1 = SpikeTrain(input_dict1)
 
-    assert type(spike_train.spikes_raw) == list
-    assert type(spike_train.spike_times) == list
-    assert type(spike_train.spike_ids) == list
-    assert type(spike_train.spike_features) == list
-
-    spike_ids, spike_times, spikes_raw = spike_train.__getitem__(5)
-
-    spikes_raw = make_1D_binary_spikes()
-
-    spike_train = SpikeTrain(time, spikes_raw=spikes_raw)
-
-    assert type(spike_train.spikes_raw) == list
-    assert type(spike_train.spike_times) == list
-    assert type(spike_train.spike_ids) == list
-    assert type(spike_train.spike_features) == list
-
-    spike_ids, spike_times, spikes_raw = spike_train.__getitem__(5)
-
-def test_spike_train_rate_functions():
-
-    spike_times = make_1D_timestamps()
-    T = 2
-    dt = .02
-    time = np.arange(0,T,dt)
-
-    spike_train = SpikeTrain(time, spike_times=spike_times)
-
-    rate1 = spike_train.spike_rate()
+    rate1 = spike_train1.get_spike_rate()
+    spikes_binary1 = spike_train1.get_binary()
 
     assert type(rate1) == float
+    assert type(spike_train1._spikes_binary) == list
+    assert type(spike_train1._spike_times) == list
+    assert type(spike_train1._spike_ids) == list
 
-    spikes_raw = make_1D_binary_spikes()
+    spikes_binary2 = make_1D_binary_spikes()
 
-    spike_train = SpikeTrain(time, spikes_raw=spikes_raw)
+    input_dict2 = input_dict.copy()
+    input_dict2['sample_length'] = int(T / dt)
+    input_dict2['sample_rate'] = float(T / dt)
+    input_dict2['spikes_binary'] = spikes_binary2
+    input_dict2['spike_times'] = []
 
-    rate2 = spike_train.spike_rate()
+    spike_train2 = SpikeTrain(input_dict2)
+
+    rate2 = spike_train2.get_spike_rate()
+    spike_times2 = spike_train2.get_spike_times()
     
     assert type(rate2) == float
-
-
-
+    assert type(spike_train2._spikes_binary) == list
+    assert type(spike_train2._spike_times) == list
+    assert type(spike_train2._spike_ids) == list
 
 
 
 
     
 if __name__ == '__main__':
-    test_spike_train_rate_functions()
+    test_spike_train_class()
 

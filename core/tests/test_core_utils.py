@@ -4,7 +4,12 @@ PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
 print(PROJECT_PATH)
 
-from core.core_utils import make_seconds_index_from_rate, make_hms_index_from_rate
+from core.core_utils import (
+    make_seconds_index_from_rate, 
+    make_hms_index_from_rate, 
+    SpikeKeys, 
+    SpikeTypes
+)
 
 from datetime import datetime
 
@@ -33,6 +38,41 @@ def test_make_seconds_index_from_rate():
             assert r(second - start) == r(1/sample_rate)
             assert r(end - start) == r((n_samples-1)/sample_rate)
 
+def test_spike_keys():
+    spike_keys = SpikeKeys()
+
+    spike_train_init_keys = spike_keys.get_spike_train_init_keys()
+
+    assert type(spike_train_init_keys) == list
+    for i in range(len(spike_train_init_keys)):
+        assert type(spike_train_init_keys[i]) == str
+    
+def test_spike_types():
+    spike_types = SpikeTypes()
+    spike_keys = SpikeKeys()
+
+    spike_train_init_keys = spike_keys.get_spike_train_init_keys()
+
+    input_dict = spike_types.format_keys(spike_train_init_keys)
+    keys = list(input_dict.keys())
+    type_counter = [0,0,0]
+    for i in range(len(keys)):
+        if type(input_dict[keys[i]]) == int:
+            type_counter[0] += 1
+        if type(input_dict[keys[i]]) == float:
+            type_counter[1] += 1
+        if type(input_dict[keys[i]]) == list:
+            type_counter[2] += 1
+
+    assert type(input_dict) == dict
+    assert sum(type_counter) == 4
+    assert type_counter[-1] == 2
+
+
+
+
 if __name__ == '__main__':
     test_make_time_index_from_rate()
     test_make_seconds_index_from_rate()
+    test_spike_keys()
+    test_spike_types()
