@@ -6,6 +6,7 @@ print(PROJECT_PATH)
 
 from x_io.axona.read_eeg_or_egf import (
     read_eeg_or_egf
+    ,_make_lfp_object
     ,load_eeg_or_egf_from_path
 )
 
@@ -23,5 +24,10 @@ def test_read_eeg_or_egf():
         eeg_values = read_eeg_or_egf(eeg_file, 'eeg')
     print(type(eeg_values))
 
+def test__make_lfp_object():
+    with open(test_eeg_file_path, 'rb') as eeg_file:
+        eeg_values = read_eeg_or_egf(eeg_file, 'eeg')
+    eeg = _make_lfp_object(eeg_values, 250)
+    print(type(eeg))
 
 

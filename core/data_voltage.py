@@ -2,7 +2,6 @@
 This module is for local field potential (LFP) data. These data are measured
 """
 
-
 class EphysSeries():
     """
     This class is for local field potential (LFP) data. These data are measured
