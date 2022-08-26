@@ -9,8 +9,7 @@ print(PROJECT_PATH)
 from core.data_spikes import (
     SpikeTrain,
     SpikeTrainBatch,
-    SpikeTypes,
-    SpikeKeys
+    InputKeys,
 )
 
 from x_io.axona.read_tetrode_and_cut import (
@@ -67,35 +66,35 @@ def make_2D_timestamps(count=20, T=2, dt=0.02):
 
 ############################
 
-def test_spike_keys():
-    spike_keys = SpikeKeys()
+# def test_spike_keys():
+#     spike_keys = SpikeKeys()
 
-    spike_train_init_keys = spike_keys.get_spike_train_init_keys()
+#     spike_train_init_keys = spike_keys.get_spike_train_init_keys()
 
-    assert type(spike_train_init_keys) == list
-    for i in range(len(spike_train_init_keys)):
-        assert type(spike_train_init_keys[i]) == str
+#     assert type(spike_train_init_keys) == list
+#     for i in range(len(spike_train_init_keys)):
+#         assert type(spike_train_init_keys[i]) == str
     
-def test_spike_types():
-    spike_types = SpikeTypes()
-    spike_keys = SpikeKeys()
+# def test_spike_types():
+#     spike_types = SpikeTypes()
+#     spike_keys = SpikeKeys()
 
-    spike_train_init_keys = spike_keys.get_spike_train_init_keys()
+#     spike_train_init_keys = spike_keys.get_spike_train_init_keys()
 
-    input_dict = spike_types.format_keys(spike_train_init_keys)
-    keys = list(input_dict.keys())
-    type_counter = [0,0,0]
-    for i in range(len(keys)):
-        if type(input_dict[keys[i]]) == int:
-            type_counter[0] += 1
-        if type(input_dict[keys[i]]) == float:
-            type_counter[1] += 1
-        if type(input_dict[keys[i]]) == list:
-            type_counter[2] += 1
+#     input_dict = spike_types.format_keys(spike_train_init_keys)
+#     keys = list(input_dict.keys())
+#     type_counter = [0,0,0]
+#     for i in range(len(keys)):
+#         if type(input_dict[keys[i]]) == int:
+#             type_counter[0] += 1
+#         if type(input_dict[keys[i]]) == float:
+#             type_counter[1] += 1
+#         if type(input_dict[keys[i]]) == list:
+#             type_counter[2] += 1
 
-    assert type(input_dict) == dict
-    assert sum(type_counter) == 4
-    assert type_counter[-1] == 2
+#     assert type(input_dict) == dict
+#     assert sum(type_counter) == 4
+#     assert type_counter[-1] == 2
 
 
 
@@ -103,18 +102,18 @@ def test_spike_types():
 
 def test_spike_train_class():
 
-    spike_keys = SpikeKeys()
-    spike_types = SpikeTypes()
+    # spike_keys = SpikeKeys()
+    # spike_types = SpikeTypes()
 
-    spike_train_init_keys = spike_keys.get_spike_train_init_keys()
-    input_dict = spike_types.format_keys(spike_train_init_keys)
+    # spike_train_init_keys = spike_keys.get_spike_train_init_keys()
+    # input_dict = spike_types.format_keys(spike_train_init_keys)
 
     spike_times = make_1D_timestamps()
 
     T = 2
     dt = .02
     
-    input_dict1 = input_dict.copy()
+    input_dict1 = {}
     input_dict1['sample_length'] = int(T / dt)
     input_dict1['sample_rate'] = float(T / dt)
     input_dict1['spikes_binary'] = []
@@ -132,7 +131,7 @@ def test_spike_train_class():
 
     spikes_binary2 = make_1D_binary_spikes()
 
-    input_dict2 = input_dict.copy()
+    input_dict2 = {}
     input_dict2['sample_length'] = int(T / dt)
     input_dict2['sample_rate'] = float(T / dt)
     input_dict2['spikes_binary'] = spikes_binary2
@@ -150,18 +149,18 @@ def test_spike_train_class():
 
 def test_spike_train_batch_class():
 
-    spike_keys = SpikeKeys()
-    spike_types = SpikeTypes()
+    # spike_keys = SpikeKeys()
+    # spike_types = SpikeTypes()
 
-    spike_train_init_keys = spike_keys.get_spike_train_init_keys()
-    input_dict = spike_types.format_keys(spike_train_init_keys)
+    # spike_train_init_keys = spike_keys.get_spike_train_init_keys()
+    # input_dict = spike_types.format_keys(spike_train_init_keys)
 
     spike_times = make_2D_timestamps()
 
     T = 2
     dt = .02
     
-    input_dict1 = input_dict.copy()
+    input_dict1 = {}
     input_dict1['sample_length'] = int(T / dt)
     input_dict1['sample_rate'] = float(T / dt)
     input_dict1['spikes_binary'] = []
@@ -184,7 +183,7 @@ def test_spike_train_batch_class():
 
     spikes_binary2 = make_2D_binary_spikes()
 
-    input_dict2 = input_dict.copy()
+    input_dict2 = {}
     input_dict2['sample_length'] = int(T / dt)
     input_dict2['sample_rate'] = float(T / dt)
     input_dict2['spikes_binary'] = spikes_binary2
@@ -208,8 +207,8 @@ def test_spike_train_batch_class():
 
 
 if __name__ == '__main__':
-    test_spike_keys()
-    test_spike_types()
+    # test_spike_keys()
+    # test_spike_types()
     test_spike_train_class()
     test_spike_train_batch_class()
-
+    print('we good')

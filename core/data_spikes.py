@@ -10,38 +10,9 @@ from core.core_utils import (
     make_seconds_index_from_rate,
 )
 
-class SpikeKeys():
+class InputKeys():
     def __init__(self):
-        self.sample_length = [
-            'sample_length',
-            'length',
-            'len',
-        ]
-        self.sample_rate = [
-            'sample_rate',
-            'rate',
-            'r',
-        ]
-        self.spikes_binary = [
-            'spikes_binary',
-            'binary',
-            'bina',
-        ]
-        self.spike_times = [
-            'spike_times',
-            'times',
-            'ts',
-            't',
-            'sptimes',
-            'spks',
-            'sps',
-        ]
-        self.cluster_labels = [
-            'cluster_labels',
-            'labels',
-            'label',
-            'cluster_label',
-        ]
+        pass
 
     def get_spike_train_init_keys(self):
         init_keys = [
@@ -52,42 +23,17 @@ class SpikeKeys():
         ]
         return init_keys
 
+    def get_spike_cluster_init_keys(self):
+        init_keys = [
+            'sample_length', 
+            'sample_rate', 
+            'spike_times',
+            'cluster_labels',
+            'ch1','ch2','ch3', 'ch4', 'ch5', 'ch6', 'ch7', 'ch8'
+        ]
+        return init_keys
 
-class SpikeTypes():
-    def __init__(self):
-        self.sample_length = int
-        self.sample_rate = float
-        self.spike_times = list[float]
-        self.spikes_binary = list[int]
-        self.cluster_labels = list[int]
-        self.init_keys = []
 
-    # def _set_init_keys(self, init_keys):
-    #     self.init_keys = init_keys
-
-    def type_dict(self):
-        types = {
-        'sample_length': int(0),
-        'sample_rate': float(0.0),
-        'spike_times': [],
-        'spikes_binary': [],
-        'cluster_labels': [],
-        }
-        return types
-
-    def format_keys(self, init_keys):
-        self.init_keys = init_keys
-
-        input_dict = {}
-        types = self.type_dict()
-
-        assert len(self.init_keys) != 0, 'make sure to set initial dict. keys using SpikeKeys class'
-
-        for i in range(len(self.init_keys)):
-            if self.init_keys[i] in types:
-                input_dict[str(self.init_keys[i])] = types[self.init_keys[i]]
-        
-        return input_dict
 
 
 
@@ -154,22 +100,16 @@ class SpikeTrain():
         return self._spike_times >= other._spike_times
 
     def _read_input_dict(self):
-        true_keys = list(self._input_dict.keys())
-        possible_keys = SpikeKeys()
-        spike_data_present = False
-        for key in true_keys:
-            if key in possible_keys.sample_length:
-                sample_length = self._input_dict[key]
-            if key in possible_keys.sample_rate:
-                sample_rate = self._input_dict[key]
-            if key in possible_keys.spikes_binary:
-                spikes_binary = self._input_dict[key]
-                if len(spikes_binary) > 0:
-                    spike_data_present = True
-            if key in possible_keys.spike_times:
-                spike_times = self._input_dict[key]
-                if len(spike_times) > 0:
-                    spike_data_present = True
+        sample_length = self._input_dict['sample_length']
+        sample_rate = self._input_dict['sample_rate']
+        spikes_binary = self._input_dict['spikes_binary']
+        assert type(spikes_binary) == list, 'Binary spikes are not a list, check inputs'
+        if len(spikes_binary) > 0:
+            spike_data_present = True
+        spike_times = self._input_dict['spike_times']
+        assert type(spike_times) == list, 'Spike times are not a list, check inputs'
+        if len(spike_times) > 0:
+            spike_data_present = True
         assert spike_data_present == True, 'No spike times or binary spikes provided'
         return sample_length, sample_rate, spikes_binary, spike_times
 
@@ -225,7 +165,7 @@ class Spike(): # spike object, has waveforms
         assert type(cluster_label) == int, 'Cluster label must be integer for index into waveforms'
         assert type(spike_time) != float, 'Spike times is in format: ' + str(type(spike_time))
 
-        self.timestamps = test_make_seconds_index_from_rate(sample_length, sample_rate)
+        self.timestamps = make_seconds_index_from_rate(sample_length, sample_rate)
         self.spike_time = spike_time
         self.label = cluster_label
         self.waveforms = ch1, ch2, ch3, ch4
@@ -337,56 +277,40 @@ class SpikeTrainBatch():
         self._spike_ids = []
         self._spike_rate = None
         self._spike_train_instances = []
-
+    
     def _read_input_dict(self):
-        true_keys = list(self._input_dict.keys())
-        possible_keys = SpikeKeys()
-        spike_data_present = False
-        for key in true_keys:
-            if key in possible_keys.sample_length:
-                sample_length = self._input_dict[key]
-            if key in possible_keys.sample_rate:
-                sample_rate = self._input_dict[key]
-            if key in possible_keys.spikes_binary:
-                spikes_binary = self._input_dict[key]
-                assert type(spikes_binary) == list, 'Binary spikes are not a list, check inputs'
-                if len(spikes_binary) > 0:
-                    assert type(spikes_binary[0]) == list, 'Binary spikes are not nested lists (2D), check inputs are not 1D'
-                    spike_data_present = True
-            if key in possible_keys.spike_times:
-                spike_times = self._input_dict[key]
-                assert type(spike_times) == list, 'Spike times are not a list, check inputs'
-                if len(spike_times) > 0:
-                    assert type(spike_times[0]) == list, 'Spike times are not nested lists (2D), check inputs are not 1D'
-                    spike_data_present = True
+        sample_length = self._input_dict['sample_length']
+        sample_rate = self._input_dict['sample_rate']
+        spikes_binary = self._input_dict['spikes_binary']
+        assert type(spikes_binary) == list, 'Binary spikes are not a list, check inputs'
+        if len(spikes_binary) > 0:
+            assert type(spikes_binary[0]) == list, 'Binary spikes are not nested lists (2D), check inputs are not 1D'
+            spike_data_present = True
+        spike_times = self._input_dict['spike_times']
+        assert type(spike_times) == list, 'Spike times are not a list, check inputs'
+        if len(spike_times) > 0:
+            assert type(spike_times[0]) == list, 'Spike times are not nested lists (2D), check inputs are not 1D'
+            spike_data_present = True
         assert spike_data_present == True, 'No spike times or binary spikes provided'
         return sample_length, sample_rate, spikes_binary, spike_times
 
     def _make_spike_train_inputs(self):
-        # check was was papssed in, spiek times or binary
-        # if len(self._spike_times) > 0:
-        #     spike_trains = self._spike_times
-        # else:
-        #     spike_trains = self._spikes_binary
-
-        # utils classes for filling/checking input dict
-        spike_keys = SpikeKeys()
-        spike_types = SpikeTypes()
-        init_keys = spike_keys.get_spike_train_init_keys()
-        # spike_types._set_init_keys(init_keys)
-
         # arr to collect SpikeTrain() instances
         instances = []
 
         # Both are 2d arrays so can do len() to iterate thru number of cells
         for i in range(self.units):
-            input_dict = spike_types.format_keys(init_keys)
+            input_dict = {}
             input_dict['sample_length'] = self._sample_length
             input_dict['sample_rate'] = self._sample_rate
             if len(self._spikes_binary) > 0:
                 input_dict['spikes_binary'] = self._spikes_binary[i]
+            else:
+                input_dict['spikes_binary'] = []
             if len(self._spike_times) > 0:
                 input_dict['spike_times'] = self._spike_times[i]
+            else:
+                input_dict['spike_times'] = []
             instances.append(self._make_spike_train_instance(input_dict))
 
         self._spike_train_instances = instances
