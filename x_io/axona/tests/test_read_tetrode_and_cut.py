@@ -5,7 +5,8 @@
 
 #TODO: figure out how to read the data directly from the internet.
 
-#import urllib as web
+# eventually replace this with urllib
+# access to the data online
 import os
 import sys
 PROJECT_PATH = os.getcwd()
