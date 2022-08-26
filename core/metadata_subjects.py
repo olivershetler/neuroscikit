@@ -1,3 +1,8 @@
+"""
+This module is for defining and managing the
+data related to experimental subjects.
+"""
+
 from abc import ABC, abstractmethod
 
 class Subject(ABC):
@@ -13,8 +18,6 @@ class AnimalSubject():
     @abstractmethod
     def __init__(self, **kwargs):
         pass
-
-    def
 
 class MouseSubject():
     """This class is used to store the mouse subject information.

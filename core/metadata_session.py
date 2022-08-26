@@ -45,5 +45,5 @@ class Experimenter():
     However, it is reccommended that the experimentor get an ORCID id.
     """
     def __init__(self, experimenter, orcid):
-        self.experimenter =
+        pass
 
