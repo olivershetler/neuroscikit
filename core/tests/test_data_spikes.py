@@ -1,5 +1,6 @@
 import os
 import sys
+import wave
 import numpy as np
 
 PROJECT_PATH = os.getcwd()
@@ -10,6 +11,8 @@ from core.data_spikes import (
     SpikeTrain,
     SpikeTrainBatch,
     InputKeys,
+    Spike,
+    SpikeCluster,
 )
 
 from x_io.axona.read_tetrode_and_cut import (
@@ -61,53 +64,53 @@ def make_2D_timestamps(count=20, T=2, dt=0.02):
         spk_count = np.random.choice(len(time), size=1)
         spk_times.append(np.random.choice(time, size=spk_count, replace=False).tolist())
 
-
     return list(spk_times)
 
+def make_waveforms(channel_count, spike_count, samples_per_wave):
+    waveforms = np.zeros((channel_count, spike_count, samples_per_wave))
+
+    for i in range(channel_count):
+        for j in range(samples_per_wave):
+            waveforms[i,:,j] = np.random.randint(-20,20,size=spike_count).tolist()
+
+    return waveforms.tolist()
+
 ############################
+# NOT CALLED
+def test_spike_keys():
+    spike_keys = SpikeKeys()
 
-# def test_spike_keys():
-#     spike_keys = SpikeKeys()
+    spike_train_init_keys = spike_keys.get_spike_train_init_keys()
 
-#     spike_train_init_keys = spike_keys.get_spike_train_init_keys()
+    assert type(spike_train_init_keys) == list
+    for i in range(len(spike_train_init_keys)):
+        assert type(spike_train_init_keys[i]) == str
+# NOT CALLED
+def test_spike_types():
+    spike_types = SpikeTypes()
+    spike_keys = SpikeKeys()
 
-#     assert type(spike_train_init_keys) == list
-#     for i in range(len(spike_train_init_keys)):
-#         assert type(spike_train_init_keys[i]) == str
-    
-# def test_spike_types():
-#     spike_types = SpikeTypes()
-#     spike_keys = SpikeKeys()
+    spike_train_init_keys = spike_keys.get_spike_train_init_keys()
 
-#     spike_train_init_keys = spike_keys.get_spike_train_init_keys()
+    input_dict = spike_types.format_keys(spike_train_init_keys)
+    keys = list(input_dict.keys())
+    type_counter = [0,0,0]
+    for i in range(len(keys)):
+        if type(input_dict[keys[i]]) == int:
+            type_counter[0] += 1
+        if type(input_dict[keys[i]]) == float:
+            type_counter[1] += 1
+        if type(input_dict[keys[i]]) == list:
+            type_counter[2] += 1
 
-#     input_dict = spike_types.format_keys(spike_train_init_keys)
-#     keys = list(input_dict.keys())
-#     type_counter = [0,0,0]
-#     for i in range(len(keys)):
-#         if type(input_dict[keys[i]]) == int:
-#             type_counter[0] += 1
-#         if type(input_dict[keys[i]]) == float:
-#             type_counter[1] += 1
-#         if type(input_dict[keys[i]]) == list:
-#             type_counter[2] += 1
-
-#     assert type(input_dict) == dict
-#     assert sum(type_counter) == 4
-#     assert type_counter[-1] == 2
-
-
-
+    assert type(input_dict) == dict
+    assert sum(type_counter) == 4
+    assert type_counter[-1] == 2
+# NOT CALLED
+############################
     
 
 def test_spike_train_class():
-
-    # spike_keys = SpikeKeys()
-    # spike_types = SpikeTypes()
-
-    # spike_train_init_keys = spike_keys.get_spike_train_init_keys()
-    # input_dict = spike_types.format_keys(spike_train_init_keys)
-
     spike_times = make_1D_timestamps()
 
     T = 2
@@ -148,13 +151,6 @@ def test_spike_train_class():
     assert type(spike_train2._spike_ids) == list
 
 def test_spike_train_batch_class():
-
-    # spike_keys = SpikeKeys()
-    # spike_types = SpikeTypes()
-
-    # spike_train_init_keys = spike_keys.get_spike_train_init_keys()
-    # input_dict = spike_types.format_keys(spike_train_init_keys)
-
     spike_times = make_2D_timestamps()
 
     T = 2
@@ -205,10 +201,50 @@ def test_spike_train_batch_class():
     assert type(spike_train2._spike_times[0]) == list
     assert isinstance(instances2[0], SpikeTrain) == True
 
+def test_spike_object_class():
+    spike_times = make_1D_timestamps()
+    ch_count = 8
+    samples_per_wave = 50
+    waveforms = make_waveforms(ch_count, len(spike_times), samples_per_wave)
+
+    T = 2
+    dt = .02
+    idx = np.random.choice(len(spike_times), size=1)[0]
+
+    input_dict1 = {}
+    input_dict1['sample_length'] = int(T / dt)
+    input_dict1['sample_rate'] = float(T / dt)
+    input_dict1['spike_time'] = spike_times[idx]
+    input_dict1['cluster_label'] = int(idx + 1)
+
+    for i in range(ch_count):
+        key = 'ch' + str(i+1)
+        input_dict1[key] = waveforms[i][idx]
+
+    spike_object = Spike(input_dict1)
+
+    label = spike_object.get_cluster_label()
+    chan, _ = spike_object.get_main_channel()
+    waveform = spike_object.get_single_channel_waveform(chan)
+
+    assert type(label) == int
+    assert type(spike_object.spike_time) == float
+    assert type(chan) == int
+    assert chan <= ch_count
+    assert chan > 0
+    assert type(waveform) == list
+    assert type(waveform[0]) == float
+    assert len(waveform) == samples_per_wave
+    assert len(waveforms) == ch_count
+
+ 
+
+# def test_spike_cluster_class():
 
 if __name__ == '__main__':
     # test_spike_keys()
     # test_spike_types()
     test_spike_train_class()
     test_spike_train_batch_class()
+    test_spike_object_class()
     print('we good')

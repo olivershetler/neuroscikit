@@ -1,6 +1,7 @@
 import os
 from re import S
 import sys
+import wave
 
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
@@ -33,8 +34,9 @@ class InputKeys():
         ]
         return init_keys
 
-
-
+    def get_channel_keys(self):
+        init_keys = ['ch1','ch2','ch3', 'ch4', 'ch5', 'ch6', 'ch7', 'ch8']
+        return init_keys
 
 
 class SpikeTrain(): 
@@ -161,19 +163,52 @@ class SpikeTrain():
 
 
 class Spike(): # spike object, has waveforms
-    def __init__(self, sample_length, sample_rate, cluster_label, spike_time, ch1, ch2, ch3, ch4):
+    def __init__(self, input_dict):
+        self._input_dict = input_dict
+        sample_length, sample_rate, cluster_label, spike_time, waveforms = self._read_input_dict()
+
         assert type(cluster_label) == int, 'Cluster label must be integer for index into waveforms'
-        assert type(spike_time) != float, 'Spike times is in format: ' + str(type(spike_time))
+        assert type(spike_time) == float, 'Spike times is in format: ' + str(type(spike_time))
 
         self.timestamps = make_seconds_index_from_rate(sample_length, sample_rate)
         self.spike_time = spike_time
         self.label = cluster_label
-        self.waveforms = ch1, ch2, ch3, ch4
+        self.waveforms = waveforms
         # self.waveforms = [self._ch1, self._ch2, self._ch3, self._ch4]
         self._sample_length = sample_length
         self._sample_rate = sample_rate
         self._main_channel = 0
         self._main_waveform = []
+
+    
+
+    def _extract_waveforms(self):
+        input_keys = InputKeys()
+        channel_keys = input_keys.get_channel_keys()
+        waveforms = []
+        for i in range(len(channel_keys)):
+            if channel_keys[i] in self._input_dict.keys():
+                waveforms.append(self._input_dict[channel_keys[i]])
+        return waveforms
+
+    def _read_input_dict(self):
+        sample_length = self._input_dict['sample_length']
+        sample_rate = self._input_dict['sample_rate']
+        # spikes_binary = self._input_dict['spikes_binary']
+        cluster_label = self._input_dict['cluster_label']
+        # assert type(spikes_binary) == list, 'Binary spikes are not a list, check inputs'
+        # if len(spikes_binary) > 0:
+            # spike_data_present = True
+        spike_time = self._input_dict['spike_time']
+        assert type(spike_time) == float, 'Spike time must be single number'
+
+        waveforms = self._extract_waveforms()
+        return sample_length, sample_rate, cluster_label, spike_time, waveforms
+
+    # one waveform per channel bcs class is for one spike
+    def get_single_channel_waveform(self, id):
+        assert id in [1,2,3,4,5,6,7,8], 'Channel number must be from 1 to 8'
+        return self.waveforms[id-1]
 
     def get_main_channel(self):
         if self._main_channel == 0:
@@ -185,10 +220,17 @@ class Spike(): # spike object, has waveforms
     def _set_main_channel(self):
         curr = 0
         for i in range(len(self.waveforms)):
-            if max(abs(self.waveforms[i])) > curr:
-                curr = i + 1
+            for j in range(len(self.waveforms[i])):
+                if abs(self.waveforms[i][j]) > curr:
+                    curr = i + 1
         assert curr != 0, 'There is no 0 channel, make sure max(abs(channel waveform)) is not 0'
-        return curr, self.waveforms[curr]
+        return curr, self.waveforms[curr-1]
+
+    def set_cluster_label(self, label):
+        self.label = label
+    
+    def get_cluster_label(self):
+        return self.label
 
 
 class SpikeClusterBatch():
@@ -197,21 +239,109 @@ class SpikeClusterBatch():
         pass
 
 class SpikeCluster(): # collection of spike objects
-    """Single spike train
-
+    """
     Inputs are sample length and sample rate + cluster labels and spike times, sorted_cells optional
     """
-    def __init__(self, sample_length, sample_rate, cluster_labels, spike_times, sorted_cells=[]):
-        assert len(cluster_labels) > 0, 'Cluster labels missing'
-        assert len(spike_times) > 0, 'Spike times missing'
+    def __init__(self, input_dict):
+        self._input_dict = input_dict
+        sample_length, sample_rate, cluster_label, spike_times, waveforms = self._read_input_dict()
 
-        self.timestamps = test_make_seconds_index_from_rate(sample_length, sample_rate)
+        # self._make_spike_object_instances()
+
+        assert type(cluster_label) == int, 'Cluster labels missing'
+        assert len(spike_times) > 0, 'Spike times missing'
+        assert len(waveforms) <= 8, 'Cannot have fewer than 0 or more than 8 channels'
+
+        self.timestamps = make_seconds_index_from_rate(sample_length, sample_rate)
+        
         self._spike_times = spike_times
-        self._labels = cluster_labels
-        self._sorted_cells = sorted_cells
+        self._label = cluster_label
         self._sample_length = sample_length
         self._sample_rate = sample_rate
         self._spike_objects = []
+        self._waveforms = waveforms
+
+    def get_cluster_firing_rate(self):
+        T = self._timestamps[1] - self._timestamps[0]
+        rate = float(len(self._spike_times) / T)
+        return rate
+
+    def get_cluster_spike_count(self):
+        return len(self._spike_times)
+
+    def get_all_channel_waveforms(self):
+        return self._waveforms
+
+    # id is channel number. Can be: 1,2,3,4,5,6,7,8
+    # all waveforms for a channel (multiple per spike)
+    def get_single_channel_waveforms(self, id):
+        assert id in [1,2,3,4,5,6,7,8], 'Channel number must be from 1 to 8'
+        return self._waveforms[id-1]
+
+    def get_spike_object_instances(self):
+        if len(self._spike_objects) == 0:
+            self._make_spike_object_instances()
+            return self._spike_objects
+        else:
+            return self._spike_objects
+
+    def _make_spike_object_inputs(self):
+        # arr to collect SpikeTrain() instances
+        instances = []
+
+        # Both are 2d arrays so can do len() to iterate thru number of cells
+        for i in range(len(self._spike_times)):
+            input_dict = {}
+            input_dict['sample_length'] = self._sample_length
+            input_dict['sample_rate'] = self._sample_rate
+            if len(self._spike_times) > 0:
+                input_dict['spike_time'] = self._spike_times[i]
+            else:
+                input_dict['spike_time'] = []
+            input_dict['label'] = self._label
+            for j in range(len(self._waveforms)):
+                key = 'ch' + str(j+1)
+                input_dict[key] = self._waveforms[i]
+            instances.append(Spike(input_dict))
+
+        self._spike_objects = instances
+
+    def set_cluster_label(self, label):
+        if len(self._spike_objects) == 0:
+            self._make_spike_object_instances()
+        for i in range(len(self._spike_objects)):
+            self._spike_objects[i].set_cluster_label(label)
+        self._label = label
+        print('Cluster label updated for all SpikeObject in cluster')
+    
+    def get_cluster_label(self):
+        return self._label
+
+    def _read_input_dict(self):
+        sample_length = self._input_dict['sample_length']
+        sample_rate = self._input_dict['sample_rate']
+        # spikes_binary = self._input_dict['spikes_binary']
+        cluster_label = self._input_dict['cluster_label']
+        # assert type(spikes_binary) == list, 'Binary spikes are not a list, check inputs'
+        # if len(spikes_binary) > 0:
+            # spike_data_present = True
+        spike_times = self._input_dict['spike_times']
+        assert type(spike_times) == list, 'Spike times are not a list, check inputs'
+        if len(spike_times) > 0:
+            spike_data_present = True
+        assert spike_data_present == True, 'No spike times or binary spikes provided'
+        waveforms = self._extract_waveforms()
+        return sample_length, sample_rate, cluster_label, spike_times, waveforms
+
+    def _extract_waveforms(self):
+        input_keys = InputKeys()
+        channel_keys = input_keys.get_channel_keys()
+        waveforms = []
+        for i in range(len(channel_keys)):
+            if channel_keys[i] in self._input_dict.keys():
+                waveforms.append(self._input_dict[channel_keys[i]])
+        return waveforms
+
 
     # def _sort_by_label(self):
     #     rng = max(self._labels) + 1 
@@ -249,14 +379,6 @@ class SpikeCluster(): # collection of spike objects
     #         all_times.append(spike_train.get_spike_times())
     #     return all_times
 
-    def get_spike_object_instances(self):
-        if len(self._spike_objects) == 0:
-            for i in range(len(self._spike_times)):
-                spike_obj = self._make_spike_object(self)
-        pass
-
-    def _make_spike_object(self):
-        pass
 
 class SpikeTrainBatch():
     def __init__(self, input_dict):
@@ -294,7 +416,7 @@ class SpikeTrainBatch():
         assert spike_data_present == True, 'No spike times or binary spikes provided'
         return sample_length, sample_rate, spikes_binary, spike_times
 
-    def _make_spike_train_inputs(self):
+    def _make_spike_train_instance(self):
         # arr to collect SpikeTrain() instances
         instances = []
 
@@ -311,17 +433,14 @@ class SpikeTrainBatch():
                 input_dict['spike_times'] = self._spike_times[i]
             else:
                 input_dict['spike_times'] = []
-            instances.append(self._make_spike_train_instance(input_dict))
+            instances.append(SpikeTrain(input_dict))
 
         self._spike_train_instances = instances
 
     def get_spike_train_instances(self):
         if len(self._spike_train_instances) == 0:
-            self._make_spike_train_inputs()
+            self._make_spike_train_instance()
         return self._spike_train_instances
-
-    def _make_spike_train_instance(self, input_dict):
-        return SpikeTrain(input_dict)
 
     def get_indiv_spike_rate(self):
         self.get_spike_train_instances()
