@@ -253,7 +253,7 @@ class SpikeCluster(): # collection of spike objects
         assert len(waveforms) <= 8, 'Cannot have fewer than 0 or more than 8 channels'
 
         self.timestamps = make_seconds_index_from_rate(sample_length, sample_rate)
-        
+ 
         self._spike_times = spike_times
         self._label = cluster_label
         self._sample_length = sample_length
@@ -262,7 +262,7 @@ class SpikeCluster(): # collection of spike objects
         self._waveforms = waveforms
 
     def get_cluster_firing_rate(self):
-        T = self._timestamps[1] - self._timestamps[0]
+        T = self.timestamps[1] - self.timestamps[0]
         rate = float(len(self._spike_times) / T)
         return rate
 
@@ -285,7 +285,7 @@ class SpikeCluster(): # collection of spike objects
         else:
             return self._spike_objects
 
-    def _make_spike_object_inputs(self):
+    def _make_spike_object_instances(self):
         # arr to collect SpikeTrain() instances
         instances = []
 
@@ -294,6 +294,7 @@ class SpikeCluster(): # collection of spike objects
             input_dict = {}
             input_dict['sample_length'] = self._sample_length
             input_dict['sample_rate'] = self._sample_rate
+            input_dict['cluster_label'] = self._label
             if len(self._spike_times) > 0:
                 input_dict['spike_time'] = self._spike_times[i]
             else:

@@ -237,6 +237,49 @@ def test_spike_object_class():
     assert len(waveform) == samples_per_wave
     assert len(waveforms) == ch_count
 
+def test_spike_cluster_class():
+    spike_times = make_1D_timestamps()
+    ch_count = 8
+    samples_per_wave = 50
+    waveforms = make_waveforms(ch_count, len(spike_times), samples_per_wave)
+
+    T = 2
+    dt = .02
+    idx = np.random.choice(len(spike_times), size=1)[0]
+
+    input_dict1 = {}
+    input_dict1['sample_length'] = int(T / dt)
+    input_dict1['sample_rate'] = float(T / dt)
+    input_dict1['spike_times'] = spike_times
+    input_dict1['cluster_label'] = int(idx + 1)
+
+
+    for i in range(ch_count):
+        key = 'ch' + str(i+1)
+        input_dict1[key] = waveforms[i]
+
+    spike_cluster = SpikeCluster(input_dict1)
+
+    all_channel_waveforms = spike_cluster.get_all_channel_waveforms()
+    rate = spike_cluster.get_cluster_firing_rate()
+    label = spike_cluster.get_cluster_label()
+    spk_count = spike_cluster.get_cluster_spike_count()
+    single_channel_waveform = spike_cluster.get_single_channel_waveforms(4)
+    spike_objects = spike_cluster.get_spike_object_instances()
+
+    assert type(spike_objects) == list
+    assert isinstance(spike_objects[0], Spike)
+    assert type(single_channel_waveform) == list
+    assert type(single_channel_waveform[0]) == list
+    assert type(single_channel_waveform[0][0]) == float
+    assert len(all_channel_waveforms) == ch_count
+    assert len(single_channel_waveform) == len(spike_times)
+
+    assert type(label) == int
+    assert type(spk_count) == int
+    assert type(rate) == float
+    assert spk_count == len(spike_times)
+
  
 
 # def test_spike_cluster_class():
@@ -247,4 +290,5 @@ if __name__ == '__main__':
     test_spike_train_class()
     test_spike_train_batch_class()
     test_spike_object_class()
+    test_spike_cluster_class()
     print('we good')
