@@ -1,15 +1,18 @@
-from ..library.spike_maps import
+
 
 
 class SpikeTrainPoints(TimeStampSpikeTrain):
     """Sorted spike trains
     """
     def __init__(self, spike_ids, spike_times, spike_x, spike_y):
+        pass
 
 
 class RateMap():
     """
     """
+    def __init__(self, spike_train, bin_size):
+        pass
 
 
 class  SpatialRateMap(RateMap):
@@ -35,6 +38,16 @@ class  SpatialRateMap2D(SpatialRateMap):
         """
         Compute rate map
         """
+        pass
+
+    def compute_error_map(self, TimeStampSpikeTrain):
+        """
+        This function will use the rate map as a basis for predicting
+        the firing rate of the neurons. Then, the temporally computed
+        firing rate for points within the spatial bins will be compared
+        and a head map of the differences will be generated.
+        """
+        pass
 
 
 class  SpatialRateMap3D(SpatialRateMap):
