@@ -34,3 +34,20 @@ class EphysSeries():
             assert len(data_dict['sample_rate']) == 2, 'The sample_rate must be a tuple or list of length 2. The length of the sample_rate you tried to add is {}'.format(len(data_dict['sample_rate']))
             assert type(data_dict['sample_rate'][0]) == int or type(data_dict['sample_rate'][0]) == float, 'The data type of the sample_rate must be int or float. The data type of the firse element in the sample_rate is {}'.format(type(data_dict['sample_rate'][0]))
             assert type(data_dict['sample_rate'][1]) == str, 'The data type of the sample_rate must be a string. The data type of the second element in the sample_rate is {}'.format(type(data_dict['sample_rate'][1]))
+
+class EphysCollection():
+    def __init__(self, channel_dict: dict):
+        """
+        Initialize the LFP object.
+        """
+        check_data_types(channel_dict)
+        for channel, ephys_series in channel_dict.items():
+            exec("self.{} = ephys_series" .format(channel))
+
+    def check_data_types(channel_dict: dict):
+        """
+        Check the data types of the data dictionary.
+        """
+        for channel, ephys_series in channel_dict.items():
+            assert type(ephys_series) == EphysSeries, 'The data type of the ephys_series must be EphysSeries. The data type of the ephys_series you tried to add is {}'.format(type(ephys_series))
+
