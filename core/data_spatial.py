@@ -1,14 +1,15 @@
 from abc import ABC, abstractmethod
 
 class Environment():
-    def
+    def __init__():
+        pass
 
 class Arena(Environment):
     """This class is used to store the arena information.
     """
     def __init__(self, **kwargs):
         self.arena_id = arena_id
-        self.**kwargs = kwargs
+        self.kwargs = kwargs
 
 class Arena2D(Environment):
     """This class is used to store the arena information.
@@ -32,4 +33,4 @@ class VirtualArena1D(Arena):
     def __init__(self, **kwargs):
         self.arena_id = arena_id
         self.shape = shape
-        self.**kwargs = kwargs
+        self.kwargs = kwargs

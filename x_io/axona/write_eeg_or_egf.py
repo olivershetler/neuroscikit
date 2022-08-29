@@ -3,10 +3,12 @@
 __version__ = '1.0' # change this to a function for getting release version in future.
 
 
+def write_eeg_or_egf():
+    pass
 
 # file type is either
-
-lfp_header = {
+'''
+session_medadata = {
     'trial_date': 'Tuesday, 22 Jun 2021',
     'trial_time': '11:12:45',
     'experimenter': 'Gus Rodriguez',
@@ -21,10 +23,13 @@ lfp_header = {
     'data_start': '',
 }
 
+
 def make_eeg_or_egf_header(EphysCollection, session_metadata):
     """
     Make the header for the .eeg or .egf file.
     """
+
+    voltage_series = EphysCollection.get_voltage_series(0)
 
     header = {}
     header['trial_date'] = session_metadata['trial_date']
@@ -40,3 +45,4 @@ def make_eeg_or_egf_header(EphysCollection, session_metadata):
     header['num_{}_samples'.format(file_type.upper())] = str(len(voltage_series)*sample_rate)
     header['data_start'] = ''
     return header
+'''
