@@ -13,6 +13,7 @@ from core.data_spikes import (
     InputKeys,
     Spike,
     SpikeCluster,
+    SpikeClusterBatch,
 )
 
 from x_io.axona.read_tetrode_and_cut import (
@@ -51,6 +52,8 @@ def make_1D_timestamps(T=2, dt=0.02):
     time = np.arange(0,T,dt)
 
     spk_count = np.random.choice(len(time), size=1)
+    while spk_count >= 10:
+        spk_count = np.random.choice(len(time), size=1)
     spk_time = np.random.choice(time, size=spk_count, replace=False).tolist()
 
     return list(spk_time)
@@ -74,6 +77,13 @@ def make_waveforms(channel_count, spike_count, samples_per_wave):
             waveforms[i,:,j] = np.random.randint(-20,20,size=spike_count).tolist()
 
     return waveforms.tolist()
+
+def make_clusters(timestamps, cluster_count):
+    cluster_labels = []
+    for i in range(len(timestamps)):
+        idx = np.random.choice(cluster_count, size=1)[0]
+        cluster_labels.append(idx)
+    return cluster_labels
 
 ############################
 # NOT CALLED
@@ -280,6 +290,63 @@ def test_spike_cluster_class():
     assert type(rate) == float
     assert spk_count == len(spike_times)
 
+def test_spike_cluster_batch_class():
+    spike_times = make_1D_timestamps()
+    ch_count = 8
+    samples_per_wave = 50
+    waveforms = make_waveforms(ch_count, len(spike_times), samples_per_wave)
+    cluster_count = 10
+    cluster_labels = make_clusters(spike_times, cluster_count)
+
+    T = 2
+    dt = .02
+
+    input_dict1 = {}
+    input_dict1['sample_length'] = int(T / dt)
+    input_dict1['sample_rate'] = float(T / dt)
+    input_dict1['spike_times'] = spike_times
+    input_dict1['cluster_labels'] = cluster_labels
+
+
+    for i in range(ch_count):
+        key = 'ch' + str(i+1)
+        input_dict1[key] = waveforms[i]
+
+    spike_cluster_batch = SpikeClusterBatch(input_dict1)
+
+    all_channel_waveforms = spike_cluster_batch.get_all_channel_waveforms()
+    rate = spike_cluster_batch.get_cluster_firing_rate(2)
+    labels = spike_cluster_batch.get_cluster_labels()
+    unique_labels = spike_cluster_batch.get_unique_cluster_labels()
+    # spk_count = spike_cluster_batch.get_cluster_spike_count()
+    single_channel_waveform = spike_cluster_batch.get_single_channel_waveforms(4)
+    # spike_objects = spike_cluster_batch.get_spike_object_instances()
+    rates = spike_cluster_batch.get_all_cluster_firing_rates()
+    spike_clusters = spike_cluster_batch.get_spike_cluster_instances()
+    count, cluster_spike_times, cluster_waveforms = spike_cluster_batch.get_single_spike_cluster_instance(2)
+    single_cluster_spike_objects = spike_cluster_batch.get_single_spike_cluster_objects(2)
+    cluster_spike_objects = spike_cluster_batch.get_spike_cluster_objects()
+
+
+    assert np.array(cluster_spike_times) == np.array(spike_times[cluster_labels])
+    assert cluster_waveforms == waveforms[2]
+    assert len(unique_labels) <= cluster_count
+    assert type(rates) == list
+    assert rates[2] == rate
+    assert type(single_cluster_spike_objects) == list
+    assert isinstance(single_cluster_spike_objects[0], Spike)
+    assert type(cluster_spike_objects) == list
+    assert isinstance(cluster_spike_objects[0], list)
+    assert isinstance(cluster_spike_objects[0][0], Spike)
+    assert type(spike_clusters) == list
+    assert isinstance(spike_clusters[0], SpikeCluster)
+    assert type(single_channel_waveform) == list
+    assert type(single_channel_waveform[0]) == list
+    assert type(single_channel_waveform[0][0]) == float
+    assert len(all_channel_waveforms) == ch_count
+    assert len(single_channel_waveform) == len(spike_times)
+    assert type(labels) == list
+    assert type(rate) == float
  
 
 # def test_spike_cluster_class():
@@ -291,4 +358,5 @@ if __name__ == '__main__':
     test_spike_train_batch_class()
     test_spike_object_class()
     test_spike_cluster_class()
+    test_spike_cluster_batch_class
     print('we good')
