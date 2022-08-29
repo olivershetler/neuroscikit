@@ -11,7 +11,7 @@ class EphysSeries():
         Initialize the LFP object.
         """
         if 'ephys_series' in data_dict:
-            self.ephys_series = data_dict['ephys_series']
+            self.data = data_dict['ephys_series']
         if 'units' in data_dict:
             self.units = data_dict['units']
         if 'sample_rate' in data_dict:
@@ -41,8 +41,7 @@ class EphysCollection():
         Initialize the LFP object.
         """
         #check_data_types(channel_dict)
-        for channel, ephys_series in channel_dict.items():
-            exec("self.{} = ephys_series" .format(channel))
+        self.channels = channel_dict
 
     @staticmethod
     def check_data_types(channel_dict: dict):
