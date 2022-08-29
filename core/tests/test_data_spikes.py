@@ -315,24 +315,24 @@ def test_spike_cluster_batch_class():
     spike_cluster_batch = SpikeClusterBatch(input_dict1)
 
     all_channel_waveforms = spike_cluster_batch.get_all_channel_waveforms()
-    rate = spike_cluster_batch.get_single_cluster_firing_rate(2)
+    rate = spike_cluster_batch.get_single_cluster_firing_rate(cluster_labels[0])
     labels = spike_cluster_batch.get_cluster_labels()
     unique_labels = spike_cluster_batch.get_unique_cluster_labels()
     # spk_count = spike_cluster_batch.get_cluster_spike_count()
-    single_channel_waveform = spike_cluster_batch.get_single_channel_waveforms(4)
+    single_channel_waveform = spike_cluster_batch.get_single_channel_waveforms(cluster_labels[0])
     # spike_objects = spike_cluster_batch.get_spike_object_instances()
     rates = spike_cluster_batch.get_all_cluster_firing_rates()
     spike_clusters = spike_cluster_batch.get_spike_cluster_instances()
-    count, cluster_spike_times, cluster_waveforms = spike_cluster_batch.get_single_spike_cluster_instance(2)
-    single_cluster_spike_objects = spike_cluster_batch.get_single_spike_cluster_objects(2)
+    count, cluster_spike_times, cluster_waveforms = spike_cluster_batch.get_single_spike_cluster_instance(cluster_labels[0])
+    single_cluster_spike_objects = spike_cluster_batch.get_single_spike_cluster_objects(cluster_labels[0])
     cluster_spike_objects = spike_cluster_batch.get_spike_cluster_objects()
 
-    ids = np.where(np.array(cluster_labels) == 2)[0]
+    ids = np.where(np.array(cluster_labels) == cluster_labels[0])[0]
     assert np.array(cluster_spike_times).all() == np.array(spike_times)[ids].all()
     assert np.array(cluster_waveforms).all() == np.array(waveforms[2]).all()
     assert len(unique_labels) <= cluster_count
     assert type(rates) == list
-    assert rates[2] == rate
+    assert rate in rates
     assert type(single_cluster_spike_objects) == list
     assert isinstance(single_cluster_spike_objects[0], Spike)
     assert type(cluster_spike_objects) == list
