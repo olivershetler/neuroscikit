@@ -37,7 +37,7 @@ np.random.seed(0)
 
 def make_1D_binary_spikes(size=100):
     spike_train = np.random.randint(2, size=size)
-
+    
     return list(spike_train)
 
 def make_2D_binary_spikes(count=20, size=100):
@@ -45,7 +45,7 @@ def make_2D_binary_spikes(count=20, size=100):
 
     for i in range(count):
         spike_trains[i] = np.random.randint(2, size=size).tolist()
-    
+
     return spike_trains.tolist()
 
 def make_1D_timestamps(T=2, dt=0.02):
@@ -118,14 +118,14 @@ def test_spike_types():
     assert type_counter[-1] == 2
 # NOT CALLED
 ############################
-    
+
 
 def test_spike_train_class():
     spike_times = make_1D_timestamps()
 
     T = 2
     dt = .02
-    
+
     input_dict1 = {}
     input_dict1['sample_length'] = int(T / dt)
     input_dict1['sample_rate'] = float(T / dt)
@@ -154,7 +154,7 @@ def test_spike_train_class():
 
     rate2 = spike_train2.get_spike_rate()
     spike_times2 = spike_train2.get_spike_times()
-    
+
     assert type(rate2) == float
     assert type(spike_train2._spikes_binary) == list
     assert type(spike_train2._spike_times) == list
@@ -165,7 +165,7 @@ def test_spike_train_batch_class():
 
     T = 2
     dt = .02
-    
+
     input_dict1 = {}
     input_dict1['sample_length'] = int(T / dt)
     input_dict1['sample_rate'] = float(T / dt)
@@ -347,7 +347,7 @@ def test_spike_cluster_batch_class():
     assert len(single_channel_waveform) == len(spike_times)
     assert type(labels) == list
     assert type(rate) == float
- 
+
 
 # def test_spike_cluster_class():
 

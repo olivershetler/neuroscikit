@@ -40,10 +40,11 @@ class EphysCollection():
         """
         Initialize the LFP object.
         """
-        check_data_types(channel_dict)
+        #check_data_types(channel_dict)
         for channel, ephys_series in channel_dict.items():
             exec("self.{} = ephys_series" .format(channel))
 
+    @staticmethod
     def check_data_types(channel_dict: dict):
         """
         Check the data types of the data dictionary.
