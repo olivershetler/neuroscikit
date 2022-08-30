@@ -17,16 +17,50 @@ class EphysSeries():
         if 'sample_rate' in data_dict:
             self.sample_rate = data_dict['sample_rate']
 
+        self._data_dict = data_dict
+
+        self.power_bands = []
+        self.filtered = []
+        self._filtered_dict = {}
+
+    def add_filtered(self, filtered, method='iirfilt', type='butter'):
+        self.get_filtered_dict()
+        self._filtered_dict[method] = {}
+        self._filtered_dict[method][type] = filtered
+        print('Method: ' + str(method) + ', Type: ' + str(type) + ', Added')
+
+    def _make_filtered_dict(self):
+
+        filtered = {
+            'iirfilt': {},
+            'notch_filt': {},
+        }
+
+        filt_types = ['butter', 'cheby1', 'cheby2', 'ellip', 'bessel']
+        for key in filtered.keys():
+            for type in filt_types:
+                filtered[key][type] = []
+
+        self._filtered_dict = filtered
+
+    def get_filtered_dict(self):
+        if len(list(self._filtered_dict.keys())) == 0:
+            self._make_filtered_dict()
+        return self._filtered_dict
+
+
     def down_sample(self, target_sample_rate):
         """
         Down sample the data to the target sample rate.
         """
-        float_index = np.arange(0, len(self.data), self.sample_rate/target_sample_rate)
+        # float_index = np.arange(0, len(self.data), self.sample_rate/target_sample_rate)
+        dt = int(self.sample_rate[0]/target_sample_rate)
+        float_index = [i for i in range(0, len(self.data), dt)]
         int_index = [round(x) for x in float_index]
         self.data = self.data[int_index]
         self.sample_rate = (target_sample_rate, 'Hz')
 
-    def check_data_types(data_dict: dict):
+    def check_data_types(self, data_dict: dict):
         """
         Check the data types of the data dictionary.
         """
@@ -61,4 +95,20 @@ class EphysCollection():
         for channel, ephys_series in channel_dict.items():
             assert type(ephys_series) == EphysSeries, 'The data type of the ephys_series must be EphysSeries. The data type of the ephys_series you tried to add is {}'.format(type(ephys_series))
 
+    def get_filtered(self, method='default', type='default'):
+        filtered = []
+        for chan in self.data.keys():
+            if method == 'default':
+                filtered.append(self.data[chan].filtered)
+            else: 
+                assert type != 'default', 'Choose filter type e.g. butter, cheby1, bessel'
+                filtered.append(self.data[chan].get_filtered_dict()[method][type])
 
+        return filtered
+
+    def get_power_bands(self):
+        bands = []
+        for chan in self.data.keys():
+            bands.append(self.data[chan].power_bands)
+        return bands
+        
