@@ -10,10 +10,15 @@ test_rhd_file_path = os.path.join(data_dir, 'intan/sampledata.rhd')
 
 def test_read_rhd_data():
     data = read_rhd_data(test_rhd_file_path)
+    assert type(data) == dict
+    """
     for key, item in data.items():
         print('\n\n', key, '\n', item)
+    """
 
 def test_read_rhd():
     data = read_rhd(test_rhd_file_path)
+    """
     for key, series in data.channels.items():
         print('\n\n', key, '\n', series.data)
+    """

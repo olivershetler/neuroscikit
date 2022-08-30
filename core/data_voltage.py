@@ -17,6 +17,15 @@ class EphysSeries():
         if 'sample_rate' in data_dict:
             self.sample_rate = data_dict['sample_rate']
 
+    def down_sample(self, target_sample_rate):
+        """
+        Down sample the data to the target sample rate.
+        """
+        float_index = np.arange(0, len(self.data), self.sample_rate/target_sample_rate)
+        int_index = [round(x) for x in float_index]
+        self.data = self.data[int_index]
+        self.sample_rate = (target_sample_rate, 'Hz')
+
     def check_data_types(data_dict: dict):
         """
         Check the data types of the data dictionary.
@@ -41,7 +50,8 @@ class EphysCollection():
         Initialize the LFP object.
         """
         #check_data_types(channel_dict)
-        self.channels = channel_dict
+        self.data = channel_dict
+        self.num_channels = len(channel_dict)
 
     @staticmethod
     def check_data_types(channel_dict: dict):
@@ -50,4 +60,5 @@ class EphysCollection():
         """
         for channel, ephys_series in channel_dict.items():
             assert type(ephys_series) == EphysSeries, 'The data type of the ephys_series must be EphysSeries. The data type of the ephys_series you tried to add is {}'.format(type(ephys_series))
+
 
