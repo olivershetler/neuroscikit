@@ -1,8 +1,7 @@
 import numpy as np
 from scipy import signal
 
-def notch_filt(data, Fs, band=10, freq=60, ripple=1, order=2, filter_type='butter', analog_filt=False,
-               showresponse=0):
+def notch_filt(data, Fs, band=10, freq=60, ripple=1, order=2, filter_type='butter', analog_filt=False):
     '''# Required input defintions are as follows;
     # time:   Time between samples
     # band:   The bandwidth around the centerline freqency that you wish to filter

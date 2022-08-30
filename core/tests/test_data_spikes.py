@@ -9,22 +9,10 @@ print(PROJECT_PATH)
 from core.data_spikes import (
     SpikeTrain,
     SpikeTrainBatch,
-    InputKeys,
     Spike,
     SpikeCluster,
     SpikeClusterBatch,
 )
-
-from x_io.axona.read_tetrode_and_cut import (
-    load_spike_train_from_paths,
-    _read_tetrode
-)
-
-
-from x_io.os_io_utils import (
-    with_open_file
-)
-#from x_io.io_axona.tetrode_cut import _read_cut
 
 cwd = os.getcwd()
 parent_dir = os.path.dirname(cwd)
@@ -117,7 +105,6 @@ def make_clusters(timestamps, cluster_count):
 #     assert type_counter[-1] == 2
 # NOT CALLED
 ############################
-
 
 def test_spike_train_class():
     spike_times = make_1D_timestamps()

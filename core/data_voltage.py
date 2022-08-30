@@ -22,6 +22,13 @@ class EphysSeries():
         self.power_bands = []
         self.filtered = []
         self._filtered_dict = {}
+        self.fft = []
+        self.fft_norm = []
+
+    def get_fast_fourier(self):
+        if len(self.fft) == 0:
+            print('FFT not computed, array is empty: fft, fft_norm')
+        return self.fft, self.fft_norm
 
     def add_filtered(self, filtered, method='iirfilt', type='butter'):
         self.get_filtered_dict()
@@ -48,6 +55,8 @@ class EphysSeries():
             self._make_filtered_dict()
         return self._filtered_dict
 
+    def set_default_filter(self, method='iirfilt', type='butter'):
+        self.filtered = self._filtered_dict[method][type]
 
     def down_sample(self, target_sample_rate):
         """

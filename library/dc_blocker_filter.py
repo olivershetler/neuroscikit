@@ -1,7 +1,7 @@
 import numpy as np
 from scipy import signal
 
-def dcblock(data, fc, fs=None, analog_val=False, showresponse=0, self=None):
+def dcblock(data, fc, fs=None, analog_val=False, self=None):
 
     """This method will return the filter coefficients for a DC Blocker Filter"""
 
@@ -27,8 +27,6 @@ def dcblock(data, fc, fs=None, analog_val=False, showresponse=0, self=None):
             # filtered_data = signal.lfilter(b, a, data)
             filtered_data = signal.filtfilt(b, a, data)
 
-    if showresponse == 1:  # set to 1 if you want to visualize the frequency response of the filter
-        self.PlotResponse(a, b, fc, fs, analog_val)
 
     if len(data) != 0:
         return filtered_data

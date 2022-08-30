@@ -1,8 +1,7 @@
 import numpy as np
 from scipy import signal
 
-def iirfilt(bandtype, data, Fs, Wp, Ws=[], order=3, analog_val=False, automatic=0, Rp=3, As=60, filttype='butter',
-            showresponse=0):
+def iirfilt(bandtype, data, Fs, Wp, Ws=[], order=3, analog_val=False, automatic=0, Rp=3, As=60, filttype='butter'):
     '''Designs butterworth filter:
     Data is the data that you want filtered
     Fs is the sampling frequency (in Hz)
