@@ -233,12 +233,12 @@ class Spike(): # spike object, has waveforms
         assert curr != 0, 'There is no 0 channel, make sure max(abs(channel waveform)) is not 0'
         return curr, self.waveforms[curr-1]
 
-    # cluster label for a given spike train
-    def set_cluster_label(self, label):
-        self.label = label
+    # # cluster label for a given spike train
+    # def set_cluster_label(self, label):
+    #     self.label = label
     
-    def get_cluster_label(self):
-        return self.label
+    # def get_cluster_label(self):
+    #     return self.label
 
 class SpikeClusterBatch():
     """

@@ -22,7 +22,6 @@ class Study():
 
         self.timebase = make_seconds_index_from_rate(sample_length, sample_rate)
         self.animals = []
-        self.animal_ids = []
 
     def _read_input_dict(self):
         sample_length = self._input_dict['sample_length']
@@ -61,7 +60,7 @@ class Animal():
     """
     def __init__(self, input_dict: dict):
         self.sessions = input_dict
-        self.timebase, self.agg_spike_times, self.agg_cluster_labels, self.agg_events, self.session_count, self.id = self._read_input_dict() 
+        self.timebase, self.agg_spike_times, self.agg_cluster_labels, self.agg_events, self.agg_waveforms, self.session_count, self.id = self._read_input_dict() 
 
     def _read_input_dict(self):
         agg_spike_times = []
@@ -85,12 +84,15 @@ class Animal():
                 agg_cluster_labels.append(cluster_labels)
                 agg_waveforms.append(waveforms)
                 agg_events.append(events)
-        return timebase, agg_spike_times, agg_cluster_labels, agg_events, count, animal_id
+        return timebase, agg_spike_times, agg_cluster_labels, agg_events, agg_waveforms, count, animal_id
 
     def _fill_events(self, spike_times, cluster_labels, waveforms):
         events = []
         for i in range(len(spike_times)):
-            events.append(Event(spike_times[i], cluster_labels[i], waveforms[i]))
+            event_waves = []
+            for j in range(len(waveforms)):
+                event_waves.append(waveforms[j][i])
+            events.append(Event(spike_times[i], cluster_labels[i], event_waves))
         return events
 
     def _extract_waveforms(self, session):
@@ -105,17 +107,22 @@ class Animal():
         spike_times = session_dict['spike_times']
         assert type(spike_times) == list, 'Spike times are not a list, check inputs'
 
+        waveforms = self._extract_waveforms(session_dict)
+        events = self._fill_events(spike_times, cluster_labels, waveforms)
+
         keys = list(self.sessions.keys())
-        keys = [int(x) for x in keys if x.isnumeric()]
+        keys = [int(x) for x in keys if str(x).isnumeric()]
 
         # self.sessions[str(max(keys) + 1)] = session_dict
-        self.session[int(max(keys) + 1)] = session_dict
+        self.sessions[int(max(keys) + 1)] = session_dict
         self.agg_spike_times.append(spike_times)
         self.agg_cluster_labels.append(cluster_labels)
+        self.agg_waveforms.append(waveforms)
+        self.agg_events.append(events)
         self.session_count += 1
 
-    def get_session(self, id):
-        return self.sessions[str(id)]
+    def get_session_data(self, id):
+        return self.sessions[int(id)]
 
     
 
@@ -123,9 +130,13 @@ class Event():
     def __init__(self, spike_time: float, cluster_label: int, waveforms: list):
         self.cluster = cluster_label
         self.waveforms = waveforms
+        self.spike_time = spike_time
 
         assert type(cluster_label) == int, 'Cluster label must be integer for index into waveforms'
         assert type(spike_time) == float, 'Spike times is in format: ' + str(type(spike_time))
+
+        self._main_channel = 0
+        self._main_waveform = 0
 
     # one waveform per channel bcs class is for one spike
     def get_single_channel_waveform(self, id):
