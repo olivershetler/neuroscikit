@@ -10,6 +10,7 @@ from core.data_study import (
     Study,
     Animal,
     Event,
+    Spike,
 )
 
 from core.core_utils import (
@@ -74,7 +75,7 @@ def make_clusters(timestamps, cluster_count):
         cluster_labels.append(int(idx))
     return cluster_labels
 
-def test_event_class():
+def test_event_spike_class():
     spike_times = make_1D_timestamps()
     ch_count = 8
     samples_per_wave = 50
@@ -84,7 +85,7 @@ def test_event_class():
     # dt = .02
     idx = np.random.choice(len(spike_times), size=1)[0]
 
-    input_dict1 = {}
+    # input_dict1 = {}
     # input_dict1['sample_length'] = int(T / dt)
     # input_dict1['sample_rate'] = float(T / dt)
     spike_time = spike_times[idx]
@@ -95,11 +96,11 @@ def test_event_class():
         key = 'ch' + str(i+1)
         waves.append(waveforms[i][idx])
 
-    spike_object = Event(spike_time, cluster_label, waves)
+    spike_object = Spike(spike_time, cluster_label, waves)
 
     label = spike_object.cluster
-    chan, _ = spike_object.get_peak_channel()
-    waveform = spike_object.get_single_channel_waveform(chan)
+    chan, _ = spike_object.get_peak_signal()
+    waveform = spike_object.get_signal(chan-1)
 
     assert type(label) == int
     assert type(spike_object.spike_time) == float

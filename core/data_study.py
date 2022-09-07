@@ -1,3 +1,4 @@
+from abc import abstractmethod
 from enum import unique
 import os
 from re import S
@@ -124,10 +125,48 @@ class Animal():
     def get_session_data(self, id):
         return self.sessions[int(id)]
 
+class Event():
+    def __init__(self, event_time, event_label, event_signal):
+        self.event_time = event_time
+        self.event_label = event_label
+        self.event_signal = event_signal
+
+        # check if signal is 2D or 1D (e.g. multiple channel waveforms or single channel signal)
+        if type(event_signal[0]) == list:
+            self.main_ind = 0
+            self.main_signal = 0
+        else:
+            self.main_ind = None
+            self.main_signal = None
+
+    
+    def set_label(self, label):
+        self.event_label = label
+
+    def get_signal(self, ind):
+        return self.waveforms[ind]
+    
+    def get_peak_signal(self):
+        if self.main_ind == 0:
+            self.main_ind, self.main_signal = self._set_peak()
+            return self.main_ind, self.main_signal
+        else:
+            print('event signal is 1 dimensional')
+            return self.main_ind, self.main_signal
+
+    def _set_peak(self):
+        curr = 0
+        for i in range(len(self.event_signal)):
+            if max(self.event_signal[i]) > curr:
+                curr = i + 1
+        assert curr != 0, 'There is no 0 channel, make sure max(abs(channel waveform)) is not 0'
+        return curr, self.event_signal[curr-1]
+
     
 
-class Event():
+class Spike(Event):
     def __init__(self, spike_time: float, cluster_label: int, waveforms: list):
+        super().__init__(spike_time, cluster_label, waveforms)
         self.cluster = cluster_label
         self.waveforms = waveforms
         self.spike_time = spike_time
@@ -135,29 +174,28 @@ class Event():
         assert type(cluster_label) == int, 'Cluster label must be integer for index into waveforms'
         assert type(spike_time) == float, 'Spike times is in format: ' + str(type(spike_time))
 
-        self._main_channel = 0
-        self._main_waveform = 0
+        # self.main_ind = 0
+        # self.main_signal = 0
 
     # one waveform per channel bcs class is for one spike
-    def get_single_channel_waveform(self, id):
-        assert id in [1,2,3,4,5,6,7,8], 'Channel number must be from 1 to 8'
-        return self.waveforms[id-1]
+    # def get_single_channel_waveform(self, id):
+    #     assert id in [1,2,3,4,5,6,7,8], 'Channel number must be from 1 to 8'
+    #     return self.waveforms[id-1]
+    
+    # # get waveform with largest positive or negative deflection (peak or trough, absolute val)
+    # def get_peak_channel(self):
+    #     if self._main_channel == 0:
+    #         self._main_channel, self._main_waveform = self._set_peak_channel()
+    #         return self._main_channel, self._main_waveform
+    #     else:
+    #         return self._main_channel, self._main_waveform
 
-    # get waveform with largest positive or negative deflection (peak or trough, absolute val)
-    def get_peak_channel(self):
-        if self._main_channel == 0:
-            self._main_channel, self._main_waveform = self._set_peak_channel()
-            return self._main_channel, self._main_waveform
-        else:
-            return self._main_channel, self._main_waveform
-
-    # lazy eval, called when get main channel called
-    def _set_peak_channel(self):
-        curr = 0
-        for i in range(len(self.waveforms)):
-            if max(self.waveforms[i]) > curr:
-                curr = i + 1
-        assert curr != 0, 'There is no 0 channel, make sure max(abs(channel waveform)) is not 0'
-        return curr, self.waveforms[curr-1]
-
+    # # lazy eval, called when get main channel called
+    # def _set_peak_channel(self):
+    #     curr = 0
+    #     for i in range(len(self.waveforms)):
+    #         if max(self.waveforms[i]) > curr:
+    #             curr = i + 1
+    #     assert curr != 0, 'There is no 0 channel, make sure max(abs(channel waveform)) is not 0'
+    #     return curr, self.waveforms[curr-1]
 
