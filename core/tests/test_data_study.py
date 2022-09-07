@@ -160,6 +160,7 @@ def test_animal_class():
     assert type(spike_objects) == list
     assert isinstance(spike_objects[0], list)
     assert isinstance(spike_objects[0][0], Event)
+    assert isinstance(spike_objects[0][0], Spike)
     assert type(session) == dict
     assert len(all_channel_waveforms) == animal.session_count
     assert len(all_channel_waveforms[0]) == ch_count
@@ -231,7 +232,7 @@ def test_study_class():
 
 
 if __name__ == '__main__':
-    test_event_class()
+    test_event_spike_class()
     test_animal_class()
     test_study_class()
     print('we good')

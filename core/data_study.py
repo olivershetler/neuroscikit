@@ -19,9 +19,9 @@ class Study():
     """
     def __init__(self, input_dict: dict):
         self._input_dict = input_dict
-        sample_length, sample_rate, self.animal_ids = self._read_input_dict()
+        self.sample_length, self.sample_rate, self.animal_ids = self._read_input_dict()
 
-        self.timebase = make_seconds_index_from_rate(sample_length, sample_rate)
+        self.timebase = make_seconds_index_from_rate(self.sample_length, self.sample_rate)
         self.animals = []
 
     def _read_input_dict(self):
@@ -93,7 +93,7 @@ class Animal():
             event_waves = []
             for j in range(len(waveforms)):
                 event_waves.append(waveforms[j][i])
-            events.append(Event(spike_times[i], cluster_labels[i], event_waves))
+            events.append(Spike(spike_times[i], cluster_labels[i], event_waves))
         return events
 
     def _extract_waveforms(self, session):
