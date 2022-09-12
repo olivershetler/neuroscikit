@@ -1,7 +1,11 @@
 import os
 import sys
 import numpy as np
-import matplotlib.pyplot as plt
+
+PROJECT_PATH = os.getcwd()
+sys.path.append(PROJECT_PATH)
+print(PROJECT_PATH)
+
 
 from core.data_spikes import (
     SpikeTrain,
@@ -26,6 +30,9 @@ from core.data_study import (
 from core.core_utils import (
     make_seconds_index_from_rate
 )
+
+from prototypes.wave_form_sorter.sort_waveforms_by_session import sort_waveforms_by_session
+from prototypes.wave_form_sorter.match_waveforms_by_session import match_waveforms_by_session
 
 
 if __name__ == '__main__':
@@ -157,3 +164,8 @@ if __name__ == '__main__':
     study.add_animal(animal_dict)
 
     animal = study.animals[0]
+
+    agg_waveform_dict = sort_waveforms_by_session(animal)
+    matched = match_waveforms_by_session
+
+    # still need to update cell references after matchings
