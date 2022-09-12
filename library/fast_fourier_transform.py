@@ -1,7 +1,7 @@
 import numpy as np
 from scipy import fftpack
 
-def FastFourier(Fs, Y):
+def fast_fourier(Fs, Y):
     '''Takes the Sample Frequency: Fs(Hz), the numer of samples, N, and the data values (Y),
     and performs a Fast Fourier Transformation to observe the signal in the frequency domain'''
 
