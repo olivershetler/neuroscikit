@@ -14,7 +14,7 @@ from core.data_voltage import (
 
 from library.custom_cheby import custom_cheby1
 from library.dc_blocker_filter import dcblock
-from library.fast_fourier_transform import FastFourier
+from library.fast_fourier_transform import fast_fourier
 from library.infinite_impulse_response_filter import iirfilt
 from library.notch_filter import notch_filt
 
@@ -50,7 +50,7 @@ def test_fast_fourier_transform():
     data = collection.data['channel_0'].data
     fs = collection.data['channel_0'].sample_rate[0]
 
-    frq, FFT_norm = FastFourier(fs, data)
+    frq, FFT_norm = fast_fourier(fs, data)
 
     collection.data['channel_0'].fft = frq
     collection.data['channel_0'].fft_norm = FFT_norm
