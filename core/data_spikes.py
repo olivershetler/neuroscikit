@@ -21,17 +21,17 @@ class InputKeys():
 
     def get_spike_train_init_keys(self):
         init_keys = [
-            'sample_length', 
-            'sample_rate', 
-            'spikes_binary', 
+            'sample_length',
+            'sample_rate',
+            'spikes_binary',
             'spike_times',
         ]
         return init_keys
 
     def get_spike_cluster_init_keys(self):
         init_keys = [
-            'sample_length', 
-            'sample_rate', 
+            'sample_length',
+            'sample_rate',
             'spike_times',
             'cluster_labels',
             'ch1','ch2','ch3', 'ch4', 'ch5', 'ch6', 'ch7', 'ch8'
@@ -42,7 +42,7 @@ class InputKeys():
         init_keys = ['ch1','ch2','ch3', 'ch4', 'ch5', 'ch6', 'ch7', 'ch8']
         return init_keys
 
-class SpikeTrain(): 
+class SpikeTrain():
     """
     Class to hold 1D spike train, spike train is a sorted set of spikes belonging to one cluster
     """
@@ -142,7 +142,7 @@ class SpikeTrain():
                 self._spikes_binary.append(1)
             else:
                 self._spikes_binary.append(0)
-        
+
     def get_binary(self):
         if len(self._spikes_binary) == 0:
             self._set_binary()
@@ -233,12 +233,12 @@ class Spike(): # spike object, has waveforms
         assert curr != 0, 'There is no 0 channel, make sure max(abs(channel waveform)) is not 0'
         return curr, self.waveforms[curr-1]
 
-    # # cluster label for a given spike train
-    # def set_cluster_label(self, label):
-    #     self.label = label
-    
-    # def get_cluster_label(self):
-    #     return self.label
+    # cluster label for a given spike train
+    def set_cluster_label(self, label):
+        self.label = label
+
+    def get_cluster_label(self):
+        return self.label
 
 class SpikeClusterBatch():
     """
@@ -271,7 +271,7 @@ class SpikeClusterBatch():
 
 
     # # e.g. if cluster labels is [1,5,2,4] ==> [0,3,1,2]
-    # def _format_cluster_count(self):   
+    # def _format_cluster_count(self):
     #     unique = self.get_unique_cluster_labels()
     #     count = len(unique)
     #     adjusted_labels = [i for i in range(count)]
@@ -297,7 +297,7 @@ class SpikeClusterBatch():
         waveforms = self._extract_waveforms()
         return sample_length, sample_rate, cluster_labels, spike_times, waveforms
 
-    # uses InputKeys() to get channel bychannel waveforms 
+    # uses InputKeys() to get channel bychannel waveforms
     def _extract_waveforms(self):
         input_keys = InputKeys()
         channel_keys = input_keys.get_channel_keys()
@@ -310,7 +310,7 @@ class SpikeClusterBatch():
     # returns all channel waveforms across all spike times
     def get_all_channel_waveforms(self):
         return self._waveforms
-    
+
     # returns specific channel waveforms across all spike times
     def get_single_channel_waveforms(self, id):
         # assert id in [1,2,3,4,5,6,7,8], 'Channel number must be from 1 to 8'
@@ -326,7 +326,7 @@ class SpikeClusterBatch():
             if self._cluster_labels[i] not in visited:
                 visited.append(self._cluster_labels[i])
         return sorted(visited)
-    
+
     def get_cluster_labels(self):
         return self._cluster_labels
 
@@ -435,7 +435,7 @@ class SpikeCluster(): # collection of spike objects
         assert len(waveforms) <= 8 and len(waveforms) > 0, 'Cannot have fewer than 0 or more than 8 channels'
 
         self.timestamps = make_seconds_index_from_rate(sample_length, sample_rate)
- 
+
         self._spike_times = spike_times
         self._label = cluster_label
         self._sample_length = sample_length
@@ -496,7 +496,7 @@ class SpikeCluster(): # collection of spike objects
             self._spike_objects[i].set_cluster_label(label)
         self._label = label
         print('Cluster label updated for all SpikeObject in cluster')
-    
+
     def get_cluster_label(self):
         return self._label
 
@@ -531,7 +531,7 @@ class SpikeTrainBatch():
     """
     def __init__(self, input_dict):
         self._input_dict = input_dict
-        
+
         sample_length, sample_rate, spikes_binary, spike_times = self._read_input_dict()
 
         self.timestamps = make_seconds_index_from_rate(sample_length, sample_rate)
@@ -547,7 +547,7 @@ class SpikeTrainBatch():
         self._spike_ids = []
         self._spike_rate = None
         self._spike_train_instances = []
-    
+
     def _read_input_dict(self):
         sample_length = self._input_dict['sample_length']
         sample_rate = self._input_dict['sample_rate']
@@ -611,7 +611,7 @@ class SpikeTrainBatch():
         for spike_train in self._spike_train_instances:
             self._spike_times.append(spike_train.get_spike_times())
         return self._spike_times
-        
+
     # get 2d spike inputs as binary
     def get_binary(self):
         if len(self._spikes_binary) == 0:
@@ -628,11 +628,11 @@ class SpikeTrainBatch():
         else:
             return self._spike_times
 
-    
+
 
 
     # def _sort_by_label(self):
-    #     rng = max(self._labels) + 1 
+    #     rng = max(self._labels) + 1
     #     sorted = [[] for i in range(rng)]
     #     for i in range(len(self._spike_times)):
     #         if self._spike_times[i] == self._labels[i]:
@@ -675,14 +675,14 @@ class SpikeTrainBatch():
     # have method for storing unbinned and binned rate estimatess
 
 # class TimeStampSpikeTrain(SpikeTrain):
-#     """ Spike train as time stamps 
+#     """ Spike train as time stamps
 #     """
 
 #     def __init(self, _spike_times, spike_features):
 #         self._spike_times = _spike_times
 
 # class BinarySpikeTrain(SpikeTrain):
-#     """ Spike train as binary 
+#     """ Spike train as binary
 #     """
 
 #     def __init(self, spikes_binary, spike_features):
