@@ -12,11 +12,13 @@ from core.data_voltage import (
     EphysSeries,
 )
 
-from library.custom_cheby import custom_cheby1
-from library.dc_blocker_filter import dcblock
-from library.fast_fourier_transform import fast_fourier
-from library.infinite_impulse_response_filter import iirfilt
-from library.notch_filter import notch_filt
+from library.filters.__init__ import *
+
+# from library.custom_cheby import custom_cheby1
+# from library.dc_blocker_filter import dcblock
+# from library.fast_fourier_transform import fast_fourier
+# from library.infinite_impulse_response_filter import iirfilt
+# from library.notch_filter import notch_filt
 
 
 from x_io.intan.load_intan_rhd_format.load_intan_rhd_format import read_rhd_data
@@ -90,4 +92,3 @@ if __name__ == '__main__':
     # test_infinite_impulse_response_filter()
     test_notch_filter()
 
-    print('we good')

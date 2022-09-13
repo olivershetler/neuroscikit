@@ -23,6 +23,7 @@ class Study():
 
         self.timebase = make_seconds_index_from_rate(self.sample_length, self.sample_rate)
         self.animals = []
+        self.agg_stat_dict = None
 
     def _read_input_dict(self):
         sample_length = self._input_dict['sample_length']
@@ -48,6 +49,10 @@ class Study():
     def get_animal(self, id):
         return self.animals[id] 
 
+    def get_animal_stats(self):
+        if self.agg_stat_dict == None:
+            for id in self.animal_ids:
+                self.agg_stat_dict[id] = self.get_animal(id).stat_dict
 
 
 # Dictionary:
@@ -62,6 +67,7 @@ class Animal():
     def __init__(self, input_dict: dict):
         self.sessions = input_dict
         self.timebase, self.agg_spike_times, self.agg_cluster_labels, self.agg_events, self.agg_waveforms, self.session_count, self.id = self._read_input_dict() 
+        self.stat_dict = None
 
     def _read_input_dict(self):
         agg_spike_times = []
@@ -124,6 +130,48 @@ class Animal():
 
     def get_session_data(self, id):
         return self.sessions[int(id)]
+
+    def get_stat_dict(self):
+        if self.stat_dict == None:
+            self.stat_dict = {}
+            self.stat_dict['sessions'] = {} # sessions --> session 1, session 2, etc.. --> session stats
+            self.stat_dict['animal'] = {} # animals --> anmal stats
+            for session in self.sessions: 
+                self.stat_dict['session'][session] = {}
+        return self.stat_dict
+    
+    def add_session_stat(self, session, statkey, statval, multiSession=False, multiStats=False):
+        self.stat_dict = self.get_stat_dict()
+        if multiSession == False and multiStats == False:
+            self.stat_dict['session'][session][statkey] = statval 
+        elif multiSession == True and multiStats == False:
+            assert type(session) == list, 'multiSession is true but only single session id provided'
+            for i in range(len(session)):
+                self.stat_dict['session'][session[i]][statkey] = statval 
+        elif multiSession == True and multiStats == True:
+            assert len(session) == len(statkey), 'multiSEssion and multiStats true so session, statkey and stataval need to be lists of same len'
+            assert len(statkey) == len(statval)
+            for i in range(len(session)):
+                self.stat_dict['session'][session[i]][statkey[i]] = statval[i]
+        elif multiSession == False and multiStats == True: 
+            assert type(statkey) == list, 'multiStats is true but only single stat key provided'
+            assert len(statkey) == len(statval), 'multiStats is true but only single stat val provided'
+            for i in range(len(statkey)):
+                self.stat_dict['session'][session][statkey[i]] = statval[i]
+        
+
+    def add_animal_stat(self, statkey, statval, multiStats=False):
+        self.stat_dict = self.get_stat_dict()
+        if multiStats == False:
+            self.stat_dict['animal'][statkey] = statval 
+        else: 
+            assert type(statkey) == list, 'multiStats is true but only single stat key provided'
+            assert len(statkey) == len(statval), 'multiStats is true but only single stat val provided'
+            for i in range(len(statkey)):
+                self.stat_dict['animal'][statkey[i]] = statval[i]   
+    
+
+
 
 class Event():
     def __init__(self, event_time, event_label, event_signal):

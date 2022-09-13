@@ -1,3 +1,10 @@
+import os, sys
+
+PROJECT_PATH = os.getcwd()
+sys.path.append(PROJECT_PATH)
+print(PROJECT_PATH)
+
+
 from core.data_study import (
     Animal,
     Study
@@ -9,7 +16,7 @@ from prototypes.wave_form_sorter.get_peak_amplitudes import get_peak_amplitudes
 from prototypes.wave_form_sorter.get_spike_width import get_spike_width
 from prototypes.wave_form_sorter.get_possible_orders import get_possible_orders
 
-def sort_waveforms_by_sesssion(animal: Animal, study: Study):
+def sort_waveforms_by_session(animal: Animal, study: Study):
     """
     Sort waveforms by session
     """
