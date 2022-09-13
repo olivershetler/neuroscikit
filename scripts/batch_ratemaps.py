@@ -9,16 +9,16 @@ from core.data_study import Study, Animal
 
 from library.maps import get_rate_map
 from library.spatial.get_spike_pos import get_spike_pos
-from prototypes.wave_form_sorter.sort_cell_spike_times import sort_cell_spike_times
+from library.sort_cell_spike_times import sort_cell_spike_times
 
 def batch_rate_maps(study: Study):
     animals = study.animals
 
     for animal in animals:
 
-        cells, waveforms = sort_cell_spike_times(animal.agg_spike_times, animal.agg_cluster_labels, animal.agg_waveforms)
+        # cells, waveforms = sort_cell_spike_times(animal)
 
-        animal.add_sorted_data(cells, waveforms)
+        sort_cell_spike_times(animal)
         
         c = 0
         for session in animal.session_keys:
@@ -37,7 +37,7 @@ def batch_rate_maps(study: Study):
             k = 0
             for cell in animal.agg_cell_keys:
 
-                spikex, spikey = get_spike_pos(cells[c,k], pos_x, pos_y, pos_t)
+                spikex, spikey = get_spike_pos(animal.agg_sorted_events[c,k], pos_x, pos_y, pos_t)
 
                 ratemap_smooth, ratemap_raw = get_rate_map(pos_x, pos_y, pos_t, arena_size, spikex, spikey, kernlen, std)
 
