@@ -90,4 +90,3 @@ if __name__ == '__main__':
     # test_infinite_impulse_response_filter()
     test_notch_filter()
 
-    print('we good')
