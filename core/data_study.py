@@ -53,6 +53,7 @@ class Study():
         if self.agg_stat_dict == None:
             for id in self.animal_ids:
                 self.agg_stat_dict[id] = self.get_animal(id).stat_dict
+        return self.agg_stat_dict
 
 
 # Dictionary:
@@ -134,41 +135,58 @@ class Animal():
     def get_stat_dict(self):
         if self.stat_dict == None:
             self.stat_dict = {}
-            self.stat_dict['sessions'] = {} # sessions --> session 1, session 2, etc.. --> session stats
-            self.stat_dict['animal'] = {} # animals --> anmal stats
+            self.stat_dict['session_stats'] = {} # --> session 1, session 2, etc.. --> session stats
+            self.stat_dict['animal_stats'] = {} # --> anmal stats
+            self.stats_dict['cell_stats'] = {} # session 1, session 2, ... --> cell 1, cell 2, ... --> cell stats
             for session in self.sessions: 
-                self.stat_dict['session'][session] = {}
+                self.stat_dict['session_stats'][session] = {}
         return self.stat_dict
-    
-    def add_session_stat(self, session, statkey, statval, multiSession=False, multiStats=False):
+
+    def clear_stat_dict(self):
+        self.stat_dict = {}
+        self.stat_dict['session_stats'] = {} # --> session 1, session 2, etc.. --> session stats
+        self.stat_dict['animal_stats'] = {} # --> anmal stats
+        self.stats_dict['cell_stats'] = {} # session 1, session 2, ... --> cell 1, cell 2, ... --> cell stats
+        for session in self.sessions: 
+            self.stat_dict['session_stats'][session] = {}
+
+
+    def add_cell_stat(self, sessions, cells, statkeys, statvals):
         self.stat_dict = self.get_stat_dict()
-        if multiSession == False and multiStats == False:
-            self.stat_dict['session'][session][statkey] = statval 
-        elif multiSession == True and multiStats == False:
-            assert type(session) == list, 'multiSession is true but only single session id provided'
-            for i in range(len(session)):
-                self.stat_dict['session'][session[i]][statkey] = statval 
-        elif multiSession == True and multiStats == True:
-            assert len(session) == len(statkey), 'multiSEssion and multiStats true so session, statkey and stataval need to be lists of same len'
-            assert len(statkey) == len(statval)
-            for i in range(len(session)):
-                self.stat_dict['session'][session[i]][statkey[i]] = statval[i]
-        elif multiSession == False and multiStats == True: 
-            assert type(statkey) == list, 'multiStats is true but only single stat key provided'
-            assert len(statkey) == len(statval), 'multiStats is true but only single stat val provided'
-            for i in range(len(statkey)):
-                self.stat_dict['session'][session][statkey[i]] = statval[i]
+        for i in range(len(sessions)):
+            for cell in cells:
+                self.stat_dict['cell_stats'][sessions[i]][cell][statkeys[i]] = statvals[i]
+
+    def add_session_stat(self, sessions, statkeys, statvals):
+        self.stat_dict = self.get_stat_dict()
+        for i in range(len(sessions)):
+            self.stats_dict['session_stats'][sessions[i]][statkeys[i]][statvals[i]]
+
+    
+    # def add_session_stat(self, session, statkey, statval, multiSession=False, multiStats=False):
+    #     self.stat_dict = self.get_stat_dict()
+    #     if multiSession == False and multiStats == False:
+    #         self.stat_dict['session_stats'][session][statkey] = statval 
+    #     elif multiSession == True and multiStats == False:
+    #         assert type(session) == list, 'multiSession is true but only single session id provided'
+    #         for i in range(len(session)):
+    #             self.stat_dict['session_stats'][session[i]][statkey] = statval 
+    #     elif multiSession == True and multiStats == True:
+    #         assert len(session) == len(statkey), 'multiSEssion and multiStats true so session, statkey and stataval need to be lists of same len'
+    #         assert len(statkey) == len(statval)
+    #         for i in range(len(session)):
+    #             self.stat_dict['session_stats'][session[i]][statkey[i]] = statval[i]
+    #     elif multiSession == False and multiStats == True: 
+    #         assert type(statkey) == list, 'multiStats is true but only single stat key provided'
+    #         assert len(statkey) == len(statval), 'multiStats is true but only single stat val provided'
+    #         for i in range(len(statkey)):
+    #             self.stat_dict['session_stats'][session][statkey[i]] = statval[i]
         
 
-    def add_animal_stat(self, statkey, statval, multiStats=False):
+    def add_animal_stat(self, statkeys, statvals):
         self.stat_dict = self.get_stat_dict()
-        if multiStats == False:
-            self.stat_dict['animal'][statkey] = statval 
-        else: 
-            assert type(statkey) == list, 'multiStats is true but only single stat key provided'
-            assert len(statkey) == len(statval), 'multiStats is true but only single stat val provided'
-            for i in range(len(statkey)):
-                self.stat_dict['animal'][statkey[i]] = statval[i]   
+        for i in range(len(statkeys)):
+            self.stat_dict['animal_stats'][statkeys[i]] = statvals[i]   
     
 
 
