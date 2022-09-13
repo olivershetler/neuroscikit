@@ -5,6 +5,8 @@ from re import S
 import sys
 import wave
 
+from prototypes.wave_form_sorter.sort_cell_spike_times import sort_cell_spike_times
+
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
 print(PROJECT_PATH)
@@ -67,14 +69,24 @@ class Animal():
     """
     def __init__(self, input_dict: dict):
         self.sessions = input_dict
-        self.timebase, self.agg_spike_times, self.agg_cluster_labels, self.agg_events, self.agg_waveforms, self.session_count, self.id = self._read_input_dict() 
+        self.timebase, self.agg_spike_times, self.agg_cluster_labels, self.agg_events, self.agg_waveforms, self.session_count, self.id, self.session_keys = self._read_input_dict() 
         self.stat_dict = None
+        self.spatial_dict = None
+        self.agg_sorted_events = None
+        self.agg_sorted_waveforms = None
+        self.agg_cell_keys = None
+
+    def add_sorted_data(self, good_events, good_waveforms):
+        self.agg_sorted_events = good_events
+        self.agg_sorted_waveforms = good_waveforms
+        self.agg_cell_keys = [i for i in range(0, len(good_events))]
 
     def _read_input_dict(self):
         agg_spike_times = []
         agg_cluster_labels = []
         agg_waveforms = []
         agg_events = []
+        session_keys = []
         count = 0
         for session in self.sessions:
             if session == 'timebase':
@@ -82,6 +94,7 @@ class Animal():
             elif session == 'id':
                 animal_id = self.sessions[session]
             else:
+                session_keys.append(session)
                 count += 1
                 cluster_labels = self.sessions[session]['cluster_labels']
                 spike_times = self.sessions[session]['spike_times']
@@ -92,7 +105,7 @@ class Animal():
                 agg_cluster_labels.append(cluster_labels)
                 agg_waveforms.append(waveforms)
                 agg_events.append(events)
-        return timebase, agg_spike_times, agg_cluster_labels, agg_events, agg_waveforms, count, animal_id
+        return timebase, agg_spike_times, agg_cluster_labels, agg_events, agg_waveforms, count, animal_id, session_keys
 
     def _fill_events(self, spike_times, cluster_labels, waveforms):
         events = []
@@ -111,7 +124,7 @@ class Animal():
         return waveforms
 
     def add_session(self, session_dict):
-        cluster_labels =session_dict['cluster_labels']
+        cluster_labels = session_dict['cluster_labels']
         spike_times = session_dict['spike_times']
         assert type(spike_times) == list, 'Spike times are not a list, check inputs'
 
@@ -133,14 +146,27 @@ class Animal():
         return self.sessions[int(id)]
 
     def get_stat_dict(self):
+        assert self.agg_cell_keys != None, 'Need to sort your spike times by cell, use "sort_cell_spike_times" in library'
         if self.stat_dict == None:
             self.stat_dict = {}
             self.stat_dict['session_stats'] = {} # --> session 1, session 2, etc.. --> session stats
             self.stat_dict['animal_stats'] = {} # --> anmal stats
-            self.stats_dict['cell_stats'] = {} # session 1, session 2, ... --> cell 1, cell 2, ... --> cell stats
-            for session in self.sessions: 
+            self.stat_dict['cell_stats'] = {} # session 1, session 2, ... --> cell 1, cell 2, ... --> cell stats
+            c = 0
+            for session in self.session_keys: 
                 self.stat_dict['session_stats'][session] = {}
+                self.stat_dict['session_stats'][session] = {}
+                for cell in self.agg_cell_keys[c]:
+                    self.stat_dict['session_stats'][session][cell] = {}
+                c += 1
         return self.stat_dict
+
+    def get_spatial_dict(self):
+        if self.spatial_dict == None:
+            self.spatial_dict = {}
+            for session in self.sessions:
+                self.spatial_dict[session] = {}
+        return self.spatial_dict
 
     def clear_stat_dict(self):
         self.stat_dict = {}
@@ -150,19 +176,29 @@ class Animal():
         for session in self.sessions: 
             self.stat_dict['session_stats'][session] = {}
 
+    def add_single_cell_stat(self, session, cell, cell_stat):
+        self.stat_dict[session][cell] = cell_stat
 
-    def add_cell_stat(self, sessions, cells, statkeys, statvals):
+
+    def add_cell_stat(self, sessions, cells, cell_stats):
         self.stat_dict = self.get_stat_dict()
         for i in range(len(sessions)):
             for cell in cells:
-                self.stat_dict['cell_stats'][sessions[i]][cell][statkeys[i]] = statvals[i]
+                self.stat_dict['cell_stats'][sessions[i]][cell] = cell_stats[sessions[i]][cell]
 
-    def add_session_stat(self, sessions, statkeys, statvals):
+    def add_session_stat(self, sessions, session_stats):
         self.stat_dict = self.get_stat_dict()
         for i in range(len(sessions)):
-            self.stats_dict['session_stats'][sessions[i]][statkeys[i]][statvals[i]]
+            self.stats_dict['session_stats'][sessions[i]] = cell_stats[sessions[i]]
 
-    
+    def add_spatial_stat(self, sessions, spatial_data: dict):
+        """
+        Spatial data is dictionary that holds spatial info to add to sesion e.g. pos_x: x position of arena
+        """
+        self.get_spatial_dict()
+        for session in sessions:
+            self.spatial_dict[session] = spatial_data
+
     # def add_session_stat(self, session, statkey, statval, multiSession=False, multiStats=False):
     #     self.stat_dict = self.get_stat_dict()
     #     if multiSession == False and multiStats == False:
@@ -182,11 +218,9 @@ class Animal():
     #         for i in range(len(statkey)):
     #             self.stat_dict['session_stats'][session][statkey[i]] = statval[i]
         
-
-    def add_animal_stat(self, statkeys, statvals):
+    def add_animal_stat(self, animal_stats):
         self.stat_dict = self.get_stat_dict()
-        for i in range(len(statkeys)):
-            self.stat_dict['animal_stats'][statkeys[i]] = statvals[i]   
+        self.stat_dict['animal_stats'] = animal_stats
     
 
 
@@ -204,8 +238,7 @@ class Event():
         else:
             self.main_ind = None
             self.main_signal = None
-
-    
+ 
     def set_label(self, label):
         self.event_label = label
 
