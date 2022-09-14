@@ -19,7 +19,7 @@ def sort_cell_spike_times(animal: Animal):
 
     spike_times = animal.agg_spike_times
     cluster_labels = animal.agg_cluster_labels
-    waveforms = animal.agg_sorted_waveforms
+    waveforms = animal.agg_waveforms
 
     assert len(spike_times) == len(cluster_labels)
 

@@ -8,7 +8,7 @@ print(PROJECT_PATH)
 from core.data_study import Study, Animal
 
 from library.maps import get_rate_map
-from library.spatial.get_spike_pos import get_spike_pos
+from library.maps import spikePos
 from library.sort_cell_spike_times import sort_cell_spike_times
 
 def batch_rate_maps(study: Study):
@@ -23,10 +23,10 @@ def batch_rate_maps(study: Study):
         c = 0
         for session in animal.session_keys:
 
-            pos_x = animal.stat_dict[session]['pos_x']
-            pos_y = animal.stat_dict[session]['pos_y']
-            pos_t = animal.stat_dict[session]['pos_t']
-            arena_size = animal.stat_dict[session]['arena_size']
+            pos_x = animal.spatial_dict[session]['pos_x']
+            pos_y = animal.spatial_dict[session]['pos_y']
+            pos_t = animal.spatial_dict[session]['pos_t']
+            arena_size = animal.spatial_dict[session]['arena_size']
 
             smoothing_factor = 5
             # Kernel size
@@ -35,9 +35,11 @@ def batch_rate_maps(study: Study):
             std = int(0.2*kernlen)
 
             k = 0
-            for cell in animal.agg_cell_keys:
+            for cell in animal.agg_cell_keys[c]:
 
-                spikex, spikey = get_spike_pos(animal.agg_sorted_events[c,k], pos_x, pos_y, pos_t)
+                spikex, spikey, _, _ = spikePos(animal.agg_sorted_events[c][k], pos_x, pos_y, pos_t, pos_t, False, False)
+
+                print(len(spikex), len(spikey))
 
                 ratemap_smooth, ratemap_raw = get_rate_map(pos_x, pos_y, pos_t, arena_size, spikex, spikey, kernlen, std)
 

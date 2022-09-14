@@ -79,7 +79,9 @@ class Animal():
     def add_sorted_data(self, good_events, good_waveforms):
         self.agg_sorted_events = good_events
         self.agg_sorted_waveforms = good_waveforms
-        self.agg_cell_keys = [i for i in range(0, len(good_events))]
+        self.agg_cell_keys = []
+        for ses in good_events:
+            self.agg_cell_keys.append([i for i in range(0, len(ses))])
 
     def _read_input_dict(self):
         agg_spike_times = []
@@ -155,16 +157,16 @@ class Animal():
             c = 0
             for session in self.session_keys: 
                 self.stat_dict['session_stats'][session] = {}
-                self.stat_dict['session_stats'][session] = {}
+                self.stat_dict['cell_stats'][session] = {}
                 for cell in self.agg_cell_keys[c]:
-                    self.stat_dict['session_stats'][session][cell] = {}
+                    self.stat_dict['cell_stats'][session][cell] = {}
                 c += 1
         return self.stat_dict
 
     def get_spatial_dict(self):
         if self.spatial_dict == None:
             self.spatial_dict = {}
-            for session in self.sessions:
+            for session in self.session_keys:
                 self.spatial_dict[session] = {}
         return self.spatial_dict
 
@@ -176,20 +178,21 @@ class Animal():
         for session in self.sessions: 
             self.stat_dict['session_stats'][session] = {}
 
-    def add_single_cell_stat(self, session, cell, cell_stat):
-        self.stat_dict[session][cell] = cell_stat
+    def add_single_cell_stat(self, session, cell, cell_stats):
+        self.get_stat_dict()
+        self.stat_dict['cell_stats'][session][cell] = cell_stats
 
 
     def add_cell_stat(self, sessions, cells, cell_stats):
-        self.stat_dict = self.get_stat_dict()
+        self.get_stat_dict()
         for i in range(len(sessions)):
             for cell in cells:
                 self.stat_dict['cell_stats'][sessions[i]][cell] = cell_stats[sessions[i]][cell]
 
     def add_session_stat(self, sessions, session_stats):
-        self.stat_dict = self.get_stat_dict()
+        self.get_stat_dict()
         for i in range(len(sessions)):
-            self.stats_dict['session_stats'][sessions[i]] = cell_stats[sessions[i]]
+            self.stats_dict['session_stats'][sessions[i]] = session_stats[sessions[i]]
 
     def add_spatial_stat(self, sessions, spatial_data: dict):
         """
@@ -197,7 +200,7 @@ class Animal():
         """
         self.get_spatial_dict()
         for session in sessions:
-            self.spatial_dict[session] = spatial_data
+            self.spatial_dict[session] = spatial_data[session]
 
     # def add_session_stat(self, session, statkey, statval, multiSession=False, multiStats=False):
     #     self.stat_dict = self.get_stat_dict()
