@@ -335,7 +335,9 @@ def get_spike_trains_from_channel(open_cut_file, open_tetrode_file, channel_no: 
     # Organize neuron data into list
     channel = [[[] for x in range(2)] for x in range(number_of_neurons)]
 
-    # iterate through every spike time
+    assert len(cut_data) == len(tetrode_data[0])
+
+    # iterate through every spike time 
     assert len(tetrode_data[0]) == len(cut_data), "Number of spikes in tetrode file {} and cut file {} do not match".format(len(tetrode_data[0]), len(cut_data))
     for i in range(len(tetrode_data[0])):
         # N x M array of spikes and samples per spike, generally ~50 samples per spike
@@ -353,7 +355,7 @@ def get_spike_trains_from_channel(open_cut_file, open_tetrode_file, channel_no: 
         else:
             empty_cell = i + 1
 
-    return channel, empty_cell
+    return channel, empty_cell, cut_data
 
 #-----------------------------------------------------------------------------------------------------------------------#
 # OS wrapper function(s)
@@ -391,6 +393,7 @@ def load_spike_train_from_paths(cut_path: str, tetrode_path: str, channel_no: in
     #extension = tetrode_path.split('.')[-1]
     #assert int(extension) >= 0, "Tetrode file path does not lead to a valid tetrode file. The extension must be a positive integer (n>=0)."
     with open(cut_path, 'r') as cut_file, open(tetrode_path, 'rb') as tetrode_file:
-        channel, empty_cell = get_spike_trains_from_channel(cut_file, tetrode_file, 1)
+        channel, empty_cell, cut_data = get_spike_trains_from_channel(cut_file, tetrode_file, 1)
 
-    return channel, empty_cell
+    return channel, empty_cell, cut_data
+

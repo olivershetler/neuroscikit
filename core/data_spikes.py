@@ -6,7 +6,7 @@ import wave
 
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
-print(PROJECT_PATH)
+ 
 
 from core.core_utils import (
     make_seconds_index_from_rate,

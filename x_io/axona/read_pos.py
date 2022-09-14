@@ -5,6 +5,9 @@ This module contains methods for reading and writing to the .pos file format, wh
 # Internal Dependencies
 
 # A+ Grade Dependencies
+import numpy as np
+import scipy 
+import json, struct
 
 # A Grade Dependencies
 

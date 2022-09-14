@@ -2,7 +2,7 @@ import os
 import sys
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
-print(PROJECT_PATH)
+ 
 
 from x_io.axona.read_eeg_or_egf import (
     read_eeg_or_egf

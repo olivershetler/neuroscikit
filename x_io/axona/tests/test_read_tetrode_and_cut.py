@@ -11,7 +11,7 @@ import os
 import sys
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
-print(PROJECT_PATH)
+ 
 
 from x_io.axona.read_tetrode_and_cut import (
     _read_cut

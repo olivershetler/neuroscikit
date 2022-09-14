@@ -9,7 +9,6 @@ from prototypes.wave_form_sorter.sort_cell_spike_times import sort_cell_spike_ti
 
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
-print(PROJECT_PATH)
 
 from core.core_utils import (
     make_seconds_index_from_rate,

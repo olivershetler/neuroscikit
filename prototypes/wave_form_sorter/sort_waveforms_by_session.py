@@ -2,7 +2,7 @@ import os, sys
 
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
-print(PROJECT_PATH)
+ 
 
 
 from core.data_study import (
