@@ -39,7 +39,7 @@ from prototypes.wave_form_sorter.match_waveforms_by_session import match_wavefor
 from scripts.batch_ratemaps import batch_rate_maps
 
 
-if __name__ == '__main__':
+def test_batch_ratemaps():
     print('Running Prototype')
 
     prototype_dir = os.getcwd()
@@ -209,7 +209,15 @@ if __name__ == '__main__':
 
     animal.add_spatial_stat(seskeys, animal_spatial)
 
-    batch_rate_maps(study)
+    tasks = {}
+    keys = ['binary_map', 'autocorrelation_map', 'sparsity', 'selectivity', 'information', 'coherence', 'speed_score', 'hd_score', 'tuning_curve', 'grid_score', 'border_score', 'field_sizes']
+    for key in keys:
+        tasks[key] = True
 
-    for animal in study.animals:
-        print(animal.stat_dict)
+
+    batch_rate_maps(study, tasks)
+
+    print(study.animals[0].stat_dict)
+
+if __name__ == '__main__':
+    test_batch_ratemaps()

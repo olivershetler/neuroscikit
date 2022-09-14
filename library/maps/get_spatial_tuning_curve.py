@@ -1,5 +1,6 @@
 import numpy as np
 #from opexebo.analysis import place_field, border_score
+import math
 from opexebo.analysis import tuning_curve, angular_occupancy
 
 def _smooth(array: np.ndarray, window: int) -> np.ndarray:
