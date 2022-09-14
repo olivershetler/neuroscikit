@@ -17,14 +17,14 @@ from core.data_spikes import (
 cwd = os.getcwd()
 parent_dir = os.path.dirname(cwd)
 data_dir = os.path.join(parent_dir, 'neuroscikit_test_data')
-test_cut_file_path = os.path.join(data_dir, '20140815-behavior2-90_1.cut')
-test_tetrode_file_path = os.path.join(data_dir, '20140815-behavior2-90.1')
+test_cut_file_path = os.path.join(data_dir, 'axona/20140815-behavior2-90_1.cut')
+test_tetrode_file_path = os.path.join(data_dir, 'axona/20140815-behavior2-90.1')
 
 np.random.seed(0)
 
 def make_1D_binary_spikes(size=100):
     spike_train = np.random.randint(2, size=size)
-    
+
     return list(spike_train)
 
 def make_2D_binary_spikes(count=20, size=100):

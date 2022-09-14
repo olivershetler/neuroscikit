@@ -3,7 +3,7 @@ import numpy as np
 from prototypes.wave_form_sorter.detect_peaks import detect_peaks
 
 
-def get_spike_width(cell_waveforms, sample_rate):
+def get_spike_statistics(cell_waveforms, sample_rate):
     """
     Get spike width data for one cell
 

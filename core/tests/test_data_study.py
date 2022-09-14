@@ -20,14 +20,14 @@ from core.core_utils import (
 cwd = os.getcwd()
 parent_dir = os.path.dirname(cwd)
 data_dir = os.path.join(parent_dir, 'neuroscikit_test_data')
-test_cut_file_path = os.path.join(data_dir, '20140815-behavior2-90_1.cut')
-test_tetrode_file_path = os.path.join(data_dir, '20140815-behavior2-90.1')
+test_cut_file_path = os.path.join(data_dir, 'axona/20140815-behavior2-90_1.cut')
+test_tetrode_file_path = os.path.join(data_dir, 'axona/20140815-behavior2-90.1')
 
 np.random.seed(0)
 
 def make_1D_binary_spikes(size=100):
     spike_train = np.random.randint(2, size=size)
-    
+
     return list(spike_train)
 
 def make_2D_binary_spikes(count=20, size=100):
@@ -126,7 +126,7 @@ def test_animal_class():
     dt = .02
     timebase = make_seconds_index_from_rate(T, 1/dt)
     idx = np.random.choice(len(spike_times), size=1)[0]
-    
+
     input_dict1 = {}
     input_dict1['timebase'] = timebase
     input_dict1['id'] = 'id'
@@ -135,7 +135,7 @@ def test_animal_class():
     input_dict1[0]['spike_times'] = spike_times
     input_dict1[0]['cluster_labels'] = cluster_labels
 
-    
+
     spike_times = make_1D_timestamps()
     waveforms = make_waveforms(ch_count, len(spike_times), samples_per_wave)
     waves.append(waveforms)
@@ -149,7 +149,7 @@ def test_animal_class():
             input_dict1[j][key] = waves[j][i]
 
     animal = Animal(input_dict1)
-    
+
     all_channel_waveforms = animal.agg_waveforms
     label = animal.agg_cluster_labels
     session = animal.get_session_data(0)
@@ -184,7 +184,7 @@ def test_study_class():
     dt = .02
     timebase = make_seconds_index_from_rate(T, 1/dt)
     idx = np.random.choice(len(spike_times), size=1)[0]
-    
+
     input_dict1 = {}
 
     input_dict1['timebase'] = timebase
@@ -194,7 +194,7 @@ def test_study_class():
     input_dict1[0]['spike_times'] = spike_times
     input_dict1[0]['cluster_labels'] = cluster_labels
 
-    
+
     spike_times = make_1D_timestamps()
     waveforms = make_waveforms(ch_count, len(spike_times), samples_per_wave)
     cluster_labels = make_clusters(spike_times, cluster_count)
@@ -227,7 +227,7 @@ def test_study_class():
     assert type(study.animal_ids) == list
     assert study.timebase == timebase
     assert type(study.get_pop_spike_times()) == list
- 
+
 
 
 

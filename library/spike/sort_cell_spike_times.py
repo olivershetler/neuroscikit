@@ -31,7 +31,7 @@ def sort_cell_spike_times(animal: Animal):
     for i in range(len(spike_times)):
         labels = np.unique(cluster_labels[i])
         # comes in shape (channel count, spike time, nmb samples) but is nested list not numpy
-        # want to rearrannge to be (spike time, channel count, nmb sample )
+        # want to rearrannge to be (spike time, channel count, nmb sample)
         waves = np.array(waveforms[i]).reshape((len(waveforms[i][0]), len(waveforms[i]),  len(waveforms[i][0][0])))
         for lbl in labels:
             idx = np.where(cluster_labels[i] == lbl)
@@ -50,5 +50,5 @@ def sort_cell_spike_times(animal: Animal):
             good_sorted_waveforms[i].append(sorted_waveforms[i][j])
 
     animal.add_sorted_data(good_cells, good_sorted_waveforms)
-    
+
     # return good_cells, good_sorted_waveforms

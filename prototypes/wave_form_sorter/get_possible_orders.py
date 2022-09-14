@@ -15,7 +15,7 @@ def get_switch_channels(pp_amp, threshold):
     return can_switch
 
 def get_possible_orders(pp_amp, threshold=.2):
-    """ 
+    """
     Get possible ordering for a cell
     """
     # avg_waveform = np.mean(cell_waveforms, axis=0)
@@ -25,7 +25,7 @@ def get_possible_orders(pp_amp, threshold=.2):
     switched = []
     true_order = np.argsort(pp_amp)
     possible_orders.append(true_order.tolist())
-    
+
     for i in range(len(pp_amp)):
         for j in range(len(can_switch)):
             if i in can_switch[j] and can_switch[j] not in switched:

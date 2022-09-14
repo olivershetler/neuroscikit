@@ -18,7 +18,7 @@ from x_io.intan.read_rhd import read_rhd
 cwd = os.getcwd()
 parent_dir = os.path.dirname(cwd)
 data_dir = os.path.join(parent_dir, 'neuroscikit_test_data')
-test_rhd_file_path = os.path.join(data_dir, 'sampledata.rhd')
+test_rhd_file_path = os.path.join(data_dir, 'intan/sampledata.rhd')
 
 np.random.seed(0)
 
@@ -56,7 +56,7 @@ def test_ephys_collection():
     assert type(power_bands[0]) == list
 
     filtered = collection.get_filtered(method='notch_filt', type='cheby2')
-    
+
     assert type(filtered) == list
     assert type(filtered[0]) == list
 

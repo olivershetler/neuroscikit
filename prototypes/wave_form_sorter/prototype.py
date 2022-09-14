@@ -79,8 +79,6 @@ if __name__ == '__main__':
     session1 = test1_35
     session2 = test2_35
 
-    assert len(session1) == len(session2)
-
     session1_tets = []
     session2_tets = []
 
@@ -118,8 +116,8 @@ if __name__ == '__main__':
 
     # Make dictionaries for core classes
 
-    sample_length1 =  tetrode_data1[-1]['duration']
-    sample_rate1 = tetrode_data1[-1]['samples_per_spike']
+    sample_length_sec_1 =  tetrode_data1[-1]['duration'] # we need to change these to match the real values
+    sample_rate_hz_1 = tetrode_data1[-1]['samples_per_spike'] # This is generally 48 megahertz (48e3 Hz) for Axona data.
 
     session_dict1 = {
         'spike_times': tetrode_data1[0].squeeze().tolist(),
@@ -130,8 +128,8 @@ if __name__ == '__main__':
         'ch4': tetrode_data1[4],
     }
 
-    sample_length2 =  tetrode_data2[-1]['duration']
-    sample_rate2 = tetrode_data2[-1]['samples_per_spike']
+    sample_length_sec_2 =  tetrode_data2[-1]['duration']
+    sample_rate_hz_2 = tetrode_data2[-1]['samples_per_spike']
 
     session_dict2 = {
         'spike_times': tetrode_data2[0].squeeze().tolist(),
@@ -142,12 +140,12 @@ if __name__ == '__main__':
         'ch4': tetrode_data2[4],
     }
 
-    assert sample_length1 == sample_length2
-    assert sample_rate1 == sample_rate2
+    assert sample_length_sec_1 == sample_length_sec_2
+    assert sample_rate_hz_1 == sample_rate_hz_2
 
     study_dict = {
-        'sample_length': sample_length1,
-        'sample_rate': sample_rate1,
+        'sample_length': sample_length_sec_1,
+        'sample_rate': sample_rate_hz_1,
         'animal_ids': []
     }
 
@@ -167,6 +165,6 @@ if __name__ == '__main__':
     animal = study.animals[0]
 
     agg_waveform_dict = sort_waveforms_by_session(animal, study)
-    matched = match_waveforms_by_session
+    matched = match_waveforms_by_session(agg_waveform_dict, study)
 
     # still need to update cell references after matchings

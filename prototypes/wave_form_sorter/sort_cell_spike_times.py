@@ -34,5 +34,5 @@ def sort_cell_spike_times(spike_times, cluster_labels, waveforms):
         for j in range(1,empty_cell,1):
             good_cells[i].append(cells[i][j])
             good_sorted_waveforms[i].append(sorted_waveforms[i][j])
-    
+
     return good_cells, good_sorted_waveforms

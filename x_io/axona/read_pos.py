@@ -251,7 +251,7 @@ def _get_position(pos_fpath, ppm, method='', flip_y=True):
 
     return x.reshape((len(x), 1)), y.reshape((len(y), 1)), t.reshape((len(t), 1)), sample_rate
 
-#called in batch_processing, compute_all_map_data, npy_converter, shuffle_processing and quadrand_analysis_window
+
 def grab_position_data(pos_path: str, ppm: int) -> tuple:
 
     '''
@@ -317,4 +317,4 @@ def grab_position_data(pos_path: str, ppm: int) -> tuple:
     pos_x_width = max(pos_x) - min(pos_x)
     pos_y_width = max(pos_y) - min(pos_y)
 
-    return pos_x, pos_y, pos_t, (pos_x_width, pos_y_width)
+    return {"time": pos_t, "x": pos_x, "y": pos_y, "arena_width":pos_x_width, "arena_height":pos_y_width}
