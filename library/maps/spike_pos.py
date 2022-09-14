@@ -1,6 +1,6 @@
 import numpy as np
 
-def spikePos(ts, x, y, t, cPost, shuffleSpks, shuffleCounter=True):
+def spike_pos(ts, x, y, t, cPost, shuffleSpks, shuffleCounter=True):
 
     randtime = 0
 

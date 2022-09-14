@@ -3,7 +3,7 @@ import sys
 
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
-print(PROJECT_PATH)
+ 
 
 import numpy as np
 import cv2
@@ -11,7 +11,7 @@ from library.maps.map_utils import _gkern
 
 # Taken from https://stackoverflow.com/questions/59144828/opencv-getting-all-blob-pixels
 #public
-def get_map_blobs(ratemap: np.ndarray) -> tuple:
+def map_blobs(ratemap: np.ndarray) -> tuple:
 
     '''
         Segments and labels firing fields in ratemap.

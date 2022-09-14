@@ -3,7 +3,7 @@ import sys
 
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
-print(PROJECT_PATH)
+ 
 
 from library.filters.convert_raw_ephys_to_lfp import down_sample_ephys
 from library.filters.custom_cheby import custom_cheby1

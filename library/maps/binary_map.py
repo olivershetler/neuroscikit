@@ -3,11 +3,11 @@ import sys
 
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
-print(PROJECT_PATH)
+ 
 
 import numpy as np
 
-def get_binary_map(ratemap: np.ndarray) -> np.ndarray:
+def binary_map(ratemap: np.ndarray) -> np.ndarray:
 
     '''
         Computes a binary map of the ratemap where only areas of moderate to

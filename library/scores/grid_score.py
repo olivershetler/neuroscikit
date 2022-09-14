@@ -3,17 +3,17 @@ import sys
 
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
-print(PROJECT_PATH)
+ 
 
 import numpy as np
 from openpyxl.worksheet.dimensions import ColumnDimension
 from openpyxl.utils.cell import get_column_letter
 from opexebo.analysis import grid_score
-from library.maps.get_autocorrelation import get_autocorrelation
-from library.maps.get_rate_map import get_rate_map
+from library.maps.autocorrelation import autocorrelation
+from library.maps.rate_map import rate_map
 from library.scores.shuffle_spikes import shuffle_spikes
 
-def compute_grid_score(occupancy_map: np.ndarray, ts: np.ndarray, pos_x: np.ndarray,
+def grid_score(occupancy_map: np.ndarray, ts: np.ndarray, pos_x: np.ndarray,
                        pos_y: np.ndarray, pos_t: np.ndarray, arena_size: tuple,
                        spikex: np.ndarray, spikey: np.ndarray, kernlen: int, std: int):
 
@@ -41,8 +41,8 @@ def compute_grid_score(occupancy_map: np.ndarray, ts: np.ndarray, pos_x: np.ndar
     unshuffled_spike_xy[1] = spikey.flatten()
 
     # Compute ratemaps, autocorrelation, and finally grid_score
-    rate_map_smooth, rate_map_raw = get_rate_map(pos_x, pos_y, pos_t, arena_size, spikex, spikey, kernlen, std)
-    autocorr_map = get_autocorrelation(rate_map_smooth,pos_x,pos_y,arena_size)
+    rate_map_smooth, rate_map_raw = rate_map(pos_x, pos_y, pos_t, arena_size, spikex, spikey, kernlen, std)
+    autocorr_map = autocorrelation(rate_map_smooth,pos_x,pos_y,arena_size)
     grid_score_object = grid_score(autocorr_map)
     true_grid_score = grid_score_object[0]
 
@@ -93,8 +93,8 @@ def grid_score_shuffle(self, occupancy_map: np.ndarray, arena_size: tuple, ts: n
 
     # For each set of shuffled data, compute grid score
     for element in shuffled_spikes:
-        rate_map_smooth, _ = get_rate_map(pos_x, pos_y, pos_t, arena_size, element[0], element[1], kernlen, std)
-        autocorr_map = get_autocorrelation(rate_map_smooth,pos_x,pos_y,arena_size)
+        rate_map_smooth, _ = rate_map(pos_x, pos_y, pos_t, arena_size, element[0], element[1], kernlen, std)
+        autocorr_map = autocorrelation(rate_map_smooth,pos_x,pos_y,arena_size)
         grid_score_object = grid_score(autocorr_map)
 
         # Populate the excel sheet with the scores

@@ -3,16 +3,16 @@ import sys
 
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
-print(PROJECT_PATH)
+ 
 
 import numpy as np
-from library.maps.get_binary_map import get_binary_map
+from library.maps.binary_map import binary_map
 from library.scores.shuffle_spikes import shuffle_spikes
-from library.maps.get_rate_map import get_rate_map
+from library.maps.rate_map import rate_map
 from openpyxl.worksheet.dimensions import ColumnDimension
 from openpyxl.utils.cell import get_column_letter
 
-def compute_border_score(binary_map: np.ndarray, rate_map: np.ndarray) -> tuple:
+def border_score(binary_map: np.ndarray, rate_map: np.ndarray) -> tuple:
 
     '''
         Computes 4 scores which each reflect selectivity of neurons firing at arena edges,
@@ -124,9 +124,9 @@ def border_score_shuffle(self, occupancy_map: np.ndarray, arena_size: tuple, ts:
 
     # For each shuffled set of spiek data, compute border score
     for element in shuffled_spikes:
-            rate_map, _ = get_rate_map(pos_x, pos_y, pos_t, arena_size, element[0], element[1], kernlen, std)
-            binary_map = get_binary_map(rate_map)
-            b_score = compute_border_score(binary_map, rate_map)
+            rate_map, _ = rate_map(pos_x, pos_y, pos_t, arena_size, element[0], element[1], kernlen, std)
+            binary_map = binary_map(rate_map)
+            b_score = border_score(binary_map, rate_map)
             border_scores.append(b_score)
 
             # Copy shuffled border scores into excel sheet

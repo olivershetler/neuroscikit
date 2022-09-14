@@ -1,6 +1,6 @@
 import numpy as np
 
-def get_firing_rate_vs_time(times: np.ndarray, pos_t: np.ndarray, window: int) -> tuple:
+def firing_rate_vs_time(times: np.ndarray, pos_t: np.ndarray, window: int) -> tuple:
 
     '''
         Computes firing rate as a function of time

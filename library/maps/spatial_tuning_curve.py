@@ -86,8 +86,7 @@ def _get_head_direction(pos_x: np.ndarray, pos_y: np.ndarray) -> np.ndarray:
 
     return angles
 
-# called in batch_processing only
-def compute_tuning_curve(pos_x: np.ndarray, pos_y: np.ndarray, pos_t: np.ndarray,
+def spatial_tuning_curve(pos_x: np.ndarray, pos_y: np.ndarray, pos_t: np.ndarray,
                          spiket: np.ndarray, smoothing: int) -> tuple:
 
     '''

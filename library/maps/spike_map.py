@@ -3,13 +3,13 @@ import sys
 
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
-print(PROJECT_PATH)
+ 
 
 import numpy as np
 import cv2
 from library.maps.map_utils import _compute_resize_ratio, _interpolate_matrix, _gkern
 
-def get_spike_map(pos_x: np.ndarray, pos_y: np.ndarray, pos_t: np.ndarray,
+def spike_map(pos_x: np.ndarray, pos_y: np.ndarray, pos_t: np.ndarray,
                 arena_size: tuple, spike_x: np.ndarray, spike_y: np.ndarray,
                 kernlen: int, std: int) -> np.ndarray:
 
