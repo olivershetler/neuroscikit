@@ -5,7 +5,7 @@ import numpy as np
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
 
-from library.maps import rate_map, spike_pos, autocorrelation, filter_pos_by_speed, firing_rate_vs_time, map_blobs, occupancy_map, spatial_tuning_curve, spike_map
+from library.maps import rate_map, spike_pos, autocorrelation, filter_pos_by_speed, firing_rate_vs_time, map_blobs, occupancy_map, spatial_tuning_curve, spike_map, binary_map
 from core.core_utils import make_seconds_index_from_rate
 
 
@@ -199,7 +199,28 @@ def test_spike_map():
 
     assert len(spike_map_smooth) == len(spike_map_raw)
 
-    
+def test_binary_map():
+    T = 2
+    dt = .02
+    pos_t = make_seconds_index_from_rate(T, 1/dt)
+
+    smoothing_factor = 5
+    # Kernel size
+    kernlen = int(smoothing_factor*8)
+    # Standard deviation size
+    std = int(0.2*kernlen)
+    arena_size = (1,1)
+
+    spk_times = make_1D_timestamps()
+    pos_x, pos_y = make_2D_arena(len(pos_t))
+
+    spikex, spikey, spiket, _ = spike_pos(spk_times, pos_x, pos_y, pos_t, pos_t, False, False)
+
+    rate_map_smooth, rate_map_raw = rate_map(pos_x, pos_y, pos_t, arena_size, spikex, spikey, kernlen, std)    
+
+    binmap = binary_map(rate_map_smooth)
+
+    assert type(binmap) == np.ndarray
 
 
 if __name__ == '__main__':
@@ -212,4 +233,5 @@ if __name__ == '__main__':
     test_map_blobs()
     test_occupancy_map()
     test_spatial_tuning_curve()
+    test_binary_map()
 

@@ -8,7 +8,7 @@ sys.path.append(PROJECT_PATH)
 import numpy as np
 from openpyxl.worksheet.dimensions import ColumnDimension
 from openpyxl.utils.cell import get_column_letter
-from opexebo.analysis import grid_score
+from opexebo.analysis import grid_score as opexebo_grid_score
 from library.maps.autocorrelation import autocorrelation
 from library.maps.rate_map import rate_map
 from library.scores.shuffle_spikes import shuffle_spikes
@@ -43,7 +43,7 @@ def grid_score(occupancy_map: np.ndarray, ts: np.ndarray, pos_x: np.ndarray,
     # Compute ratemaps, autocorrelation, and finally grid_score
     rate_map_smooth, rate_map_raw = rate_map(pos_x, pos_y, pos_t, arena_size, spikex, spikey, kernlen, std)
     autocorr_map = autocorrelation(rate_map_smooth,pos_x,pos_y,arena_size)
-    grid_score_object = grid_score(autocorr_map)
+    grid_score_object = opexebo_grid_score(autocorr_map)
     true_grid_score = grid_score_object[0]
 
     return true_grid_score
@@ -95,7 +95,7 @@ def grid_score_shuffle(self, occupancy_map: np.ndarray, arena_size: tuple, ts: n
     for element in shuffled_spikes:
         rate_map_smooth, _ = rate_map(pos_x, pos_y, pos_t, arena_size, element[0], element[1], kernlen, std)
         autocorr_map = autocorrelation(rate_map_smooth,pos_x,pos_y,arena_size)
-        grid_score_object = grid_score(autocorr_map)
+        grid_score_object = opexebo_grid_score(autocorr_map)
 
         # Populate the excel sheet with the scores
         if s != None and row_index != None and cell_number != None:

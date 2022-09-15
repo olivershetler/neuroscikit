@@ -26,7 +26,7 @@ def make_seconds_index_from_rate(sample_length, sample_rate):
 
     time = []
 
-    for i in range(sample_length):
+    for i in range(start_time, int(sample_length*sample_rate)):
         time.append(i*dt)
 
     return time

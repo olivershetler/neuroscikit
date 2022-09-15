@@ -1,7 +1,7 @@
 import numpy as np
 from opexebo.general import shuffle
 
-def shuffle_spikes(self, ts: np.ndarray, pos_x: np.ndarray,
+def shuffle_spikes(ts: np.ndarray, pos_x: np.ndarray,
                    pos_y: np.ndarray, pos_t: np.ndarray) -> list:
 
     '''
@@ -35,9 +35,6 @@ def shuffle_spikes(self, ts: np.ndarray, pos_x: np.ndarray,
             index = np.abs(pos_t - time).argmin()
             spike_x[0][j] = pos_x[index]
             spike_y[0][j] = pos_y[index]
-
-        # Emit shuffle progress for progress bar in ShuffleWindow
-        self.signals.progress.emit(i)
 
         shuffled_spike_xy[0] = spike_x
         shuffled_spike_xy[1] = spike_y
