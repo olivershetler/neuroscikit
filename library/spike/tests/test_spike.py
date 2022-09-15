@@ -1,4 +1,3 @@
-from audioop import avg
 import os
 import sys
 import numpy as np
@@ -8,7 +7,8 @@ sys.path.append(PROJECT_PATH)
 
 from core.core_utils import make_seconds_index_from_rate
 from core.data_study import Animal
-from library.spike import sort_cell_spike_times, find_burst, avg_spike_burst
+from library.spike import sort_cell_spike_times, find_burst, avg_spike_burst, histogram_ISI
+from library.cluster import create_features
 
 def make_1D_timestamps(T=2, dt=0.02):
     time = np.arange(0,T,dt)
@@ -98,11 +98,29 @@ def test_avg_spike_burst():
 
     assert type(avg_burst) == float
 
+def test_histogram_ISI():
+    T = 2
+    dt = .02
+    timebase = make_seconds_index_from_rate(T, 1/dt)
+    ch_count = 8
+    samples_per_wave = 50
+
+    spike_times = make_1D_timestamps()
+    waveforms = make_waveforms(ch_count, len(spike_times), samples_per_wave)
+    FD = create_features(np.array(waveforms))
+
+    cluster_labels = make_clusters(timebase, 10)
+
+    ISI_dict = histogram_ISI(np.array(spike_times), FD, cluster_labels, 1)
+
+    assert type(ISI_dict) == dict
+
 
 
 if __name__ == '__main__':
     test_sort_cell_spike_times()
     test_find_burst()
     test_avg_spike_burst()
+    test_histogram_ISI()
 
 
