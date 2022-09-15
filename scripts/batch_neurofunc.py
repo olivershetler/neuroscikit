@@ -17,7 +17,7 @@ from PIL import Image
 import numpy as np
 from matplotlib import cm
 
-def batch_rate_maps(study: Study, tasks: dict):
+def batch_neurofunc(study: Study, tasks: dict):
     """
     Computes rate maps across all animals, sessions, cells in a study.
 
@@ -48,7 +48,7 @@ def batch_rate_maps(study: Study, tasks: dict):
             # Standard deviation size
             std = int(0.2*kernlen)
 
-            occupancy_map, _, _ = occupancy_map(pos_x, pos_y, pos_t, arena_size, kernlen, std)
+            occ_map, _, _ = occupancy_map(pos_x, pos_y, pos_t, arena_size, kernlen, std)
 
             k = 0
             for cell in animal.agg_cell_keys[c]:
@@ -59,21 +59,21 @@ def batch_rate_maps(study: Study, tasks: dict):
 
                 rate_map_smooth, rate_map_raw = rate_map(pos_x, pos_y, pos_t, arena_size, spikex, spikey, kernlen, std)
 
-                ratemap_stats_dict  = rate_map_stats(rate_map_smooth, occupancy_map)
+                ratemap_stats_dict  = rate_map_stats(rate_map_smooth, occ_map)
                 
 
                 autocorr_map = autocorrelation(rate_map_smooth, pos_x, pos_y, arena_size)
 
                 cell_stats = {}
                 cell_stats['rate_map_smooth'] = rate_map_smooth
-                cell_stats['occupancy_map'] = occupancy_map
+                cell_stats['occupancy_map'] = occ_map
                 cell_stats['rate_map_raw'] = rate_map_raw
 
                 if tasks['binary_map']:
-                    binary_map = binary_map(rate_map_smooth)
-                    binary_map_im = Image.fromarray(np.uint8(binary_map*255))
-                    cell_stats['binary_map'] = binary_map
-                    cell_stats['binary_map_im'] = binary_map_im
+                    binmap = binary_map(rate_map_smooth)
+                    binmap_im = Image.fromarray(np.uint8(binmap*255))
+                    cell_stats['binary_map'] = binmap
+                    cell_stats['binary_map_im'] = binmap_im
 
                 if tasks['autocorrelation_map']:
                     cell_stats['autocorr_map'] = autocorr_map
@@ -111,13 +111,13 @@ def batch_rate_maps(study: Study, tasks: dict):
                     cell_stats['hd_hist'] = hd_hist
 
                 if tasks['grid_score']:
-                    true_grid_score = grid_score(occupancy_map, spiket, pos_x, pos_y, pos_t, arena_size, spikex, spikey, kernlen, std)
+                    true_grid_score = grid_score(occ_map, spiket, pos_x, pos_y, pos_t, arena_size, spikex, spikey, kernlen, std)
                     cell_stats['grid_score'] = true_grid_score
 
                 if tasks['border_score']:
                     if not tasks['binary_map']:
-                        binary_map = binary_map(rate_map_smooth)
-                    b_score = border_score(binary_map, rate_map_smooth)
+                        binmap = binary_map(rate_map_smooth)
+                    b_score = border_score(binmap, rate_map_smooth)
                     cell_stats['b_score_top'] = b_score[0]
                     cell_stats['b_score_bottom'] = b_score[1]
                     cell_stats['b_score_left'] = b_score[2]

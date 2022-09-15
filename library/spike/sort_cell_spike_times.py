@@ -27,6 +27,7 @@ def sort_cell_spike_times(animal: Animal):
     sorted_waveforms = [[] for i in range(len(spike_times))]
     good_cells = [[] for i in range(len(spike_times))]
     good_sorted_waveforms = [[] for i in range(len(spike_times))]
+    good_sorted_label_ids = [[] for i in range(len(spike_times))]
 
     for i in range(len(spike_times)):
         labels = np.unique(cluster_labels[i])
@@ -47,8 +48,9 @@ def sort_cell_spike_times(animal: Animal):
                 empty_cell = j + 1
         for j in range(1,empty_cell,1):
             good_cells[i].append(cells[i][j])
+            good_sorted_label_ids[i].append(j)
             good_sorted_waveforms[i].append(sorted_waveforms[i][j])
 
-    animal.add_sorted_data(good_cells, good_sorted_waveforms)
+    animal.add_sorted_data(good_cells, good_sorted_waveforms, good_sorted_label_ids)
 
     # return good_cells, good_sorted_waveforms

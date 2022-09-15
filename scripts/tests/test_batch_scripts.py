@@ -33,14 +33,11 @@ from core.core_utils import (
     make_seconds_index_from_rate
 )
 
-from prototypes.wave_form_sorter.sort_waveforms_by_session import sort_waveforms_by_session
-from prototypes.wave_form_sorter.match_waveforms_by_session import match_waveforms_by_session
 
-from scripts.batch_ratemaps import batch_rate_maps
+from scripts import batch_rate_maps, batch_spike_analysis
 
-
-def test_batch_ratemaps():
-    print('Running Prototype')
+def make_study():
+    print('Running Batch Test')
 
     prototype_dir = os.getcwd()
     print(prototype_dir)
@@ -184,8 +181,10 @@ def test_batch_ratemaps():
 
     # still need to update cell references after matchings
 
-    pos_x_1, pos_y_1, pos_t_1, arena_size_1 = grab_position_data(session1_pos_path, 511)
-    pos_x_2, pos_y_2, pos_t_2, arena_size_2 = grab_position_data(session2_pos_path, 511)
+    pos_dict_1 = grab_position_data(session1_pos_path, 511)
+    pos_x_1, pos_y_1, pos_t_1, arena_size_1 = pos_dict_1['x'], pos_dict_1['y'], pos_dict_1['time'], (pos_dict_1['arena_width'], pos_dict_1['arena_height'])
+    pos_dict_2 = grab_position_data(session2_pos_path, 511)
+    pos_x_2, pos_y_2, pos_t_2, arena_size_2 = pos_dict_2['x'], pos_dict_2['y'], pos_dict_2['time'], (pos_dict_2['arena_width'], pos_dict_2['arena_height'])
 
     s1 = {
         'pos_x': pos_x_1,
@@ -209,15 +208,33 @@ def test_batch_ratemaps():
 
     animal.add_spatial_stat(seskeys, animal_spatial)
 
+    return study
+
+
+def test_batch_neurofunc():
+    study = make_study()
+
     tasks = {}
     keys = ['binary_map', 'autocorrelation_map', 'sparsity', 'selectivity', 'information', 'coherence', 'speed_score', 'hd_score', 'tuning_curve', 'grid_score', 'border_score', 'field_sizes']
     for key in keys:
         tasks[key] = True
 
-
     batch_rate_maps(study, tasks)
 
-    print(study.animals[0].stat_dict)
+    assert study.animals[0].stat_dict != None
+
+def test_batch_spike_analysis():
+    study = make_study()
+
+    # tasks = {}
+    # keys = ['binary_map', 'autocorrelation_map', 'sparsity', 'selectivity', 'information', 'coherence', 'speed_score', 'hd_score', 'tuning_curve', 'grid_score', 'border_score', 'field_sizes']
+    # for key in keys:
+    #     tasks[key] = True
+
+    batch_spike_analysis(study)
+
+    assert study.animals[0].stat_dict != None
 
 if __name__ == '__main__':
-    test_batch_ratemaps()
+    test_batch_neurofunc()
+    test_batch_spike_analysis()

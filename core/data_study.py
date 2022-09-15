@@ -74,10 +74,12 @@ class Animal():
         self.agg_sorted_events = None
         self.agg_sorted_waveforms = None
         self.agg_cell_keys = None
+        self.agg_sorted_labels = None
 
-    def add_sorted_data(self, good_events, good_waveforms):
+    def add_sorted_data(self, good_events, good_waveforms, good_labels):
         self.agg_sorted_events = good_events
         self.agg_sorted_waveforms = good_waveforms
+        self.agg_sorted_labels = good_labels
         self.agg_cell_keys = []
         for ses in good_events:
             self.agg_cell_keys.append([i for i in range(0, len(ses))])
@@ -180,7 +182,6 @@ class Animal():
     def add_single_cell_stat(self, session, cell, cell_stats):
         self.get_stat_dict()
         self.stat_dict['cell_stats'][session][cell] = cell_stats
-
 
     def add_cell_stat(self, sessions, cells, cell_stats):
         self.get_stat_dict()
