@@ -2,7 +2,7 @@ import os, sys
 
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
- 
+
 
 
 from core.data_study import (
@@ -10,11 +10,11 @@ from core.data_study import (
     Study
 )
 
-from prototypes.wave_form_sorter.sort_cell_spike_times import sort_cell_spike_times
-from prototypes.wave_form_sorter.average_cell_waveforms import average_cell_waveforms
-from prototypes.wave_form_sorter.get_peak_amplitudes import get_peak_amplitudes
-from prototypes.wave_form_sorter.get_spike_statistics import get_spike_statistics
-from prototypes.wave_form_sorter.get_possible_orders import get_possible_orders
+from _prototypes.wave_form_sorter.sort_cell_spike_times import sort_cell_spike_times
+from _prototypes.wave_form_sorter.neuron_waveform_template import waveform_template
+from _prototypes.wave_form_sorter.get_peak_amplitudes import get_peak_amplitudes
+from _prototypes.wave_form_sorter.get_spike_statistics import get_spike_statistics
+from _prototypes.wave_form_sorter.get_possible_orders import get_possible_orders
 
 def sort_waveforms_by_session(animal: Animal, study: Study):
     """
@@ -22,7 +22,7 @@ def sort_waveforms_by_session(animal: Animal, study: Study):
     """
     cells, sorted_waveforms = sort_cell_spike_times(animal.agg_spike_times, animal.agg_cluster_labels, animal.agg_waveforms)
 
-    waveforms = average_cell_waveforms(sorted_waveforms)
+    average_waveforms, _, _ = waveform_template(sorted_waveforms)
 
     agg_waveform_dict = {}
     for i in range(len(sorted_waveforms)):

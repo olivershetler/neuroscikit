@@ -1,6 +1,6 @@
 import numpy as np
 
-from prototypes.wave_form_sorter.detect_peaks import detect_peaks
+from _prototypes.wave_form_sorter.detect_peaks import detect_peaks
 
 
 def get_spike_statistics(cell_waveforms, sample_rate):

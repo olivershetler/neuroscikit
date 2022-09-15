@@ -6,7 +6,7 @@ from library.spike.find_burst import find_burst
 
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
- 
+
 
 from core.data_study import Study, Animal
 
@@ -31,7 +31,7 @@ def batch_spike_analysis(study: Study):
     for animal in animals:
 
         sort_cell_spike_times(animal)
-        
+
         c = 0
         for session in animal.session_keys:
 
@@ -67,14 +67,8 @@ def batch_spike_analysis(study: Study):
 
                 animal.add_single_cell_stat(session, cell, cell_stats)
                 k += 1
-            
+
             c += 1
-            
-
-
-              
-
-           
 
 
 
