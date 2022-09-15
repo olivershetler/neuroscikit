@@ -11,9 +11,10 @@ from library.cluster.L_ratio import L_ratio
 from library.cluster.wave_PCA import wave_PCA
 from library.cluster.feature_wave_PCX import feature_wave_PCX
 from library.cluster.feature_energy import feature_energy
+from library.cluster.create_features import create_features
 
 
-__all__ = ['mahal', 'isolation_distance', 'L_ratio', 'wave_PCA', 'feature_wave_PCX', 'feature_energy']
+__all__ = ['mahal', 'isolation_distance', 'L_ratio', 'wave_PCA', 'feature_wave_PCX', 'feature_energy', 'create_features']
 
 if __name__ == '__main__':
     pass

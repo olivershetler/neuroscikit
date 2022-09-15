@@ -4,7 +4,7 @@ import sys
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
 
-from library.maps import feature_wave_PCX, feature_energy
+from library.cluster import feature_wave_PCX, feature_energy
 
 import numpy as np
 
