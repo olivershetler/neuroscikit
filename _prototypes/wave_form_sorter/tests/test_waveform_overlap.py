@@ -5,7 +5,7 @@ import numpy as np
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
 
-from _prototypes.wave_form_sorter.wave_form_sorter.waveform_overlap import waveform_overlap
+from _prototypes.wave_form_sorter.waveform_overlap import waveform_overlap
 
 def test_waveform_overlap():
     """

@@ -5,11 +5,10 @@ from re import S
 import sys
 import wave
 
-<<<<<<< HEAD
 from _prototypes.wave_form_sorter.sort_cell_spike_times import sort_cell_spike_times
-=======
+
 # from prototypes.wave_form_sorter.sort_cell_spike_times import sort_cell_spike_times
->>>>>>> 55a8ff16fe9d7e74f0eb85c5dbd71754a368c0d3
+
 
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
