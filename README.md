@@ -5,8 +5,47 @@ This is the initial branch of the main pipeline for data analysis at the Hussein
 
 There are four main software modules called `core`, `library`, `scripts` and `widgets`. There are also several additional bridge / firmware modules that are all named by the convention `x_{}` (e.g. `x_io`, `x_cli`, etc.).
 
+### io (input/output)
+In the io layer, there are submodules for reading and writing different data formats, and tools for getting data from users. Additionally, there are two modules for creating the data classes Session and Study. These classes serve as a bridge and formatting bottleneck between the io layer and the core data types. They store data in a in a standardized format that is easy to convert into the core data types. This format is isomorphic to dictionaries with keys and contents as outlined below (i.e. every io module must generate a subset of the following keys and contents).
+
+#### Session class intake dictionary
+
+- animal
+    - animal_id
+    - species
+    - sex
+    - age
+    - weight
+    - genotype
+    - animal_notes
+- devices
+    - implants
+        - implant_id
+        - implant_type
+            - tetrode
+            - tetrode_array_{int}
+            - sillicone_shank
+            - ...
+        - implant_geometry
+            - channel_{int}: (x, y, z)
+            - ...
+        - implant_data
+            - sample_rate OR irregular_sampling: True
+            - event_times: [float]
+            - event_labels: [string]
+            - channel_{int}: [float]
+            - units: string
+            - 
+    - axona_led_tracker
+        - led_tracker_id
+        - led_location
+        - led_position_data: {`time`:float, `x`:float, `y`:float}
+
+#### Study class intake dictionary
+-
+
 ### core
-The `core` module contains the canonical data types and functions for managing them. This module has no dependencies other than the version of python being used. Some of the data structures are inspired by the [Neurodata Without Borders](https://www.nwb.org/) project, though the code is not directly based on that project.
+The `core` module contains the canonical data types and functions for managing them. This module has no dependencies other than the version of python being used and numpy. Some of the data structures are inspired by the [Neurodata Without Borders](https://www.nwb.org/) project, though the code is not directly based on that project.
 
 ### library
 The `library` module contains data types, classes and functions for exploring, analyzing and visualizing the core data types. Each of these functions does only one thing.
@@ -62,7 +101,7 @@ If you would like to contribute to the project, please read all the guidelines f
 - For class modules, use only a handfull of abstract classes per module (preferably no more than one).
 
 ### External Dependencies
-- `core` should not depend on any external libraries.
+- `core` should not depend on any external libraries except numpy.
 - `library` should depend only on `core` and a few A+ safe libraries (see below).
 - `scripts` and `widgets` should depend on `library`, `core` and A safe libraries.
 - The `x_{}` modules can have dependencies on any framework or firmware that is reasonably well maintained.

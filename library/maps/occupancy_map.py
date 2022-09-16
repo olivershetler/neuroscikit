@@ -3,14 +3,14 @@ import sys
 
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
- 
+
 
 import cv2
-import numpy as np 
+import numpy as np
 from scipy import signal
 # from library.maps.map_utils import _compute_resize_ratio, _interpolate_matrix, _gkern
 
-def occupancy_map(pos_x: np.ndarray, pos_y: np.ndarray, pos_t: np.ndarray, arena_size: tuple, kernlen: int, std: int) -> np.ndarray:
+def occupancy_map(Arena, AnimalPosition) -> np.ndarray:
 
     '''
         Computes the position, or occupancy map, which is a 2D numpy array

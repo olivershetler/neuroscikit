@@ -3,16 +3,14 @@ import sys
 
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
- 
+
 
 import numpy as np
 import cv2
 from library.maps.occupancy_map import occupancy_map
 from library.maps.spike_map import spike_map
 
-def rate_map(pos_x: np.ndarray, pos_y: np.ndarray, pos_t: np.ndarray,
-                arena_size: tuple, spikex: np.ndarray, spikey: np.ndarray,
-                kernlen: int, std: int) -> np.ndarray:
+def rate_map(SpikeTrain, BehaviorSpace, PositionData2D) -> np.ndarray:
 
     '''
         Computes a 2D array encoding neuron spike events in 2D space, based on where

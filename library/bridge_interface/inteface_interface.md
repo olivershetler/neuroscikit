@@ -1,0 +1,1 @@
+This module is for defining functions that extract data from the core data types and reformat them into data that can be taken in by library classes. The reason for these stand-alone functions is to limit the changes needed on the data classes both in core _and_ in the library module.
