@@ -5,15 +5,16 @@ import numpy as np
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
 
-from _prototypes.wave_form_sorter.get_peak_amplitudes import get_peak_amplitudes
-
+from _prototypes.wave_form_sorter.get_spike_width import get_spike_statistics
 
 def make_waveforms(channel_count, spike_count, samples_per_wave):
-    waveforms = np.zeros((channel_count, spike_count, samples_per_wave))
+    waveforms = np.zeros((spike_count, channel_count, samples_per_wave))
 
     for i in range(channel_count):
         for j in range(samples_per_wave):
-            waveforms[i,:,j] = np.random.randint(-20,20,size=spike_count).tolist()
+            waveforms[:,i,j] = np.random.randint(-20,20,size=spike_count).tolist()
+            for k in range(10):
+                waveforms[i,:,j] += np.random.rand() 
 
     return waveforms.tolist()
 
@@ -30,26 +31,17 @@ def make_1D_timestamps(T=2, dt=0.02):
 
 
 
-def test_get_peak_ampltiude():
 
+def test_get_spike_statistics():
     spike_times = make_1D_timestamps()
-    ch_count = 8
+    ch_count = 4
     samples_per_wave = 50
     waveforms = make_waveforms(ch_count, len(spike_times), samples_per_wave)
 
+    waveform_dict = get_spike_statistics(np.array(waveforms), 50)
 
-    peak, peak_ids = get_peak_amplitudes(waveforms)
-    assert type(peak) == list
-    assert type(peak_ids) == list
-    assert type(peak[0]) == list
-    assert type(peak_ids[0]) == list
-    assert type(peak[0][0]) == list
-    assert type(peak_ids[0][0]) == list
-            
-
-
-
-
+    assert type(waveform_dict) == dict
+    assert 'pp_amp' in waveform_dict.keys()
 
 if __name__ == '__main__':
-    test_get_peak_ampltiude()
+    test_get_spike_statistics()

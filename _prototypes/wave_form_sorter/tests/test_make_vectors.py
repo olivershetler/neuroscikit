@@ -8,6 +8,7 @@ sys.path.append(PROJECT_PATH)
 from core.data_study import Study, Animal
 from core.core_utils import make_seconds_index_from_rate
 from _prototypes.wave_form_sorter.sort_waveforms_by_session import sort_waveforms_by_session
+from _prototypes.wave_form_sorter.make_vectors import make_vectors
 
 
 def make_1D_timestamps(T=2, dt=0.02):
@@ -39,7 +40,7 @@ def make_clusters(timestamps, cluster_count):
     return cluster_labels
 
 
-def test_sort_waveforms_by_session():
+def test_make_vectors():
 
     waves = []
     spike_times = make_1D_timestamps()
@@ -92,9 +93,12 @@ def test_sort_waveforms_by_session():
 
     agg_waveform_dict = sort_waveforms_by_session(animal, study)
 
-    assert type(agg_waveform_dict) == dict
-    assert len(agg_waveform_dict['session_1']) == 2
+    vectors = make_vectors(agg_waveform_dict)
+
+    assert type(vectors) == list
+    assert type(vectors[0]) == list 
+    assert len(vectors[0]) == 2
 
 
 if __name__ == '__main__':
-    test_sort_waveforms_by_session()
+    test_make_vectors()

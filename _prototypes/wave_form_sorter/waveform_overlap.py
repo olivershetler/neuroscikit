@@ -52,4 +52,3 @@ def _interval_overlap_proportion(interval_a_ij, interval_b_ij):
 
     return overlap_proportion
 
-
