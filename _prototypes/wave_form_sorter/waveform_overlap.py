@@ -33,4 +33,3 @@ def _interval_overlap_proportion(interval_a_i, interval_b_i):
 
     return intersection_size / union_size
 
-

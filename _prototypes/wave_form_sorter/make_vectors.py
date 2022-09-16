@@ -8,19 +8,19 @@ def make_vectors(agg_waveform_dict: dict):
 
     agg_spike_amp, agg_spike_width, agg_peak_channel = aggregate_amp_width(agg_waveform_dict)
 
-    vectors = [[] for i in range(len(spike_amps))]
+    vectors = [[] for i in range(len(agg_spike_amp))]
 
     tet_x_coord = [-1,1,1,-1]
     tet_y_coord = [1,1,-1,-1]
 
-    for i in range(len(spike_amps)):
-        ses_amps = spike_amps[i]
+    for i in range(len(agg_spike_amp)):
+        ses_amps = agg_spike_amp[i]
         mn = np.mean(ses_amps)
         std = np.std(ses_amps)
         for j in range(len(ses_amps)):
             cell_amps = (ses_amps[j] - mn)/std
-            cell_widths = spike_widths[i][j]
-            cell_peak = peak_channels[i][j]
+            cell_widths = agg_spike_width[i][j]
+            cell_peak = agg_peak_channel[i][j]
 
             loc_x = np.sum(np.array(tet_x_coord) * np.array(cell_amps))
             loc_y = np.sum(np.array(tet_y_coord) * np.array(cell_amps))
