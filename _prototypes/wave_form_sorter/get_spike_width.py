@@ -14,7 +14,6 @@ def get_spike_statistics(cell_waveforms, sample_rate):
     pp_amp = np.zeros((cell_waveforms.shape[0], cell_waveforms.shape[1]))
     pt_width = np.zeros_like(pp_amp)
     peak_cell = np.zeros_like(pp_amp)
-    # aup = np.zeros_like(pp_amp)
 
     reshaped_waveforms = np.zeros((cell_waveforms.shape[1], cell_waveforms.shape[0], cell_waveforms.shape[2]))
     for i in range(len(cell_waveforms)):
@@ -25,7 +24,6 @@ def get_spike_statistics(cell_waveforms, sample_rate):
     for chan_index, channel in enumerate(cell_waveforms):
 
         for spike_index, spike in enumerate(channel):
-            # aup[spike_index, chan_index] = AUP(spike, t_peak)
 
             t = ((10 ** 6) / sample_rate) * np.arange(0, len(spike))
 
@@ -45,12 +43,6 @@ def get_spike_statistics(cell_waveforms, sample_rate):
                 min_t = t[min_ind]  # converting the index to a time value
                 peak_cell[spike_index, :] = np.array([np.amax(pks), locs_ts[max_ind[0]], min_val, min_t])
 
-            # if sum(np.isnan(peak_cell[:, 0])) != 0:
-            #     print('waveform with no peaks')
-            #     print(chan_index, locs)
-            #     print(spike_index, spike)
-            #     print(channel[spike_index])
-            #     sto()
 
             pp_amp[:, chan_index] = peak_cell[:, 0] - peak_cell[:, 2]
             pt_width[:, chan_index] = peak_cell[:, 1] - peak_cell[:, 3]
@@ -59,7 +51,6 @@ def get_spike_statistics(cell_waveforms, sample_rate):
 
         avg_pp_amp = np.zeros((1, len(cell_waveforms)))
         avg_pt_width = np.zeros_like(avg_pp_amp)
-        # avg_aup = np.zeros_like(avg_pp_amp)
 
         for waveform_index, waveform in enumerate(avg_waveform):
             locs = detect_peaks(waveform, edge='both', threshold=0)
@@ -73,7 +64,7 @@ def get_spike_statistics(cell_waveforms, sample_rate):
             min_t = t[min_ind]  # converting the index to a time value
             avg_pp_amp[0, waveform_index] = max_val - min_val
             avg_pt_width[0, waveform_index] = min_t - max_t
-            # avg_aup[0, waveform_index] = AUP(waveform, t_peak)
+
     # ------------ ended avg_waveform calculations ------------------- #
     best_channel = np.where(avg_pp_amp == np.amax(avg_pp_amp))[1][0]
 

@@ -5,7 +5,7 @@ from re import S
 import sys
 import wave
 
-from prototypes.wave_form_sorter.sort_cell_spike_times import sort_cell_spike_times
+from _prototypes.wave_form_sorter.sort_cell_spike_times import sort_cell_spike_times
 
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
@@ -48,7 +48,7 @@ class Study():
         return self.animal_ids
 
     def get_animal(self, id):
-        return self.animals[id] 
+        return self.animals[id]
 
     def get_animal_stats(self):
         if self.agg_stat_dict == None:
@@ -68,7 +68,7 @@ class Animal():
     """
     def __init__(self, input_dict: dict):
         self.sessions = input_dict
-        self.timebase, self.agg_spike_times, self.agg_cluster_labels, self.agg_events, self.agg_waveforms, self.session_count, self.id, self.session_keys = self._read_input_dict() 
+        self.timebase, self.agg_spike_times, self.agg_cluster_labels, self.agg_events, self.agg_waveforms, self.session_count, self.id, self.session_keys = self._read_input_dict()
         self.stat_dict = None
         self.spatial_dict = None
         self.agg_sorted_events = None
@@ -156,7 +156,7 @@ class Animal():
             self.stat_dict['animal_stats'] = {} # --> anmal stats
             self.stat_dict['cell_stats'] = {} # session 1, session 2, ... --> cell 1, cell 2, ... --> cell stats
             c = 0
-            for session in self.session_keys: 
+            for session in self.session_keys:
                 self.stat_dict['session_stats'][session] = {}
                 self.stat_dict['cell_stats'][session] = {}
                 for cell in self.agg_cell_keys[c]:
@@ -176,7 +176,7 @@ class Animal():
         self.stat_dict['session_stats'] = {} # --> session 1, session 2, etc.. --> session stats
         self.stat_dict['animal_stats'] = {} # --> anmal stats
         self.stats_dict['cell_stats'] = {} # session 1, session 2, ... --> cell 1, cell 2, ... --> cell stats
-        for session in self.sessions: 
+        for session in self.sessions:
             self.stat_dict['session_stats'][session] = {}
 
     def add_single_cell_stat(self, session, cell, cell_stats):
@@ -205,26 +205,26 @@ class Animal():
     # def add_session_stat(self, session, statkey, statval, multiSession=False, multiStats=False):
     #     self.stat_dict = self.get_stat_dict()
     #     if multiSession == False and multiStats == False:
-    #         self.stat_dict['session_stats'][session][statkey] = statval 
+    #         self.stat_dict['session_stats'][session][statkey] = statval
     #     elif multiSession == True and multiStats == False:
     #         assert type(session) == list, 'multiSession is true but only single session id provided'
     #         for i in range(len(session)):
-    #             self.stat_dict['session_stats'][session[i]][statkey] = statval 
+    #             self.stat_dict['session_stats'][session[i]][statkey] = statval
     #     elif multiSession == True and multiStats == True:
     #         assert len(session) == len(statkey), 'multiSEssion and multiStats true so session, statkey and stataval need to be lists of same len'
     #         assert len(statkey) == len(statval)
     #         for i in range(len(session)):
     #             self.stat_dict['session_stats'][session[i]][statkey[i]] = statval[i]
-    #     elif multiSession == False and multiStats == True: 
+    #     elif multiSession == False and multiStats == True:
     #         assert type(statkey) == list, 'multiStats is true but only single stat key provided'
     #         assert len(statkey) == len(statval), 'multiStats is true but only single stat val provided'
     #         for i in range(len(statkey)):
     #             self.stat_dict['session_stats'][session][statkey[i]] = statval[i]
-        
+
     def add_animal_stat(self, animal_stats):
         self.stat_dict = self.get_stat_dict()
         self.stat_dict['animal_stats'] = animal_stats
-    
+
 
 
 
@@ -241,13 +241,13 @@ class Event():
         else:
             self.main_ind = None
             self.main_signal = None
- 
+
     def set_label(self, label):
         self.event_label = label
 
     def get_signal(self, ind):
         return self.waveforms[ind]
-    
+
     def get_peak_signal(self):
         if self.main_ind == 0:
             self.main_ind, self.main_signal = self._set_peak()
@@ -264,7 +264,7 @@ class Event():
         assert curr != 0, 'There is no 0 channel, make sure max(abs(channel waveform)) is not 0'
         return curr, self.event_signal[curr-1]
 
-    
+
 
 class Spike(Event):
     def __init__(self, spike_time: float, cluster_label: int, waveforms: list):
@@ -283,7 +283,7 @@ class Spike(Event):
     # def get_single_channel_waveform(self, id):
     #     assert id in [1,2,3,4,5,6,7,8], 'Channel number must be from 1 to 8'
     #     return self.waveforms[id-1]
-    
+
     # # get waveform with largest positive or negative deflection (peak or trough, absolute val)
     # def get_peak_channel(self):
     #     if self._main_channel == 0:

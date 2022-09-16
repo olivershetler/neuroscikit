@@ -35,6 +35,7 @@ If you would like to contribute to the project, please read all the guidelines f
 ### Style
 
 - Generally follow the [PEP 8](https://peps.python.org/pep-0008/) style conventions.
+- Additionally, please name functions and classes in such a way that there are no names that are substrings of other names. For example, `get_waveform` and `get_waveform_from_file` are not allowed. Instead, use something like `get_waveform` and `waveform_from_file_path`. This is to allow global search and replace when changing the name of a function or class.
 - When importing modules:
     - Group all the internal dependencies together at the top under the header "# Internal Dependencies".
     - Group all the external dependencies together below header the internal dependencies.
