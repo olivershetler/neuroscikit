@@ -3,7 +3,7 @@ import sys
 
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
- 
+
 
 import numpy as np
 import cv2
@@ -11,8 +11,8 @@ from PIL import Image
 from library.maps.map_utils import _compute_resize_ratio, _interpolate_matrix
 from opexebo.analysis import autocorrelation as opexebo_autocorrelation
 
-def autocorrelation(ratemap: np.ndarray, pos_x: np.ndarray, pos_y: np.ndarray, arena_size: tuple) -> np.ndarray:
 
+def autocorrelation(ratemap: np.ndarray, pos_x: np.ndarray, pos_y: np.ndarray, arena_size: tuple) -> np.ndarray:
     '''
         Compute the autocorrelation map from ratemap
 
@@ -35,6 +35,7 @@ def autocorrelation(ratemap: np.ndarray, pos_x: np.ndarray, pos_y: np.ndarray, a
     autocorr_OPEXEBO = _interpolate_matrix(autocorr_OPEXEBO, cv2_interpolation_method=cv2.INTER_NEAREST) #_resize_numpy2D(autocorr_OPEXEBO, x_resize, y_resize)
 
     return autocorr_OPEXEBO
+
 
 def _resize_numpy2D(array: np.ndarray, x: int, y: int) -> np.ndarray:
 
