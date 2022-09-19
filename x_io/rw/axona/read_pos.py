@@ -148,7 +148,7 @@ def _get_position(pos_fpath, ppm, method='', flip_y=True):
     _get_position function:
     ---------------------------------------------
     variables:
-    -pos_fpath: the full path (C:\example\session.pos)
+    -pos_fpath: the full path (C:/example/session.pos)
 
     output:
     t: column numpy array of the time stamps
@@ -230,7 +230,7 @@ def _get_position(pos_fpath, ppm, method='', flip_y=True):
         if method == 'raw':
             return x, y, t, sample_rate
 
-        t = np.divide(t, np.float(timebase))  # converting the frame number from Axona to the time value
+        t = np.divide(t, np.float64(timebase))  # converting the frame number from Axona to the time value
 
         # values that are NaN are set to 1023 in Axona's system, replace these values by NaN's
 
