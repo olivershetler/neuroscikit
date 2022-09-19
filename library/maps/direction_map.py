@@ -29,12 +29,12 @@ def _smooth(array: np.ndarray, window: int) -> np.ndarray:
 
     return smoothed_array
 
-def _get_head_direction(pos_x: np.ndarray, pos_y: np.ndarray) -> np.ndarray:
+def _get_head_direction(x: np.ndarray, y: np.ndarray) -> np.ndarray:
 
     '''
         Will compute the head direction angle of subject over experiemnt.
         Params:
-            pos_x, pos_y (np.ndarray):
+            x, y (np.ndarray):
                 Arrays of x and y coordinates.
 
         Returns:
@@ -50,11 +50,11 @@ def _get_head_direction(pos_x: np.ndarray, pos_y: np.ndarray) -> np.ndarray:
     last_angle = 0      # Keep track of the most previous computed angle
     angles = []         # Will accumulate angles as they are computed
 
-    # Iterate over the pos_x and pos_y points
-    for i in range(len(pos_x)):
+    # Iterate over the x and y points
+    for i in range(len(x)):
 
         # Grab the current point
-        current_point = [float(pos_x[i]), float(pos_y[i])]
+        current_point = [float(x[i]), float(y[i])]
 
         # If the last point is the same as the current point
         if (last_point[0] == current_point[0]) and (last_point[1] == current_point[1]):
@@ -86,16 +86,15 @@ def _get_head_direction(pos_x: np.ndarray, pos_y: np.ndarray) -> np.ndarray:
 
     return angles
 
-def spatial_tuning_curve(pos_x: np.ndarray, pos_y: np.ndarray, pos_t: np.ndarray,
-                         spiket: np.ndarray, smoothing: int) -> tuple:
+def spatial_direction_tuning_curve(x: np.ndarray, y: np.ndarray, t: np.ndarray, spike_times: np.ndarray, smoothing: int) -> tuple:
 
     '''
         Compute a polar plot of the average directional firing of a neuron.
 
         Params:
-            pos_x, pos_y, pos_t (np.ndarray):
+            x, y, t (np.ndarray):
                 Arrays of x and y coordinates, and timestamps
-            spiket (np.ndarray):
+            spike_times (np.ndarray):
                 Timestamps of when spike events occured
             smoothing (int):
                 Smoothing factor for angle data
@@ -114,18 +113,18 @@ def spatial_tuning_curve(pos_x: np.ndarray, pos_y: np.ndarray, pos_t: np.ndarray
     '''
 
     # Compute head direction angles
-    hd_angles = _get_head_direction(pos_x, pos_y)
+    hd_angles = _get_head_direction(x, y)
 
     # Split angle range (0 to 360) into angle bins
     bin_array = np.linspace(0,2*np.pi,36)
 
     # Compute histogram of occupanices in each bin
-    ang_occ = angular_occupancy(pos_t.flatten(), hd_angles.flatten(), bin_width=10)
+    ang_occ = angular_occupancy(t.flatten(), hd_angles.flatten(), bin_width=10)
 
     # Extract spike angles (i.e angles at which spikes occured)
     spike_angles = []
-    for i in range(len(spiket)):
-        index = np.abs(pos_t - spiket[i]).argmin()
+    for i in range(len(spike_times)):
+        index = np.abs(t - spike_times[i]).argmin()
         spike_angles.append(hd_angles[index])
 
     spike_angles = np.array(spike_angles)
