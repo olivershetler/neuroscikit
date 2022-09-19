@@ -97,7 +97,6 @@ def _integrate_pos_pdfs(pdfs, pos_time):
     return np.trapz(y=pdfs.T, x=pos_time.T)
 
 
-
 def _pos_pdf(pos_x: np.ndarray, pos_y: np.ndarray, pos_time: np.ndarray, smoothing_factor, point: tuple, ):
 
         x, y = point
