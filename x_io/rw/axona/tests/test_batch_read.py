@@ -24,9 +24,15 @@ from x_io.rw.axona.read_tetrode_and_cut import (
     ,load_spike_train_from_paths
 )
 
-from x_io.os_io_utils import (
-    with_open_file
+from x_io.session import (
+    Session,
+    SessionAnimal,
+    SessionDevices,
+    SessionImplant,
+    SessionTracker
 )
+
+from x_io.study import Study
 
 from x_io.rw.axona.read_pos import (
     grab_position_data,
@@ -38,12 +44,12 @@ from x_io.rw.axona.batch_read import (
     _get_session_data,
     _init_session_dict,
     _fill_session_dict,
-    make_session_dict,
+    make_session,
     _grab_tetrode_cut_position_files,
     _init_study_dict,
     _group_session_files,
     batch_sessions,
-    make_study_dict,
+    make_study,
 
 )
 
@@ -136,12 +142,15 @@ def test__fill_session_dict():
     assert 'x' in session_dict['devices']['axona_led_tracker']
     assert 'event_times' in session_dict['devices']['implant']['implant_data']
 
-def test_make_session_dict():
+def test_make_session():
 
-    session_dict = make_session_dict(cut_file, tet_file, pos_file, settings_dict['sessions'][0], settings_dict['ppm'])
+    session = make_session(cut_file, tet_file, pos_file, settings_dict['sessions'][0], settings_dict['ppm'])
 
-    assert 'x' in session_dict['devices']['axona_led_tracker']
-    assert 'event_times' in session_dict['devices']['implant']['implant_data']
+    assert isinstance(session, Session)
+    assert isinstance(session.devices.devices_dict['axona_led_tracker'], SessionTracker)
+    assert isinstance(session.devices.devices_dict['implant'], SessionImplant)
+    assert 'x' in session.devices.devices_dict['axona_led_tracker']._input_dict
+    assert 'event_times' in session.devices.devices_dict['implant'].implant_data
 
 def test__grab_tetrode_cut_position_files():
 
@@ -176,13 +185,15 @@ def test_batch_sessions():
     cut_files, tetrode_files, pos_files = _grab_tetrode_cut_position_files([data_dir], pos_files=[], cut_files=[], tetrode_files=[])
     sorted_files = _group_session_files(cut_files, tetrode_files, pos_files)
 
-    session_dicts = batch_sessions(sorted_files, settings_dict)
+    sessions = batch_sessions(sorted_files, settings_dict)
 
-    assert type(session_dicts) == list 
-    assert len(session_dicts) == 1
-    assert type(session_dicts[0]) == dict
+    assert type(sessions) == list 
+    assert len(sessions) == 1
+    assert isinstance(sessions[0], Session)
 
-def test_make_study_dict():
-    study_dict = make_study_dict([data_dir], settings_dict)
+def test_make_study():
+    study = make_study([data_dir], settings_dict)
 
-    assert len(study_dict['session_1']) > 1
+    assert isinstance(study, Study)
+    assert len(study.sessions) > 0
+    assert isinstance(study._input_dict['session_1'], Session) 

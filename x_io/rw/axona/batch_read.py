@@ -7,6 +7,9 @@ This module will format the data into a dictionary that can be taken in by the S
 import os, sys
 from xml.etree.ElementTree import TreeBuilder
 
+from x_io.session import Session
+from x_io.study import Study
+
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
 
@@ -22,7 +25,7 @@ from x_io.rw.axona.read_pos import (
     grab_position_data,
 )
 
-def make_study_dict(directory, settings_dict: list):
+def make_study(directory, settings_dict: list):
 
     study_dict = _init_study_dict(settings_dict)
 
@@ -30,11 +33,13 @@ def make_study_dict(directory, settings_dict: list):
 
     sorted_files = _group_session_files(cut_files, tetrode_files, pos_files)
 
-    session_dicts = batch_sessions(sorted_files, settings_dict)
+    sessions = batch_sessions(sorted_files, settings_dict)
 
-    study_dict = _fill_study_dict(session_dicts, study_dict)
+    study_dict = _fill_study_dict(sessions, study_dict)
 
-    return study_dict
+    study = Study(study_dict)
+
+    return study
 
 def _grab_tetrode_cut_position_files(paths: list, pos_files=[], cut_files=[], tetrode_files=[], parent_path=None) -> tuple:
 
@@ -83,6 +88,7 @@ def _grab_tetrode_cut_position_files(paths: list, pos_files=[], cut_files=[], te
                 cut_files.append(file)
             elif file[-1:].isdigit() and 'clu' not in file:
                 tetrode_files.append(file)
+
     return cut_files, tetrode_files, pos_files
 
 def _group_session_files(cut_files, tetrode_files, pos_files):
@@ -137,11 +143,11 @@ def _init_study_dict(settings_dicts):
 
     return study_dict
 
-def _fill_study_dict(session_dicts, study_dict):
-    assert len(session_dicts) == len(study_dict)
+def _fill_study_dict(sessions, study_dict):
+    assert len(sessions) == len(study_dict)
 
-    for i in range(len(session_dicts)):
-         study_dict['session_' + str(i+1)] = session_dicts[i]
+    for i in range(len(sessions)):
+         study_dict['session_' + str(i+1)] = sessions[i]
 
     return study_dict
 
@@ -155,21 +161,17 @@ def batch_sessions(sorted_files, settings_dict):
     # assert len(tet_files) == len(pos_files)
     assert len(sorted_files) == len(settings_dict['sessions'])
 
-    session_dicts = []
+    sessions = []
 
     for i in range(len(settings_dict['sessions'])):
 
-        session_dict = make_session_dict(sorted_files[i][2], sorted_files[i][1], sorted_files[i][0], settings_dict['sessions'][i], settings_dict['ppm'])
+        session = make_session(sorted_files[i][2], sorted_files[i][1], sorted_files[i][0], settings_dict['sessions'][i], settings_dict['ppm'])
 
-        session_dicts.append(session_dict)
+        sessions.append(session)
 
-    return session_dicts
-
-
-
-
+    return sessions
      
-def make_session_dict(cut_file, tet_file, pos_file, settings_dict, ppm):
+def make_session(cut_file, tet_file, pos_file, settings_dict, ppm):
     session_dict = _init_session_dict(settings_dict)
 
     implant_data_dict = _get_session_data(cut_file, tet_file, ch_count=settings_dict['channel_count'])
@@ -179,7 +181,9 @@ def make_session_dict(cut_file, tet_file, pos_file, settings_dict, ppm):
 
     session_dict = _fill_session_dict(session_dict, implant_data_dict, pos_dict, settings_dict)
 
-    return session_dict
+    session = Session(session_dict)
+
+    return session
 
 def _fill_session_dict(session_dict, implant_data_dict, pos_dict, settings_dict):
     devices = settings_dict['devices']
