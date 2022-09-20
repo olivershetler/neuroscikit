@@ -1,7 +1,6 @@
 import numpy as np
 
-def filter_pos_by_speed(lower_speed: float, higher_speed: float, pos_v: np.ndarray,
-               pos_x: np.ndarray, pos_y: np.ndarray, pos_t: np.ndarray) -> tuple:
+def filter_pos_by_speed(lower_speed: float, higher_speed: float, pos_v: np.ndarray, pos_x: np.ndarray, pos_y: np.ndarray, pos_t: np.ndarray) -> tuple:
 
     '''
         Selectively filters position values of subject travelling between

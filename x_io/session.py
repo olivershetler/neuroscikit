@@ -18,7 +18,6 @@ class Session():
         self.devices = SessionDevices(devices_dict)
 
 
-
         # for device_dict in device_dicts:
         #     session_device = SessionDevices(device_dict)
         #     self.devices.append(session_device.device)
@@ -43,8 +42,6 @@ class Session():
             print('No devices added to the session')
 
         return animal_dict, devices_dict
-
-
 
 
 class SessionAnimal():
@@ -74,7 +71,7 @@ class SessionAnimal():
 
 class SessionDevices():
     def __init__(self, input_dict: dict):
-        self._input_dict = input_dict 
+        self._input_dict = input_dict
 
         self.devices_dict = self._read_input_dict()
 
@@ -89,7 +86,7 @@ class SessionDevices():
             elif key == 'axona_led_tracker':
                 tracker = SessionTracker(device_dict)
                 devices[key] = tracker
-            
+
             # ... continue with more device types
 
         return devices
@@ -97,7 +94,7 @@ class SessionDevices():
 
 class SessionImplant(SessionDevices):
     def __init__(self, input_dict: dict):
-        self._input_dict = input_dict 
+        self._input_dict = input_dict
 
         self.implant_id, self.implant_geometry, self.implant_type, self.implant_data, self.wire_length, self.wire_length_units, self.implant_units = self._read_input_dict()
 
@@ -106,8 +103,8 @@ class SessionImplant(SessionDevices):
         implant_geometry = None
         implant_type = None
         implant_data = None
-        wire_length = None 
-        wire_length_units = None 
+        wire_length = None
+        wire_length_units = None
         implant_units = None
 
         if 'implant_id' in self._input_dict:
@@ -126,7 +123,7 @@ class SessionImplant(SessionDevices):
             implant_units = self._input_dict['implant_units']
 
         return implant_id, implant_geometry, implant_type, implant_data, wire_length, wire_length_units, implant_units
-        
+
 
 
 class SessionTracker(SessionDevices):
@@ -137,12 +134,12 @@ class SessionTracker(SessionDevices):
 
     def _read_input_dict(self):
         led_tracker_id = None
-        led_location = None 
+        led_location = None
         led_position_data = None
-        x = None 
-        y = None 
-        time = None 
-        arena_height = None 
+        x = None
+        y = None
+        time = None
+        arena_height = None
         arena_width = None
 
         if 'led_tracker_id' in self._input_dict:

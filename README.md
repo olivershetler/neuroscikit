@@ -35,7 +35,7 @@ In the io layer, there are submodules for reading and writing different data for
             - event_labels: [string]
             - channel_{int}: [float]
             - units: string
-            - 
+            -
     - axona_led_tracker
         - led_tracker_id
         - led_location
@@ -133,4 +133,68 @@ If you'd like to propose adding a library to the A Safe or A+ Safe list, please 
 - frequent commits---DO NOT build an entire feature and then commit. This can lead to merge conflicts
 - frequent pulls---pull every time before committing and notify partner if there is a merge conflict (tell them to pause on that module)
 - separate hard to test parts of a class or function from the easy parts
+
+### Contributing to specific modules
+
+#### core
+`core` is the most fundamental module. It should not depend on any other module. It should only contain classes and functions that pertain to basic data types that could conceivably have been read from a file.
+
+When defining new class, please consider the following:
+- Metadata: Are the data in the class metadata for an object that was used in the experiment?
+    - If yes, then the class should be in `core`.
+    - If no, then the class might belong in `library`.
+- Unit Homogenaity: Does the class contain an attriute that contains one principle data structure? Are all the data within the principle attribute of the same unit type?
+    - If yes to both, then the class should be in `core`.
+    - If no, then the class might belong in `library`.
+
+When defining a new function, please consider the following:
+- Does the function operate on a single data type with homogeneous units?
+    - If yes, then the function should be in `core`. It might belong inside the pertainant class.
+    - If no, then the function might belong in `library`.
+
+#### library
+`library` is the module that contains the bulk of the code. It should depend only on `core` and a few A and A+ safe libraries (see above). It contains the data structures and functions that are used to analyze, visualize and derive new data types from the data objects in the `core` module.
+
+When defining new classes, please consider the following:
+    - Does the class combine data from multiple `core` classes?
+        - If yes, then the class should be in `library`.
+        - If no, then the class might belong in `core`.
+    - Does the class or function perform a non-invertable transformation on a single data type and/or does the operation change the units? (e.g. converting locations to speeds or velocities)
+        - If yes, then the class should be in `library`.
+        - If no, then the class might belong in `core`.
+    - Does the class store a single object for a single task?
+        - If yes, then the class should be in `library`.
+        - If no, then the class might belong in `scripts` or `widgets`.
+    - Does the class contain only methods that do not cause side effects? (e.g. no direct manipulation of data; only creation and deletion of data attributes; e.g. no read/write or display methods)
+        - If yes, then the class should be in `library`.
+        - If no, then the class might belong in `scripts` or `widgets`.
+
+When defining new functions, please consider the following:
+    - Does the function perform a single analysis, reformatting or visualization task (without displaying)?
+        - If yes, then the function should be in `library`.
+        - If no, then the function might belong in `scripts` or `widgets`.
+
+#### scripts
+Architecture rules:
+- Horizontal Segregation: Scripts should not depend on each other.
+- Vertical Segregation: Scripts should not depend on `widgets` or any `x_{}` modules.
+- No Global States: Scripts should not have any global states.
+- No Interfaces: Scripts should not contain any adapters or interfaces.
+- One Configuration Dictionary: Scripts should always take in exactly ONE configuration dictionary.
+- Data Structures: Aside from one configuration dictionary, scripts should only take in data structures from the `core` and `library` modules.
+
+When defining new classes or functios in the `scripts` module, please consider the following:
+    - Does the class or function perform a sequence of steps that automate a use case?
+        - If yes, then the class or function should be in `scripts`.
+        - If no, then the class or function might belong in `library` or `widgets`.
+    - Does the class or function require user input only at the beginning of the use case?
+        - If yes, then the class or function should be in `scripts`.
+        - If no, then the class or function might belong in `widgets`.
+
+#### widgets
+When defining new classes in the `widgets` module, please consider the following:
+    - Does the class store part of an abstract user interface (e.g. a `View` or `Controller`)?
+        - If yes, then the class should be in `widgets`.
+        - If no, then the class might belong in `scripts` or `library`.
+    - Does the class contain
 
