@@ -5,7 +5,7 @@ class Workspace():
         pass
 
 
-class StudyData(Workspace):
+class SessionData(Workspace):
     def __init__(self, Session):
         self.session_id = session_id
 
