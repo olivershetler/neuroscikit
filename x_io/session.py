@@ -1,6 +1,67 @@
 
 
 
+class Workspace():
+    def __init__(self):
+        pass
+
+
+class SessionContainer(Workspace):
+    def __init__(self, input_dict: dict):
+        self._input_dict = input_dict
+
+        self.session_data, self.session_metadata = self._read_input_dict()
+
+
+    def _read_input_dict(self):
+        session_data = None
+        session_metadata = None
+
+        if 'session_data' in self._input_dict:
+            session_data = self._input_dict['session_data']
+        else:
+            print('No session data provided')
+
+        if 'session_metadata' in  self._input_dict:
+            session_metadata = self._input_dict['session_metadata']
+        else:
+            print('Mo session metadata provided')
+
+        return session_data, session_metadata
+
+    def get_animal_metadata(self):
+        if 'animal' in self.session_metadata:
+            animal_metadata = self.session_metadata['animal']
+            return animal_metadata
+        else:
+            print('No animal metadata found')
+
+    def get_devices_metadata(self):
+        device_dict = {}
+        if 'devices' in self.session_metadata:
+            for key in self.session_metadata['devices']:
+                device_dict[key] = self.session_metadata['devices'][key]
+        return device_dict
+
+    def get_spike_data(self):
+        spike_dict = {}
+        if self.session_data != None:
+            for key in self.session_data:
+                if 'spike' in key:
+                    spike_dict[key] = self.session_data[key]
+        return spike_dict
+
+    def get_position_data(self):
+        pass
+
+
+class StudyContainer(Workspace):
+    def __init__(self, input_dict: dict):
+        pass
+
+
+
+
 
 class Session():
     """
@@ -13,13 +74,13 @@ class Session():
         # device dict is a dictionary with all devices
         animal_dict, devices_dict = self._read_input_dict()
 
-        self.animal = SessionAnimal(animal_dict)
+        self.animal = AnimalMetadata(animal_dict)
 
-        self.devices = SessionDevices(devices_dict)
+        self.devices = DevicesMetadata(devices_dict)
 
 
         # for device_dict in device_dicts:
-        #     session_device = SessionDevices(device_dict)
+        #     session_device = DevicesMetadata(device_dict)
         #     self.devices.append(session_device.device)
 
     def _read_input_dict(self):
@@ -44,7 +105,7 @@ class Session():
         return animal_dict, devices_dict
 
 
-class SessionAnimal():
+class AnimalMetadata():
     def __init__(self, input_dict: dict):
         self._input_dict = input_dict
 
@@ -69,7 +130,8 @@ class SessionAnimal():
 
         return animal_id, species, sex, age, weight, genotype, animal_notes
 
-class SessionDevices():
+
+class DevicesMetadata():
     def __init__(self, input_dict: dict):
         self._input_dict = input_dict
 
@@ -81,10 +143,10 @@ class SessionDevices():
             device_dict = self._input_dict[key]
 
             if key == 'implant':
-                implant = SessionImplant(device_dict)
+                implant = ImplantMetadata(device_dict)
                 devices[key] = implant
             elif key == 'axona_led_tracker':
-                tracker = SessionTracker(device_dict)
+                tracker = TrackerMetadata(device_dict)
                 devices[key] = tracker
 
             # ... continue with more device types
@@ -92,7 +154,7 @@ class SessionDevices():
         return devices
 
 
-class SessionImplant(SessionDevices):
+class ImplantMetadata(DevicesMetadata):
     def __init__(self, input_dict: dict):
         self._input_dict = input_dict
 
@@ -126,7 +188,7 @@ class SessionImplant(SessionDevices):
 
 
 
-class SessionTracker(SessionDevices):
+class TrackerMetadata(DevicesMetadata):
     def __init__(self, input_dict: dict):
         self._input_dict = input_dict
 
@@ -160,3 +222,6 @@ class SessionTracker(SessionDevices):
             arena_width = self._input_dict['arena_width']
 
         return led_tracker_id, led_location, led_position_data, x, y, time, arena_height, arena_width
+
+
+

@@ -7,10 +7,8 @@
 
 # eventually replace this with urllib
 # access to the data online
-from csv import DictReader
 import os
 import sys
-from turtle import pos
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
  
@@ -24,15 +22,10 @@ from x_io.rw.axona.read_tetrode_and_cut import (
     ,load_spike_train_from_paths
 )
 
-from x_io.session import (
-    Session,
-    SessionAnimal,
-    SessionDevices,
-    SessionImplant,
-    SessionTracker
-)
-
-from x_io.study import Study
+from library.workspace import Session, SessionData, SessionMetadata, Study, StudyMetadata
+from core.instrument import DevicesMetadata, ImplantMetadata, TrackerMetadata
+from core.subject import AnimalMetadata
+from core.spikes import Spike, SpikeClusterBatch, SpikeTrain
 
 from x_io.rw.axona.read_pos import (
     grab_position_data,
@@ -147,10 +140,9 @@ def test_make_session():
     session = make_session(cut_file, tet_file, pos_file, settings_dict['sessions'][0], settings_dict['ppm'])
 
     assert isinstance(session, Session)
-    assert isinstance(session.devices.devices_dict['axona_led_tracker'], SessionTracker)
-    assert isinstance(session.devices.devices_dict['implant'], SessionImplant)
-    assert 'x' in session.devices.devices_dict['axona_led_tracker']._input_dict
-    assert 'event_times' in session.devices.devices_dict['implant'].implant_data
+    assert isinstance(session.get_devices_metadata()['axona_led_tracker'], TrackerMetadata)
+    assert isinstance(session.get_devices_metadata()['implant'], ImplantMetadata)
+    assert isinstance(session.get_spike_data()['spike_train'], SpikeTrain)
 
 def test__grab_tetrode_cut_position_files():
 
@@ -180,6 +172,10 @@ def test__group_session_files():
     assert len(cut_files) == len(tetrode_files)
     assert len(tetrode_files) == len(pos_files)
 
+
+
+
+
 def test_batch_sessions():
 
     cut_files, tetrode_files, pos_files = _grab_tetrode_cut_position_files([data_dir], pos_files=[], cut_files=[], tetrode_files=[])
@@ -187,9 +183,9 @@ def test_batch_sessions():
 
     sessions = batch_sessions(sorted_files, settings_dict)
 
-    assert type(sessions) == list 
+    assert type(sessions) == dict 
     assert len(sessions) == 1
-    assert isinstance(sessions[0], Session)
+    assert isinstance(sessions['session_1'], Session)
 
 def test_make_study():
     study = make_study([data_dir], settings_dict)
@@ -197,3 +193,5 @@ def test_make_study():
     assert isinstance(study, Study)
     assert len(study.sessions) > 0
     assert isinstance(study._input_dict['session_1'], Session) 
+
+

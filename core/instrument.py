@@ -1,5 +1,5 @@
 
-class Devices():
+class DevicesMetadata():
     def __init__(self, input_dict: dict):
         self._input_dict = input_dict
 
@@ -8,13 +8,12 @@ class Devices():
     def _read_input_dict(self):
         devices = {}
         for key in self._input_dict:
-            device_dict = self._input_dict[key]
 
             if key == 'implant':
-                implant = Implant(device_dict)
+                implant = self._input_dict[key]
                 devices[key] = implant
             elif key == 'axona_led_tracker':
-                tracker = Tracker(device_dict)
+                tracker = self._input_dict[key]
                 devices[key] = tracker
 
             # ... continue with more device types
@@ -22,7 +21,7 @@ class Devices():
         return devices
 
 
-class Implant(Devices):
+class ImplantMetadata(DevicesMetadata):
     def __init__(self, input_dict: dict):
         self._input_dict = input_dict
 
@@ -55,7 +54,7 @@ class Implant(Devices):
         return implant_id, implant_geometry, implant_type, implant_data, wire_length, wire_length_units, implant_units
 
 
-class Tracker(Devices):
+class TrackerMetadata(DevicesMetadata):
     def __init__(self, input_dict: dict):
         self._input_dict = input_dict
 

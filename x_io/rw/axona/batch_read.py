@@ -5,14 +5,15 @@ This module will format the data into a dictionary that can be taken in by the S
 """
 
 import os, sys
-from xml.etree.ElementTree import TreeBuilder
-
-from x_io.session import Session
-from x_io.study import Study
 
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
 
+from core.spatial import Position2D
+from library.workspace import Session, SessionData, SessionMetadata, Study, StudyMetadata
+from core.instrument import DevicesMetadata, ImplantMetadata, TrackerMetadata
+from core.subject import AnimalMetadata
+from core.spikes import Spike, SpikeClusterBatch, SpikeTrain
 import numpy as np
 
 from x_io.rw.axona.read_tetrode_and_cut import (
@@ -37,9 +38,15 @@ def make_study(directory, settings_dict: list):
 
     study_dict = _fill_study_dict(sessions, study_dict)
 
-    study = Study(study_dict)
+    study_metadata_dict = _get_study_metadata()
+    study_metadata = StudyMetadata(study_metadata_dict)
+
+    study = Study(study_metadata, study_dict)
 
     return study
+
+def _get_study_metadata():
+    return StudyMetadata({'test': 'test'})
 
 def _grab_tetrode_cut_position_files(paths: list, pos_files=[], cut_files=[], tetrode_files=[], parent_path=None) -> tuple:
 
@@ -147,7 +154,7 @@ def _fill_study_dict(sessions, study_dict):
     assert len(sessions) == len(study_dict)
 
     for i in range(len(sessions)):
-         study_dict['session_' + str(i+1)] = sessions[i]
+         study_dict['session_' + str(i+1)] = sessions['session_' + str(i+1)]
 
     return study_dict
 
@@ -161,13 +168,13 @@ def batch_sessions(sorted_files, settings_dict):
     # assert len(tet_files) == len(pos_files)
     assert len(sorted_files) == len(settings_dict['sessions'])
 
-    sessions = []
+    sessions = {}
 
     for i in range(len(settings_dict['sessions'])):
 
         session = make_session(sorted_files[i][2], sorted_files[i][1], sorted_files[i][0], settings_dict['sessions'][i], settings_dict['ppm'])
 
-        sessions.append(session)
+        sessions['session_'+str(i+1)] = session
 
     return sessions
      
@@ -181,9 +188,47 @@ def make_session(cut_file, tet_file, pos_file, settings_dict, ppm):
 
     session_dict = _fill_session_dict(session_dict, implant_data_dict, pos_dict, settings_dict)
 
-    session = Session(session_dict)
+    session_classes = _create_session_classes(session_dict, settings_dict)
+
+    session = Session(session_classes)
 
     return session
+
+def _create_session_classes(session_dict, settings_dict):
+    """
+    Tetrode, Cut, Pos, Animal metadata, device metadata
+
+    For one cut, tet, pos file:
+        - extract tet data --> spikeTrain(event_times), Spike(events)
+        - extract pos data --> locationClass(x,y)
+        - animal metadata --> animal()
+        - devices metadata --> tracker(devices), implant(devices)
+        - arena metadata?
+
+    ALL TAKE IN SESSION METADATA
+    """
+    
+    animal_metadata = AnimalMetadata(session_dict['animal'])
+    tracker_metadata = TrackerMetadata(session_dict['devices']['implant'])
+    implant_metadata = ImplantMetadata(session_dict['devices']['axona_led_tracker'])
+    devices_dict = {'axona_led_tracker': tracker_metadata, 'implant': implant_metadata}
+    devices_metadata = DevicesMetadata(devices_dict)
+    
+    spike_train = SpikeTrain(session_dict['devices']['implant']['implant_data'])
+    spike_cluster = SpikeClusterBatch(session_dict['devices']['implant']['implant_data'])
+
+    # Temporary fix, rmeove this
+    position = Position2D('subject' , 'space', session_dict['devices']['axona_led_tracker'])
+
+    # Workspace classes
+    session_metadata = SessionMetadata({'animal': animal_metadata, 'devices': devices_metadata})
+    session_data = SessionData({'spike_train': spike_train, 'spike_cluster': spike_cluster, 'position': position})
+
+    session_classes = {'metadata': session_metadata, 'data': session_data}
+
+    return session_classes 
+
+
 
 def _fill_session_dict(session_dict, implant_data_dict, pos_dict, settings_dict):
     devices = settings_dict['devices']
