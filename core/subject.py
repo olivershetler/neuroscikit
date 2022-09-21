@@ -5,6 +5,8 @@ import sys
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
 
+from abc import ABC
+
 
 # from core.core_utils import (
 #     make_seconds_index_from_rate,
@@ -17,7 +19,7 @@ class Animal():
     """
     ### Currently input is a list of dictionaries, once we save ordered sessions in x_io study class we will input nested dictionaries
     def __init__(self, input_dict_list: list):
-        self._input_dict_list = input_dict_list 
+        self._input_dict_list = input_dict_list
 
         self.sessions = self._read_input_dict()
 
@@ -32,7 +34,7 @@ class Animal():
 
 class AnimalSession():
     """
-    A single session belonging to an animal instance. 
+    A single session belonging to an animal instance.
     """
     def __init__(self, input_dict: dict):
         self._input_dict = input_dict
@@ -48,19 +50,19 @@ class AnimalCell():
         self._input_dict = input_dict
 
     def _read_input_dict(self):
-        pass 
+        pass
 
 
 """
 
 Animal has multiple AnimalSessions
 AnimalSession has multiple AnimalCells
-AnimalCells != SpikeTrainCluster 
+AnimalCells != SpikeTrainCluster
 SpikeTrainCLuster has multiple SORTED event as SpikeTrains.
-AnimalCells has multiple SpikeTrainClusters. 
+AnimalCells has multiple SpikeTrainClusters.
     If one trial per cell then AnimalCells has one SpikeTrain (as a SpikeTrainCluster with one SpikeTrain only)
     If multiple trials per cell then AnimallCells has multiple SpikeTrains (as a SpikeTrainCluster with as manny SpikeTrains as trials
-AnimalSession != SpikeCluster 
+AnimalSession != SpikeCluster
 AnimalSession has multiple UNSORTED events as SpikeCluster
 SpikeCluster has the UNSORTED events as Spikes
 
