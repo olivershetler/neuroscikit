@@ -460,7 +460,7 @@ class SpikeClusterBatch():
                 # labelled.append(self._cluster_labels[i])
         # assert len(labelled) == max(self._cluster_labels)
         self._spike_clusters = instances
-        
+
 class SpikeCluster(): # collection of spike objects
     """
     Class to represent SpikeCluster(). Set of 1D spike times belonging to same cluster
