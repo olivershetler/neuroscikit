@@ -1,18 +1,18 @@
-from core.session import Session
+from core.session import Session, Study
 
 class Workspace():
     def __init__(self):
         pass
 
 
-class SessionWorkspace(Workspace):
+class StudyData(Workspace):
     def __init__(self, Session):
         self.session_id = session_id
 
 
-
-class StudyWorkspace(Workspace):
-    def __init__(self, *args):
+class StudyData(Workspace):
+    def __init__(self, study, *args):
+        assert isinstance(study, Study), 'The argument must be a Study object'
         for arg in args:
             assert isinstance(arg, SessionWorkspace), 'All arguments must be SessionWorkspace objects'
         self.sessions = list(args)
