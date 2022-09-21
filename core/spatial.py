@@ -1,4 +1,6 @@
-class Position2D(Subject):
+import numpy as np
+
+class Position2D():
     def __init__(self, subject, space, input_dict):
         self.subject = subject
         self.limb = space
@@ -8,12 +10,12 @@ class Position2D(Subject):
             self.t = np.arange(0, len(input_dict['x']) / input_dict['rate'], 1 / input_dict['rate'])
         if 'x' in input_dict:
             self.x = input_dict['x']
-            assert len(self.x) == len(self.t)
+            # assert len(self.x) == len(self.t)
         if 'y' in input_dict:
             self.y = input_dict['y']
-            assert len(self.y) == len(self.t)
+            # assert len(self.y) == len(self.t)
 
-    def speed_from_locations(location: Location) -> np.ndarray:
+    def speed_from_locations(location) -> np.ndarray:
         '''calculates an averaged/smoothed speed'''
 
         x = location.x

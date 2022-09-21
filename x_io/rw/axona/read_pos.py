@@ -44,9 +44,9 @@ def _rem_bad_track(x, y, t, threshold):
             remInd.append(ind[index] + 1)
         else:
             ''' Not a single jump. 2 possibilities:
-             1. Tracker jumps out, and stay out at the same place for several
+             1. TrackerMetadata jumps out, and stay out at the same place for several
              samples and then jumps back.
-             2. Tracker just has a small jump before path continues as normal,
+             2. TrackerMetadata just has a small jump before path continues as normal,
              unknown reason for this. In latter case the samples are left
              untouched'''
             idx = np.where(x[ind[index] + 1:ind[index + 1] + 1 + 1] == x[ind[index] + 1])[0]

@@ -11,6 +11,34 @@ sys.path.append(PROJECT_PATH)
 # )
 
 
+
+class AnimalMetadata():
+    def __init__(self, input_dict: dict):
+        self._input_dict = input_dict
+
+        self.animal_id, self.species, self.sex, self.age, self.weight, self.genotype, self.animal_notes = self._read_input_dict()
+
+
+    def _read_input_dict(self):
+        if 'animal_id' in self._input_dict:
+            animal_id = self._input_dict['animal_id']
+        if 'species' in self._input_dict:
+            species = self._input_dict['species']
+        if 'sex' in self._input_dict:
+            sex = self._input_dict['sex']
+        if 'age' in self._input_dict:
+            age = self._input_dict['age']
+        if 'weight' in self._input_dict:
+            weight = self._input_dict['weight']
+        if 'genotype' in self._input_dict:
+            genotype = self._input_dict['genotype']
+        if 'animal_notes' in self._input_dict:
+            animal_notes = self._input_dict['animal_notes']
+
+        return animal_id, species, sex, age, weight, genotype, animal_notes
+
+
+
 class Animal():
     """
     Holds all sessions belonging to an animal, TO BE ADDED: ordered sequentially
