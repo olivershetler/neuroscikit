@@ -1,16 +1,14 @@
-from enum import unique
+
 import os
-from re import S
 import sys
-import wave
 
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
 
 
-from core.core_utils import (
-    make_seconds_index_from_rate,
-)
+# from core.core_utils import (
+#     make_seconds_index_from_rate,
+# )
 
 
 class Event():
@@ -49,8 +47,6 @@ class Event():
         assert curr != 0, 'There is no 0 channel, make sure max(abs(channel waveform)) is not 0'
         return curr, self.event_signal[curr-1]
 
-
-
 class Spike(Event):
     def __init__(self, spike_time: float, cluster_label: int, waveforms: list):
         super().__init__(spike_time, cluster_label, waveforms)
@@ -60,31 +56,6 @@ class Spike(Event):
 
         assert type(cluster_label) == int, 'Cluster label must be integer for index into waveforms'
         assert type(spike_time) == float, 'Spike times is in format: ' + str(type(spike_time))
-
-        # self.main_ind = 0
-        # self.main_signal = 0
-
-    # one waveform per channel bcs class is for one spike
-    # def get_single_channel_waveform(self, id):
-    #     assert id in [1,2,3,4,5,6,7,8], 'Channel number must be from 1 to 8'
-    #     return self.waveforms[id-1]
-
-    # # get waveform with largest positive or negative deflection (peak or trough, absolute val)
-    # def get_peak_channel(self):
-    #     if self._main_channel == 0:
-    #         self._main_channel, self._main_waveform = self._set_peak_channel()
-    #         return self._main_channel, self._main_waveform
-    #     else:
-    #         return self._main_channel, self._main_waveform
-
-    # # lazy eval, called when get main channel called
-    # def _set_peak_channel(self):
-    #     curr = 0
-    #     for i in range(len(self.waveforms)):
-    #         if max(self.waveforms[i]) > curr:
-    #             curr = i + 1
-    #     assert curr != 0, 'There is no 0 channel, make sure max(abs(channel waveform)) is not 0'
-    #     return curr, self.waveforms[curr-1]
 
 class InputKeys():
     """
@@ -127,7 +98,7 @@ class SpikeTrain():
         self._input_dict = input_dict
         sample_length, sample_rate, spikes_binary, spike_times = self._read_input_dict()
 
-        self.timestamps = make_seconds_index_from_rate(sample_length, sample_rate)
+        # self.timestamps = make_seconds_index_from_rate(sample_length, sample_rate)
 
         assert ((len(spikes_binary) == 0) and (len(spike_times) == 0)) != True, "No spike data provided"
 
@@ -250,7 +221,7 @@ class Spike(): # spike object, has waveforms
         assert type(cluster_label) == int, 'Cluster label must be integer for index into waveforms'
         assert type(spike_time) == float, 'Spike times is in format: ' + str(type(spike_time))
 
-        self.timestamps = make_seconds_index_from_rate(sample_length, sample_rate)
+        # self.timestamps = make_seconds_index_from_rate(sample_length, sample_rate)
         self.spike_time = spike_time
         self.label = cluster_label
         self.waveforms = waveforms
@@ -328,7 +299,7 @@ class SpikeClusterBatch():
         assert len(spike_times) > 0, 'Spike times missing'
         assert len(waveforms) <= 8 and len(waveforms) > 0, 'Cannot have fewer than 0 or more than 8 channels'
 
-        self.timestamps = make_seconds_index_from_rate(sample_length, sample_rate)
+        # self.timestamps = make_seconds_index_from_rate(sample_length, sample_rate)
 
         self._spike_times = spike_times
         self._cluster_labels = cluster_labels
@@ -489,8 +460,7 @@ class SpikeClusterBatch():
                 # labelled.append(self._cluster_labels[i])
         # assert len(labelled) == max(self._cluster_labels)
         self._spike_clusters = instances
-        # print(instances)
-
+        
 class SpikeCluster(): # collection of spike objects
     """
     Class to represent SpikeCluster(). Set of 1D spike times belonging to same cluster
@@ -508,7 +478,7 @@ class SpikeCluster(): # collection of spike objects
         assert len(spike_times) > 0, 'Spike times missing'
         assert len(waveforms) <= 8 and len(waveforms) > 0, 'Cannot have fewer than 0 or more than 8 channels'
 
-        self.timestamps = make_seconds_index_from_rate(sample_length, sample_rate)
+        # self.timestamps = make_seconds_index_from_rate(sample_length, sample_rate)
 
         self._spike_times = spike_times
         self._label = cluster_label
@@ -608,7 +578,7 @@ class SpikeTrainBatch():
 
         sample_length, sample_rate, spikes_binary, spike_times = self._read_input_dict()
 
-        self.timestamps = make_seconds_index_from_rate(sample_length, sample_rate)
+        # self.timestamps = make_seconds_index_from_rate(sample_length, sample_rate)
 
         assert ((len(spikes_binary) == 0) and (len(spike_times) == 0)) != True, "No spike data provided"
 
@@ -703,63 +673,5 @@ class SpikeTrainBatch():
             return self._spike_times
 
 
-
-
-    # def _sort_by_label(self):
-    #     rng = max(self._labels) + 1
-    #     sorted = [[] for i in range(rng)]
-    #     for i in range(len(self._spike_times)):
-    #         if self._spike_times[i] == self._labels[i]:
-    #             sorted[i].append(self._spike_times[i])
-    #     assert len(sorted[-1]) > 0, 'Wrong cell count'
-    #     return sorted
-
-    # def _make_spike_train(self, spike_train):
-    #     return SpikeTrain(self._sample_length, self._sample_rate, spike_times=spike_train)
-
-    # def get_spike_train_instances(self):
-    #     if len(self._sorted_cells) == 0:
-    #         sorted = self._sort_by_label()
-    #         for i in range(len(sorted)):
-    #             spike_train = self._make_spike_train(sorted[i])
-    #             self._sorted_cells.append(spike_train)
-    #         return self._sorted_cells
-    #     else:
-    #         return self._sorted_cells
-
-    # def get_binary(self):
-    #     self._sorted_cells = self.get_spike_train_instances()
-    #     all_binary = []
-    #     for spike_train in self._sorted_cells:
-    #         all_binary.append(spike_train.get_binary())
-    #     return all_binary
-
-    # def get_spike_times(self):
-    #     self._sorted_cells = self.get_spike_train_instances()
-    #     all_times = []
-    #     for spike_train in self._sorted_cells:
-    #         all_times.append(spike_train.get_spike_times())
-    #     return all_times
-
-
-
-    # check if the spike train is in time-stamp format or binary format
-    # if in binary format, create binary data object and extract timestamp format as well
-    # if in time-stamp format, create time-stamp data object onlys
-    # have method for storing unbinned and binned rate estimatess
-
-# class TimeStampSpikeTrain(SpikeTrain):
-#     """ Spike train as time stamps
-#     """
-
-#     def __init(self, _spike_times, spike_features):
-#         self._spike_times = _spike_times
-
-# class BinarySpikeTrain(SpikeTrain):
-#     """ Spike train as binary
-#     """
-
-#     def __init(self, spikes_binary, spike_features):
-#         self.spikes_binary = spikes_binary
 
 
