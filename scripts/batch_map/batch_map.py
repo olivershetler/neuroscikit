@@ -23,7 +23,7 @@ class BatchMaps(Workspace):
         pass
 
 
-def batch_neurofunc(study: StudyWorkspace, tasks: dict):
+def batch_map(study: StudyWorkspace, tasks: dict):
     """
     Computes rate maps across all animals, sessions, cells in a study.
 

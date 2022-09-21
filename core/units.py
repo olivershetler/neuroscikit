@@ -1,5 +1,5 @@
 
-class Units():
+class Unit():
     def __init__(self, **kwargs):
         for key, value in units.items():
             assert isinstance(key, str)
