@@ -5,8 +5,8 @@ sys.path.append(PROJECT_PATH)
 print(PROJECT_PATH)
 
 from core.core_utils import (
-    make_seconds_index_from_rate, 
-    make_hms_index_from_rate, 
+    make_seconds_index_from_rate,
+    make_hms_index_from_rate,
 )
 
 from datetime import datetime
