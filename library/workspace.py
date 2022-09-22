@@ -6,6 +6,8 @@ sys.path.append(PROJECT_PATH)
 
 from core.subjects import SessionMetadata, StudyMetadata
 
+from library.animal import Animal, AnimalCell, AnimalSession
+
 class Workspace():
     def __init__(self):
         pass
@@ -17,6 +19,7 @@ class Session(Workspace):
 
         self.session_data, self.session_metadata = self._read_input_dict()
 
+        self.animal_id = self.session_metadata.metadata['animal'].animal_id
 
     def _read_input_dict(self):
         session_data = None
@@ -83,17 +86,58 @@ class Study(Workspace):
 
         self.sessions = self._read_input_dict()
 
+        self.animal_ids = self._get_animal_ids()
+
+    def _get_animal_ids(self):
+        animal_ids = []
+        for session in self.sessions:
+            animal_ids.append(session.animal_id)
+        return animal_ids
+
     def _read_input_dict(self):
         sessions = []
         for key in self._input_dict:
-            assert isinstance(self._input_dict[key], Session), 'All arguments must be SessionWorkspace objects'
+            assert isinstance(self._input_dict[key], Session), 'All arguments must be Session(Workspace) objects'
             sessions.append(self._input_dict[key])
 
         return sessions
 
     def add_session(self, session):
-        assert isinstance(session, Session), 'The argument must be a SessionWorkspace object'
+        assert isinstance(session, Session), 'The argument must be a Session(Workspace) object'
         self.sessions.append(session)
+
+    def _sort_session_by_animal(self):
+        animal_sessions = {}
+
+        for id in self.animal_ids:
+            animal_sessions[id] = []
+
+        for i in range(len(self.sessions)):
+            animal_id = self.sessions[i].animal_id
+            assert animal_id in self.animal_ids
+            animal_sessions[animal_id].append(self.sessions[i])
+
+            ### ....
+            ### NEED TO EXTEND THIS TO MAKE animal_sessions[animal_id] a dictionary and not list of dictionaries
+            ### Keys will be ordered/sequential sessions. Have to save start date/time from read_tetrode_cut and use to order
+            ### ...
+
+        return animal_sessions
+
+    def make_animals(self):
+        animal_sessions = self._sort_session_by_animal()
+        animals = []
+
+        for animal in animal_sessions:
+            animal_instance = Animal(animal)
+            animals.append(animal_instance)
+
+        self.animals = animals
+
+    def get_animals(self):
+        if self.animals == None:
+            self.make_animals()
+        return self.animals
 
         
 

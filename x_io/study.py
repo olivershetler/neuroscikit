@@ -10,7 +10,7 @@ import wave
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
 
-from core.subject import Animal
+from core.subjects import Animal
 
 class Study():
     """
