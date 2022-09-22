@@ -5,7 +5,7 @@ import numpy as np
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
 
-from core.data_spikes import (
+from core.spikes import (
     SpikeTrain,
     SpikeTrainBatch,
     Spike,
@@ -65,11 +65,11 @@ def make_waveforms(channel_count, spike_count, samples_per_wave):
     return waveforms.tolist()
 
 def make_clusters(timestamps, cluster_count):
-    cluster_labels = []
+    event_labels = []
     for i in range(len(timestamps)):
         idx = np.random.choice(cluster_count, size=1)[0]
-        cluster_labels.append(int(idx))
-    return cluster_labels
+        event_labels.append(int(idx))
+    return event_labels
 
 ############################
 # NOT CALLED
@@ -106,121 +106,72 @@ def make_clusters(timestamps, cluster_count):
 ############################
 
 def test_spike_train_class():
-    spike_times = make_1D_timestamps()
+    event_times = make_1D_timestamps()
 
     T = 2
     dt = .02
 
     input_dict1 = {}
-    input_dict1['sample_length'] = int(T / dt)
-    input_dict1['sample_rate'] = float(T / dt)
-    input_dict1['spikes_binary'] = []
-    input_dict1['spike_times'] = spike_times
+    input_dict1['duration'] = int(T)
+    input_dict1['sample_rate'] = float(1 / dt)
+    input_dict1['events_binary'] = []
+    input_dict1['event_times'] = event_times
 
     spike_train1 = SpikeTrain(input_dict1)
 
-    rate1 = spike_train1.get_spike_rate()
-    spikes_binary1 = spike_train1.get_binary()
+    rate1 = spike_train1.get_event_rate()
+    events_binary1 = spike_train1.get_binary()
 
     assert type(rate1) == float
-    assert type(spike_train1._spikes_binary) == list
-    assert type(spike_train1._spike_times) == list
-    assert type(spike_train1._spike_ids) == list
+    assert type(spike_train1.events_binary) == list
+    assert type(spike_train1.event_times) == list
+    assert type(spike_train1.event_labels) == list
 
-    spikes_binary2 = make_1D_binary_spikes()
+    events_binary2 = make_1D_binary_spikes()
 
     input_dict2 = {}
-    input_dict2['sample_length'] = int(T / dt)
-    input_dict2['sample_rate'] = float(T / dt)
-    input_dict2['spikes_binary'] = spikes_binary2
-    input_dict2['spike_times'] = []
+    input_dict2['duration'] = int(T)
+    input_dict2['sample_rate'] = float(1 / dt)
+    input_dict2['events_binary'] = events_binary2
+    input_dict2['event_times'] = []
 
     spike_train2 = SpikeTrain(input_dict2)
 
-    rate2 = spike_train2.get_spike_rate()
-    spike_times2 = spike_train2.get_spike_times()
+    rate2 = spike_train2.get_event_rate()
+    event_times2 = spike_train2.get_event_times()
 
     assert type(rate2) == float
-    assert type(spike_train2._spikes_binary) == list
-    assert type(spike_train2._spike_times) == list
-    assert type(spike_train2._spike_ids) == list
-
-def test_spike_train_batch_class():
-    spike_times = make_2D_timestamps()
-
-    T = 2
-    dt = .02
-
-    input_dict1 = {}
-    input_dict1['sample_length'] = int(T / dt)
-    input_dict1['sample_rate'] = float(T / dt)
-    input_dict1['spikes_binary'] = []
-    input_dict1['spike_times'] = spike_times
-
-    spike_train1 = SpikeTrainBatch(input_dict1)
-    rate1 = spike_train1.get_average_spike_rate()
-    rate_list1 = spike_train1.get_indiv_spike_rate()
-    spike_train1.get_binary()
-    instances1 = spike_train1.get_spike_train_instances()
-
-    assert type(rate1) == float
-    assert type(rate_list1) == list
-    assert type(spike_train1._spikes_binary) == list
-    assert type(spike_train1._spike_times) == list
-    assert type(spike_train1._spike_ids) == list
-    assert type(spike_train1._spikes_binary[0]) == list
-    assert type(spike_train1._spike_times[0]) == list
-    assert isinstance(instances1[0], SpikeTrain) == True
-
-    spikes_binary2 = make_2D_binary_spikes()
-
-    input_dict2 = {}
-    input_dict2['sample_length'] = int(T / dt)
-    input_dict2['sample_rate'] = float(T / dt)
-    input_dict2['spikes_binary'] = spikes_binary2
-    input_dict2['spike_times'] = []
-
-    spike_train2 = SpikeTrainBatch(input_dict2)
-
-    spike_train2.get_spike_times()
-    rate2 = spike_train2.get_average_spike_rate()
-    rate_list2 = spike_train2.get_indiv_spike_rate()
-    instances2 = spike_train2.get_spike_train_instances()
-
-    assert type(rate2) == float
-    assert type(rate_list2) == list
-    assert type(spike_train2._spikes_binary) == list
-    assert type(spike_train2._spike_times) == list
-    assert type(spike_train2._spike_ids) == list
-    assert type(spike_train2._spikes_binary[0]) == list
-    assert type(spike_train2._spike_times[0]) == list
-    assert isinstance(instances2[0], SpikeTrain) == True
+    assert type(spike_train2.events_binary) == list
+    assert type(spike_train2.event_times) == list
+    assert type(spike_train2.event_labels) == list
 
 def test_spike_object_class():
-    spike_times = make_1D_timestamps()
+    event_times = make_1D_timestamps()
     ch_count = 8
     samples_per_wave = 50
-    waveforms = make_waveforms(ch_count, len(spike_times), samples_per_wave)
+    waveforms = make_waveforms(ch_count, len(event_times), samples_per_wave)
 
     T = 2
     dt = .02
-    idx = np.random.choice(len(spike_times), size=1)[0]
+    idx = np.random.choice(len(event_times), size=1)[0]
 
     input_dict1 = {}
-    input_dict1['sample_length'] = int(T / dt)
-    input_dict1['sample_rate'] = float(T / dt)
-    input_dict1['spike_time'] = spike_times[idx]
+    input_dict1['duration'] = int(T)
+    input_dict1['sample_rate'] = float(1 / dt)
+    input_dict1['spike_time'] = event_times[idx]
     input_dict1['cluster_label'] = int(idx + 1)
 
+    wf = []
     for i in range(ch_count):
-        key = 'ch' + str(i+1)
+        key = 'channel_' + str(i+1)
         input_dict1[key] = waveforms[i][idx]
+        wf.append(waveforms[i][idx])
 
-    spike_object = Spike(input_dict1)
+    spike_object = Spike(input_dict1['spike_time'], input_dict1['cluster_label'], wf)
 
     # label = spike_object.get_cluster_label()
-    chan, _ = spike_object.get_main_channel()
-    waveform = spike_object.get_single_channel_waveform(chan)
+    chan, _ = spike_object.get_peak_signal()
+    waveform = spike_object.get_signal(chan)
 
     # assert type(label) == int
     assert type(spike_object.spike_time) == float
@@ -233,24 +184,24 @@ def test_spike_object_class():
     assert len(waveforms) == ch_count
 
 def test_spike_cluster_class():
-    spike_times = make_1D_timestamps()
+    event_times = make_1D_timestamps()
     ch_count = 8
     samples_per_wave = 50
-    waveforms = make_waveforms(ch_count, len(spike_times), samples_per_wave)
+    waveforms = make_waveforms(ch_count, len(event_times), samples_per_wave)
 
     T = 2
     dt = .02
-    idx = np.random.choice(len(spike_times), size=1)[0]
+    idx = np.random.choice(len(event_times), size=1)[0]
 
     input_dict1 = {}
-    input_dict1['sample_length'] = int(T / dt)
-    input_dict1['sample_rate'] = float(T / dt)
-    input_dict1['spike_times'] = spike_times
+    input_dict1['duration'] = int(T)
+    input_dict1['sample_rate'] = float(1 / dt)
+    input_dict1['event_times'] = event_times
     input_dict1['cluster_label'] = int(idx + 1)
 
 
     for i in range(ch_count):
-        key = 'ch' + str(i+1)
+        key = 'channel_' + str(i+1)
         input_dict1[key] = waveforms[i]
 
     spike_cluster = SpikeCluster(input_dict1)
@@ -268,53 +219,56 @@ def test_spike_cluster_class():
     assert type(single_channel_waveform[0]) == list
     assert type(single_channel_waveform[0][0]) == float
     assert len(all_channel_waveforms) == ch_count
-    assert len(single_channel_waveform) == len(spike_times)
+    assert len(single_channel_waveform) == len(event_times)
 
     assert type(label) == int
     assert type(spk_count) == int
     assert type(rate) == float
-    assert spk_count == len(spike_times)
+    assert spk_count == len(event_times)
+
+
+
 
 def test_spike_cluster_batch_class():
-    spike_times = make_1D_timestamps()
+    event_times = make_1D_timestamps()
     ch_count = 8
     samples_per_wave = 50
-    waveforms = make_waveforms(ch_count, len(spike_times), samples_per_wave)
+    waveforms = make_waveforms(ch_count, len(event_times), samples_per_wave)
     cluster_count = 10
 
-    cluster_labels = make_clusters(spike_times, cluster_count)
+    event_labels = make_clusters(event_times, cluster_count)
 
     T = 2
     dt = .02
 
     input_dict1 = {}
-    input_dict1['sample_length'] = int(T / dt)
-    input_dict1['sample_rate'] = float(T / dt)
-    input_dict1['spike_times'] = spike_times
-    input_dict1['cluster_labels'] = cluster_labels
+    input_dict1['duration'] = int(T)
+    input_dict1['sample_rate'] = float(1 / dt)
+    input_dict1['event_times'] = event_times
+    input_dict1['event_labels'] = event_labels
 
 
     for i in range(ch_count):
-        key = 'ch' + str(i+1)
+        key = 'channel_' + str(i+1)
         input_dict1[key] = waveforms[i]
 
     spike_cluster_batch = SpikeClusterBatch(input_dict1)
 
     all_channel_waveforms = spike_cluster_batch.get_all_channel_waveforms()
-    rate = spike_cluster_batch.get_single_cluster_firing_rate(cluster_labels[0])
+    rate = spike_cluster_batch.get_single_cluster_firing_rate(event_labels[0])
     labels = spike_cluster_batch.get_cluster_labels()
     unique_labels = spike_cluster_batch.get_unique_cluster_labels()
     # spk_count = spike_cluster_batch.get_cluster_spike_count()
-    single_channel_waveform = spike_cluster_batch.get_single_channel_waveforms(cluster_labels[0])
+    single_channel_waveform = spike_cluster_batch.get_single_channel_waveforms(event_labels[0])
     # spike_objects = spike_cluster_batch.get_spike_object_instances()
     rates = spike_cluster_batch.get_all_cluster_firing_rates()
     spike_clusters = spike_cluster_batch.get_spike_cluster_instances()
-    count, cluster_spike_times, cluster_waveforms = spike_cluster_batch.get_single_spike_cluster_instance(cluster_labels[0])
-    single_cluster_spike_objects = spike_cluster_batch.get_single_spike_cluster_objects(cluster_labels[0])
+    count, cluster_event_times, cluster_waveforms = spike_cluster_batch.get_single_spike_cluster_instance(event_labels[0])
+    single_cluster_spike_objects = spike_cluster_batch.get_single_spike_cluster_objects(event_labels[0])
     cluster_spike_objects = spike_cluster_batch.get_spike_cluster_objects()
 
-    ids = np.where(np.array(cluster_labels) == cluster_labels[0])[0]
-    assert np.array(cluster_spike_times).all() == np.array(spike_times)[ids].all()
+    ids = np.where(np.array(event_labels) == event_labels[0])[0]
+    assert np.array(cluster_event_times).all() == np.array(event_times)[ids].all()
     assert np.array(cluster_waveforms).all() == np.array(waveforms[2]).all()
     assert len(unique_labels) <= cluster_count
     assert type(rates) == list
@@ -330,10 +284,64 @@ def test_spike_cluster_batch_class():
     assert type(single_channel_waveform[0]) == list
     assert type(single_channel_waveform[0][0]) == float
     assert len(all_channel_waveforms) == ch_count
-    assert len(single_channel_waveform) == len(spike_times)
+    assert len(single_channel_waveform) == len(event_times)
     assert type(labels) == list
     assert type(rate) == float
 
+
+
+
+
+def test_spike_train_batch_class():
+    event_times = make_2D_timestamps()
+
+    T = 2
+    dt = .02
+
+    input_dict1 = {}
+    input_dict1['duration'] = int(T)
+    input_dict1['sample_rate'] = float(1 / dt)
+    input_dict1['events_binary'] = []
+    input_dict1['event_times'] = event_times
+
+    spike_train1 = SpikeTrainBatch(input_dict1)
+    rate1 = spike_train1.get_average_event_rate()
+    rate_list1 = spike_train1.get_indiv_event_rate()
+    spike_train1.get_binary()
+    instances1 = spike_train1.get_spike_train_instances()
+
+    assert type(rate1) == float
+    assert type(rate_list1) == list
+    assert type(spike_train1.events_binary) == list
+    assert type(spike_train1.event_times) == list
+    assert type(spike_train1.event_labels) == list
+    assert type(spike_train1.events_binary[0]) == list
+    assert type(spike_train1.event_times[0]) == list
+    assert isinstance(instances1[0], SpikeTrain) == True
+
+    events_binary2 = make_2D_binary_spikes()
+
+    input_dict2 = {}
+    input_dict2['duration'] = int(T)
+    input_dict2['sample_rate'] = float(1 / dt)
+    input_dict2['events_binary'] = events_binary2
+    input_dict2['event_times'] = []
+
+    spike_train2 = SpikeTrainBatch(input_dict2)
+
+    spike_train2.get_event_times()
+    rate2 = spike_train2.get_average_event_rate()
+    rate_list2 = spike_train2.get_indiv_event_rate()
+    instances2 = spike_train2.get_spike_train_instances()
+
+    assert type(rate2) == float
+    assert type(rate_list2) == list
+    assert type(spike_train2.events_binary) == list
+    assert type(spike_train2.event_times) == list
+    assert type(spike_train2.event_labels) == list
+    assert type(spike_train2.events_binary[0]) == list
+    assert type(spike_train2.event_times[0]) == list
+    assert isinstance(instances2[0], SpikeTrain) == True
 
 # def test_spike_cluster_class():
 

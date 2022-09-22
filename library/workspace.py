@@ -1,4 +1,10 @@
+import os
+import sys
 
+PROJECT_PATH = os.getcwd()
+sys.path.append(PROJECT_PATH)
+
+from core.subjects import SessionMetadata, StudyMetadata
 
 class Workspace():
     def __init__(self):
@@ -104,24 +110,3 @@ class SessionData():
             core_data_instances[key] = self._input_dict[key]
 
         return core_data_instances
-
-class SessionMetadata():
-    def __init__(self, input_dict: dict):
-        self._input_dict = input_dict 
-
-        self.metadata = self._read_input_dict()
-
-    def _read_input_dict(self):
-        core_metadata_instances = {} 
-        
-        for key in self._input_dict:
-            core_metadata_instances[key] = self._input_dict[key]
-
-        return core_metadata_instances
-
-class StudyMetadata():
-    def __init__(self, input_dict: dict):
-        self._input_dict = input_dict 
-    
-    def _read_input_dict(self):
-        pass
