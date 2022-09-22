@@ -95,9 +95,3 @@ def test_study():
     assert isinstance(study.sessions[0], Session)
 
     
-
-##### TO IMPLEMENT
-
-def test_study_metadata():
-    pass
-    
