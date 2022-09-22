@@ -11,8 +11,8 @@ sys.path.append(PROJECT_PATH)
 
 from core.spatial import Position2D
 from library.workspace import Session, SessionData, SessionMetadata, Study, StudyMetadata
-from core.instrument import DevicesMetadata, ImplantMetadata, TrackerMetadata
-from core.subject import AnimalMetadata
+from core.instruments import DevicesMetadata, ImplantMetadata, TrackerMetadata
+from core.subjects import AnimalMetadata
 from core.spikes import Spike, SpikeClusterBatch, SpikeTrain
 import numpy as np
 

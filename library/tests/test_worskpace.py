@@ -25,7 +25,9 @@ from x_io.rw.axona.batch_read import (
     make_study,
 )
 
-from x_io.session import AnimalMetadata, DevicesMetadata, ImplantMetadata, TrackerMetadata
+from library.workspace import Session, SessionData, SessionMetadata, Study, StudyMetadata
+from core.subjects import AnimalMetadata
+from core.instruments import TrackerMetadata, DevicesMetadata, ImplantMetadata
 
 cwd = os.getcwd()
 parent_dir = os.path.dirname(cwd)
@@ -72,7 +74,7 @@ def test_session_implant():
 
 def test_session_devices():
     pos_dict = grab_position_data(pos_file, settings_dict['ppm'])
-    session_devices = DevicesMetadata({'implant': implant, 'axona_led_tracker': pos_dict})
+    session_devices = DevicesMetadata({'implant': ImplantMetadata(implant), 'axona_led_tracker': TrackerMetadata(pos_dict)})
 
     assert isinstance(session_devices, DevicesMetadata)
     assert type(session_devices.devices_dict) == dict
@@ -82,10 +84,20 @@ def test_session_devices():
 def test_session():
     session = make_session(cut_file, tet_file, pos_file, session_settings, settings_dict['ppm'])
 
-    assert isinstance(session.animal, AnimalMetadata)
-    assert isinstance(session.devices, DevicesMetadata)
-    assert isinstance(session.devices.devices_dict['axona_led_tracker'], TrackerMetadata)
-    assert isinstance(session.devices.devices_dict['implant'], ImplantMetadata)
+    assert isinstance(session.get_animal_metadata(), AnimalMetadata)
+    assert isinstance(session.get_devices_metadata()['axona_led_tracker'], TrackerMetadata)
+    assert isinstance(session.get_devices_metadata()['implant'], ImplantMetadata)
 
+def test_study():
+    study = make_study([data_dir], settings_dict)
 
+    assert len(study.sessions) == 1
+    assert isinstance(study.sessions[0], Session)
+
+    
+
+##### TO IMPLEMENT
+
+def test_study_metadata():
+    pass
     
