@@ -1,20 +1,20 @@
 import numpy as np
 
 class Position2D():
-    def __init__(self, subject, space, input_dict):
+    def __init__(self, subject, limb, input_dict):
         self.subject = subject
-        self.limb = space
+        self.limb = limb # e.g. head
         if 't' in input_dict:
             self.t = input_dict['t']
         elif 'rate' in input_dict and 'x' in input_dict:
             self.t = np.arange(0, len(input_dict['x']) / input_dict['rate'], 1 / input_dict['rate'])
         if 'x' in input_dict:
             self.x = input_dict['x']
-            # assert len(self.x) == len(self.t)
+            assert len(self.x) == len(self.t)
         if 'y' in input_dict:
             self.y = input_dict['y']
-            # assert len(self.y) == len(self.t)
-
+            assert len(self.y) == len(self.t)
+"""
     def speed_from_locations(location) -> np.ndarray:
         '''calculates an averaged/smoothed speed'''
 
@@ -29,11 +29,11 @@ class Position2D():
 
         v = np.ndarray(map(_speed_formula, range(1, N-1), x, y, t))
 
-        """
+        '''
         for index in range(1, N-1):
             v[index] = np.sqrt((x[index + 1] - x[index - 1]) ** 2 + (y[index + 1] - y[index - 1]) ** 2) / (
             t[index + 1] - t[index - 1])
-        """
+        '''
 
         v[0] = v[1]
         v[-1] = v[-2]
@@ -82,4 +82,4 @@ class Position2D():
         new_pos_t = np.asarray([ float(pos_t[i]) for i in choose_array])
 
         return new_pos_x, new_pos_y, new_pos_t
-
+"""
