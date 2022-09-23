@@ -5,7 +5,9 @@ import numpy as np
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
 
-from core.data_study import Study, Animal
+from core.subjects import AnimalMetadata, SessionMetadata, StudyMetadata
+from library.animal import Animal
+from library.workspace import Study
 from core.core_utils import make_seconds_index_from_rate
 from _prototypes.wave_form_sorter.sort_waveforms_by_session import sort_waveforms_by_session
 from _prototypes.wave_form_sorter.match_waveforms_by_session import match_waveforms_by_session
@@ -28,7 +30,7 @@ def make_waveforms(channel_count, spike_count, samples_per_wave):
         for j in range(samples_per_wave):
             waveforms[i,:,j] = np.random.randint(-20,20,size=spike_count).tolist()
             for k in range(10):
-                waveforms[i,:,j] += np.random.rand() 
+                waveforms[i,:,j] += np.random.rand()
 
     return waveforms.tolist()
 
@@ -83,7 +85,8 @@ def test_match_waveforms_by_session():
     init_dict['sample_rate'] = float(1 / dt)
     init_dict['animal_ids'] = ['id1', 'id2']
 
-    study = Study(init_dict)
+    study_metadata = StudyMetadata(dict())
+    study = Study(study_metadata,init_dict)
 
     animal_count = 2
     for i in range(animal_count):
@@ -97,7 +100,7 @@ def test_match_waveforms_by_session():
 
     assert type(agg_matched) == list
     for i in range(len(agg_matched)):
-        assert type(agg_matched[i]) == list 
+        assert type(agg_matched[i]) == list
         for j in range(len(agg_matched[i])):
             if len(agg_matched[i]) > 0:
                 assert type(agg_matched[i][j]) == list

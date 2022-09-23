@@ -5,7 +5,7 @@ import numpy as np
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
 
-from _prototypes.wave_form_sorter.get_spike_width import get_spike_statistics
+from _prototypes.wave_form_sorter.spike_statistics import get_spike_statistics
 
 def make_waveforms(channel_count, spike_count, samples_per_wave):
     waveforms = np.zeros((spike_count, channel_count, samples_per_wave))
@@ -14,7 +14,7 @@ def make_waveforms(channel_count, spike_count, samples_per_wave):
         for j in range(samples_per_wave):
             waveforms[:,i,j] = np.random.randint(-20,20,size=spike_count).tolist()
             for k in range(10):
-                waveforms[i,:,j] += np.random.rand() 
+                waveforms[i,:,j] += np.random.rand()
 
     return waveforms.tolist()
 

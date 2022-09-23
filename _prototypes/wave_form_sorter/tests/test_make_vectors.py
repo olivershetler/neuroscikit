@@ -5,7 +5,8 @@ import numpy as np
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
 
-from core.data_study import Study, Animal
+from library.animal import Animal
+from library.workspace import Study
 from core.core_utils import make_seconds_index_from_rate
 from _prototypes.wave_form_sorter.sort_waveforms_by_session import sort_waveforms_by_session
 from _prototypes.wave_form_sorter.make_vectors import make_vectors
@@ -28,7 +29,7 @@ def make_waveforms(channel_count, spike_count, samples_per_wave):
         for j in range(samples_per_wave):
             waveforms[i,:,j] = np.random.randint(-20,20,size=spike_count).tolist()
             for k in range(10):
-                waveforms[i,:,j] += np.random.rand() 
+                waveforms[i,:,j] += np.random.rand()
 
     return waveforms.tolist()
 
@@ -96,7 +97,7 @@ def test_make_vectors():
     vectors = make_vectors(agg_waveform_dict)
 
     assert type(vectors) == list
-    assert type(vectors[0]) == list 
+    assert type(vectors[0]) == list
     assert len(vectors[0]) == 2
 
 
