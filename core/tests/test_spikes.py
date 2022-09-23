@@ -13,6 +13,8 @@ from core.spikes import (
     SpikeClusterBatch,
 )
 
+from core.core_utils import *
+
 cwd = os.getcwd()
 parent_dir = os.path.dirname(cwd)
 data_dir = os.path.join(parent_dir, 'neuroscikit_test_data')
@@ -20,56 +22,6 @@ test_cut_file_path = os.path.join(data_dir, 'axona/20140815-behavior2-90_1.cut')
 test_tetrode_file_path = os.path.join(data_dir, 'axona/20140815-behavior2-90.1')
 
 np.random.seed(0)
-
-def make_1D_binary_spikes(size=100):
-    spike_train = np.random.randint(2, size=size)
-
-    return list(spike_train)
-
-def make_2D_binary_spikes(count=20, size=100):
-    spike_trains = np.zeros((count, size))
-
-    for i in range(count):
-        spike_trains[i] = np.random.randint(2, size=size).tolist()
-
-    return spike_trains.tolist()
-
-def make_1D_timestamps(T=2, dt=0.02):
-    time = np.arange(0,T,dt)
-
-    spk_count = np.random.choice(len(time), size=1)
-    while spk_count <= 10:
-        spk_count = np.random.choice(len(time), size=1)
-    spk_time = np.random.choice(time, size=spk_count, replace=False).tolist()
-
-    return spk_time
-
-def make_2D_timestamps(count=20, T=2, dt=0.02):
-    time = np.arange(0,T,dt)
-    # spk_times = np.zeros((count, len(time)))
-    spk_times = []
-
-    for i in range(count):
-        spk_count = np.random.choice(len(time), size=1)
-        spk_times.append(np.random.choice(time, size=spk_count, replace=False).tolist())
-
-    return spk_times
-
-def make_waveforms(channel_count, spike_count, samples_per_wave):
-    waveforms = np.zeros((channel_count, spike_count, samples_per_wave))
-
-    for i in range(channel_count):
-        for j in range(samples_per_wave):
-            waveforms[i,:,j] = np.random.randint(-20,20,size=spike_count).tolist()
-
-    return waveforms.tolist()
-
-def make_clusters(timestamps, cluster_count):
-    event_labels = []
-    for i in range(len(timestamps)):
-        idx = np.random.choice(cluster_count, size=1)[0]
-        event_labels.append(int(idx))
-    return event_labels
 
 ############################
 # NOT CALLED
@@ -288,10 +240,6 @@ def test_spike_cluster_batch_class():
     assert type(labels) == list
     assert type(rate) == float
 
-
-
-
-
 def test_spike_train_batch_class():
     event_times = make_2D_timestamps()
 
@@ -343,7 +291,7 @@ def test_spike_train_batch_class():
     assert type(spike_train2.event_times[0]) == list
     assert isinstance(instances2[0], SpikeTrain) == True
 
-# def test_spike_cluster_class():
+
 
 if __name__ == '__main__':
     # test_spike_keys()
