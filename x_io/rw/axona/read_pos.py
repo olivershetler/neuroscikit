@@ -320,4 +320,4 @@ def grab_position_data(pos_path: str, ppm: int) -> tuple:
     pos_x_width = max(pos_x) - min(pos_x)
     pos_y_width = max(pos_y) - min(pos_y)
 
-    return {"time": pos_t, "x": pos_x, "y": pos_y, "arena_width":pos_x_width, "arena_height":pos_y_width}
+    return {"t": pos_t, "x": pos_x, "y": pos_y, "arena_width":pos_x_width, "arena_height":pos_y_width}

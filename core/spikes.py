@@ -100,7 +100,7 @@ class SpikeTrain():
         self._input_dict = input_dict
         self.duration, self.sample_rate, self.events_binary, self.event_times, self.event_labels = self._read_input_dict()
 
-        assert ((len(self.events_binary) == 0) and (len(self.event_times) == 0)) != True, "No spike data provided"
+        # assert ((len(self.events_binary) == 0) and (len(self.event_times) == 0)) != True, "No spike data provided"
 
         self.time_index = make_seconds_index_from_rate(self.duration, self.sample_rate)
 

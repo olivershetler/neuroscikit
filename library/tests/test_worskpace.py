@@ -25,7 +25,8 @@ from x_io.rw.axona.batch_read import (
     make_study,
 )
 
-from library.workspace import Session, SessionData, SessionMetadata, Study, StudyMetadata
+from library.workspace import Session, SessionData, SessionMetadata, Study, StudyMetadata, Animal
+from library.ensembles import CellPopulation
 from core.subjects import AnimalMetadata
 from core.instruments import TrackerMetadata, DevicesMetadata, ImplantMetadata
 
@@ -45,41 +46,19 @@ session_settings = {'channel_count': 4, 'animal': animal, 'devices': devices, 'i
 
 settings_dict = {'ppm': 511, 'sessions': [session_settings,]}
 
-def test_session_animal():
-    session_animal = AnimalMetadata(animal)
+def test_animal():
+    session = make_session(cut_file, tet_file, pos_file, session_settings, settings_dict['ppm'])
 
-    assert isinstance(session_animal, AnimalMetadata)
-    assert session_animal.animal_id == animal['animal_id']
-    assert session_animal.species == animal['species']
-    assert session_animal.weight == animal['weight']
+    animal_instance = Animal({'session_1': session})
+    
+    assert type(animal_instance.ensembles) == list
+    assert type(animal_instance.sessions) == list
+    assert isinstance(animal_instance.population, CellPopulation)
 
-def test_session_tracker():
-    pos_dict = grab_position_data(pos_file, settings_dict['ppm'])
-    session_tracker = TrackerMetadata(pos_dict)
+    animal_instance.add_session(session)
 
-    assert isinstance(session_tracker, TrackerMetadata)
-    assert session_tracker.arena_height != None
-    assert session_tracker.y.all() != None
-    assert session_tracker.x.all() != None
-    assert session_tracker.time.all() != None
-    assert session_tracker.arena_width != None
-
-def test_session_implant():
-    session_implant = ImplantMetadata(implant)
-
-    assert isinstance(session_implant, ImplantMetadata)
-    assert session_implant.implant_id == implant['implant_id']
-    assert session_implant.implant_type == implant['implant_type']
-    assert session_implant.implant_units == implant['implant_units']
-
-def test_session_devices():
-    pos_dict = grab_position_data(pos_file, settings_dict['ppm'])
-    session_devices = DevicesMetadata({'implant': ImplantMetadata(implant), 'axona_led_tracker': TrackerMetadata(pos_dict)})
-
-    assert isinstance(session_devices, DevicesMetadata)
-    assert type(session_devices.devices_dict) == dict
-    assert isinstance(session_devices.devices_dict['axona_led_tracker'], TrackerMetadata)
-    assert isinstance(session_devices.devices_dict['implant'], ImplantMetadata)
+    assert len(animal_instance.ensembles) == 2
+    assert len(animal_instance.sessions) == 2
 
 def test_session():
     session = make_session(cut_file, tet_file, pos_file, session_settings, settings_dict['ppm'])

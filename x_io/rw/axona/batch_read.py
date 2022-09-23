@@ -13,7 +13,8 @@ from core.spatial import Position2D
 from library.workspace import Session, SessionData, SessionMetadata, Study, StudyMetadata
 from core.instruments import DevicesMetadata, ImplantMetadata, TrackerMetadata
 from core.subjects import AnimalMetadata
-from core.spikes import Spike, SpikeClusterBatch, SpikeTrain
+from core.spikes import Spike, SpikeTrain
+from library.ensembles import SpikeTrainBatch, SpikeClusterBatch
 import numpy as np
 
 from x_io.rw.axona.read_tetrode_and_cut import (
