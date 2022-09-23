@@ -4,9 +4,11 @@ import sys
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
 
-from core.subjects import SessionMetadata, StudyMetadata
-
-from library.animal import Animal, AnimalCell, AnimalSession
+from core.subjects import StudyMetadata, SessionMetadata
+from library.ensembles import Cell, CellEnsemble, CellPopulation, SpikeClusterBatch, SpikeTrainBatch
+from core.spikes import * 
+from core.spatial import Position2D
+from library.spike import sort_spikes_by_cell
 
 class Workspace():
     def __init__(self):
@@ -138,8 +140,7 @@ class Study(Workspace):
         if self.animals == None:
             self.make_animals()
         return self.animals
-
-        
+      
 
 class SessionData():
     def __init__(self, input_dict: dict):
@@ -154,3 +155,74 @@ class SessionData():
             core_data_instances[key] = self._input_dict[key]
 
         return core_data_instances
+
+
+
+class Animal():
+    """
+    Holds all sessions belonging to an animal, TO BE ADDED: ordered sequentially in time 
+    """
+    ### Currently input is a list of dictionaries, once we save ordered sessions in x_io study class we will input nested dictionaries
+    def __init__(self, input_dict: dict):
+        self._input_dict = input_dict
+
+        self.sessions = []
+        self.ensembles = []
+
+        self.sessions, self.ensembles = self._read_input_dict()
+
+        self.population = CellPopulation()
+
+        self.animal_id = self.sessions[0].animal_id
+
+
+    def _read_input_dict(self):
+        sessions = []
+        ensembles = []
+        for key in self._input_dict:
+            session = self._input_dict[key]
+            assert isinstance(session, Session)
+            # session is instance of SessionWorkspace, has SessionData and SessionMetadata
+            # AnimalSession will hold Cells which hold SpikeTrains from SessionData
+            cell_ensemble = self.add_session(session)
+            sessions.append(session)
+            ensembles.append(cell_ensemble)
+        return sessions, ensembles
+
+    def _extract_core_classes(self, session):
+        core_data = {}
+        keys = list(session.session_data.data.keys())
+        for i in range(len(keys)):
+            core_type = session.session_data.data[keys[i]] 
+            core_data = self._check_core_type(keys[i], core_type, core_data)
+
+        return core_data
+
+    def _check_core_type(self, key, core_type, core_data):
+        if isinstance(core_type, SpikeTrain):
+            core_data[key] = core_type
+        elif isinstance(core_type, SpikeClusterBatch):
+            core_data[key] = core_type
+        elif isinstance(core_type, Position2D):
+            core_data[key] = core_type
+        else:
+            print('Session data class is not valid, check inputs')
+        return core_data
+
+    def add_session(self, session):
+        core_data = self._extract_core_classes(session)
+        assert 'spike_cluster' in core_data, 'Need cluster label data to sort valid cells'
+        spike_cluster = core_data['spike_cluster']
+        assert isinstance(spike_cluster, SpikeClusterBatch)
+        good_sorted_cells, good_sorted_waveforms = sort_spikes_by_cell(spike_cluster)
+        ensemble = CellEnsemble()
+        for i in range(len(good_sorted_cells)):
+            cell_dict = {'events': good_sorted_cells[i], 'signal': good_sorted_waveforms[i], 'session_metadata': session.session_metadata}
+            cell = Cell(cell_dict)
+            ensemble.add_cell(cell)
+        
+        self.ensembles.append(ensemble)
+        self.sessions.append(session)
+        
+
+    

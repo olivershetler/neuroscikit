@@ -80,8 +80,8 @@ class TrackerMetadata(DevicesMetadata):
             x = self._input_dict['x']
         if 'y' in self._input_dict:
             y = self._input_dict['y']
-        if 'time' in self._input_dict:
-            time = self._input_dict['time']
+        if 't' in self._input_dict:
+            time = self._input_dict['t']
         if 'arena_height' in self._input_dict:
             arena_height = self._input_dict['arena_height']
         if 'arena_width' in self._input_dict:

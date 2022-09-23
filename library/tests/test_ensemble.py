@@ -5,15 +5,18 @@ import os, sys
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
 
-from library.ensemble import SpikeTrainBatch, SpikeClusterBatch
+from library.ensembles import CellEnsemble, CellPopulation, SpikeTrainBatch, SpikeClusterBatch, Cell
 from core.core_utils import *
+from core.subjects import SessionMetadata
 from core.spikes import Spike, SpikeCluster, SpikeTrain
+from library.ensembles import Cell
+from x_io.rw.axona.batch_read import make_session
 
 
 
 def test_spike_cluster_batch_class():
     event_times = make_1D_timestamps()
-    ch_count = 8
+    ch_count = 4
     samples_per_wave = 50
     waveforms = make_waveforms(ch_count, len(event_times), samples_per_wave)
     cluster_count = 10
@@ -41,7 +44,7 @@ def test_spike_cluster_batch_class():
     labels = spike_cluster_batch.get_cluster_labels()
     unique_labels = spike_cluster_batch.get_unique_cluster_labels()
     # spk_count = spike_cluster_batch.get_cluster_spike_count()
-    single_channel_waveform = spike_cluster_batch.get_single_channel_waveforms(event_labels[0])
+    single_channel_waveform = spike_cluster_batch.get_single_channel_waveforms(1)
     # spike_objects = spike_cluster_batch.get_spike_object_instances()
     rates = spike_cluster_batch.get_all_cluster_firing_rates()
     spike_clusters = spike_cluster_batch.get_spike_cluster_instances()
@@ -88,7 +91,7 @@ def test_spike_train_batch_class():
     spike_train1.get_binary()
     instances1 = spike_train1.get_spike_train_instances()
 
-    assert type(rate1) == float
+    assert type(rate1) == np.float64
     assert type(rate_list1) == list
     assert type(spike_train1.events_binary) == list
     assert type(spike_train1.event_times) == list
@@ -112,7 +115,7 @@ def test_spike_train_batch_class():
     rate_list2 = spike_train2.get_indiv_event_rate()
     instances2 = spike_train2.get_spike_train_instances()
 
-    assert type(rate2) == float
+    assert type(rate2) == np.float64
     assert type(rate_list2) == list
     assert type(spike_train2.events_binary) == list
     assert type(spike_train2.event_times) == list
@@ -120,4 +123,42 @@ def test_spike_train_batch_class():
     assert type(spike_train2.events_binary[0]) == list
     assert type(spike_train2.event_times[0]) == list
     assert isinstance(instances2[0], SpikeTrain) == True
+
+def test_cell_ensemble():
+    cells = {}
+    for i in range(5):
+        events = make_1D_timestamps()
+        waveforms = make_waveforms
+        session_metadata = SessionMetadata({'session_id': 'id0'})
+        cell = Cell({'events': events, 'signal': waveforms, 'session_metadata': session_metadata})
+        cells['cell_'+ str(i+1)] = cell
+
+    ensemble = CellEnsemble(cells)
+
+    assert isinstance(ensemble, CellEnsemble)
+    assert type(ensemble.cells) == list
+
+    events = make_1D_timestamps()
+    waveforms = make_waveforms
+    session_metadata = SessionMetadata({'session_id': 'id0'})
+    cell_new = Cell({'events': events, 'signal': waveforms, 'session_metadata': session_metadata})
+
+    ensemble.add_cell(cell_new)
+
+    assert ensemble.cells[-1] == cell_new
+
+def test_cell_population():
+    cells = {}
+    for i in range(5):
+        events = make_1D_timestamps()
+        waveforms = make_waveforms
+        session_metadata = SessionMetadata({'session_id': 'id0'})
+        cell = Cell({'events': events, 'signal': waveforms, 'session_metadata': session_metadata})
+        cells['cell_'+ str(i+1)] = cell
+
+    ensemble = CellEnsemble(cells)
+
+    population = CellPopulation()
+
+    assert type(population.ensembles) == list
 

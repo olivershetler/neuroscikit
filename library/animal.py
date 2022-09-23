@@ -1,7 +1,17 @@
+import os
+import sys
 
 
+PROJECT_PATH = os.getcwd()
+sys.path.append(PROJECT_PATH)
 
-class Animal(Subject):
+from core.spikes import Spike, SpikeCluster, SpikeTrain
+from core.spatial import Position2D
+from library.ensembles import SpikeClusterBatch, CellPopulation, CellEnsemble, Cell
+from library.spike import sort_spikes_by_cell
+from library.workspace import Session
+
+class AnimalOld():
     """
     Holds all session information and data for an animal
 
@@ -143,79 +153,22 @@ class Animal(Subject):
         for session in sessions:
             self.spatial_dict[session] = spatial_data[session]
 
-    # def add_session_stat(self, session, statkey, statval, multiSession=False, multiStats=False):
-    #     self.stat_dict = self.get_stat_dict()
-    #     if multiSession == False and multiStats == False:
-    #         self.stat_dict['session_stats'][session][statkey] = statval
-    #     elif multiSession == True and multiStats == False:
-    #         assert type(session) == list, 'multiSession is true but only single session id provided'
-    #         for i in range(len(session)):
-    #             self.stat_dict['session_stats'][session[i]][statkey] = statval
-    #     elif multiSession == True and multiStats == True:
-    #         assert len(session) == len(statkey), 'multiSEssion and multiStats true so session, statkey and stataval need to be lists of same len'
-    #         assert len(statkey) == len(statval)
-    #         for i in range(len(session)):
-    #             self.stat_dict['session_stats'][session[i]][statkey[i]] = statval[i]
-    #     elif multiSession == False and multiStats == True:
-    #         assert type(statkey) == list, 'multiStats is true but only single stat key provided'
-    #         assert len(statkey) == len(statval), 'multiStats is true but only single stat val provided'
-    #         for i in range(len(statkey)):
-    #             self.stat_dict['session_stats'][session][statkey[i]] = statval[i]
-
     def add_animal_stat(self, animal_stats):
         self.stat_dict = self.get_stat_dict()
         self.stat_dict['animal_stats'] = animal_stats
 
 
 
-class Animal():
-    """
-    Holds all sessions belonging to an animal, TO BE ADDED: ordered sequentially
-    """
-    ### Currently input is a list of dictionaries, once we save ordered sessions in x_io study class we will input nested dictionaries
-    def __init__(self, input_dict_list: list):
-        self._input_dict_list = input_dict_list
-
-        self.sessions = self._read_input_dict()
-
-    def _read_input_dict(self):
-        sessions = []
-        for i in range(len(self._input_dict_list)):
-            session_dict = self._input_dict_list[i]
-            session = AnimalSession(session_dict)
-            sessions.append(session)
-        return sessions
-
-
-class AnimalSession():
-    """
-    A single session belonging to an animal instance.
-    """
-    def __init__(self, input_dict: dict):
-        self._input_dict = input_dict
-
-    def _read_input_dict(self):
-        pass
-
-class AnimalCell():
-    """
-    A single cell belonging to a session of an animal
-    """
-    def __init__(self, input_dict: dict):
-        self._input_dict = input_dict
-
-    def _read_input_dict(self):
-        pass
 
 
 """
 
 Animal has multiple AnimalSessions
-AnimalSession has multiple AnimalCells
-AnimalCells != SpikeTrainCluster
+AnimalSession has multiple Cells
+Cells != SpikeTrainCluster
 SpikeTrainCLuster has multiple SORTED event as SpikeTrains.
-AnimalCells has multiple SpikeTrainClusters.
-    If one trial per cell then AnimalCells has one SpikeTrain (as a SpikeTrainCluster with one SpikeTrain only)
+Cells has multiple SpikeTrainClusters.
+    If one trial per cell then Cells has one SpikeTrain (as a SpikeTrainCluster with one SpikeTrain only)
     If multiple trials per cell then AnimallCells has multiple SpikeTrains (as a SpikeTrainCluster with as manny SpikeTrains as trials
 AnimalSession != SpikeCluster
 AnimalSession has multiple UNSORTED events as SpikeCluster

@@ -16,7 +16,7 @@ pos_file = os.path.join(data_dir, '20140815-behavior2-90.pos')
 
 animal = {'animal_id': 'id', 'species': 'mouse', 'sex': 'F', 'age': 1, 'weight': 1, 'genotype': 'type', 'animal_notes': 'notes'}
 devices = {'axona_led_tracker': True, 'implant': True}
-pos_dict = {'x' : [0,1,2,3], 'y': [0,1,2,3], 'arena_height': 1, 'arena_width': 1, 'time': [0,1,2,3]}
+pos_dict = {'x' : [0,1,2,3], 'y': [0,1,2,3], 'arena_height': 1, 'arena_width': 1, 't': [0,1,2,3]}
 implant = {'implant_id': 'id', 'implant_type': 'tetrode', 'implant_geometry': 'square', 'wire_length': 25, 'wire_length_units': 'um', 'implant_units': 'uV'}
 
 session_settings = {'channel_count': 4, 'animal': animal, 'devices': devices, 'implant': implant}
