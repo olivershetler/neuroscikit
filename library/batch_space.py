@@ -6,10 +6,11 @@ PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
 
 from core.core_utils import make_seconds_index_from_rate
-from core.spikes import * 
+from core.spikes import *
+import numpy as np
+from library.workspace import Workspace
 
-
-class SpikeTrainBatch():
+class SpikeTrainBatch(Workspace):
     """
     Class to hold collection of 1D spike trains
     """
@@ -20,7 +21,7 @@ class SpikeTrainBatch():
 
         # self.time_index = make_seconds_index_from_rate(duration, sample_rate)
 
-        assert ((len(events_binary) == 0) and (len(event_times) == 0)) != True, "No spike data provided"
+        # assert ((len(events_binary) == 0) and (len(event_times) == 0)) != True, "No spike data provided"
 
         self.units = max(len(events_binary), len(event_times))
 
@@ -84,7 +85,9 @@ class SpikeTrainBatch():
     def get_average_event_rate(self):
         self.get_spike_train_instances()
         event_rates = self.get_indiv_event_rate()
-        return sum(event_rates) / len(event_rates)
+        event_rates = np.array(event_rates)
+        ids = np.where(event_rates != None)[0]
+        return sum(event_rates[ids]) / len(event_rates[ids])
 
     def _set_binary(self):
         for i in range(len(self._spike_train_instances)):
@@ -112,10 +115,7 @@ class SpikeTrainBatch():
         else:
             return self.event_times
 
-
-
-
-class SpikeClusterBatch():
+class SpikeClusterBatch(Workspace):
     """
     Class to batch process SpikeClusters. Can pass in unorganized set of 1D spike times + cluster labels
     will create a collection of spike clusters with a collection of spikie objects in each cluster
@@ -188,7 +188,7 @@ class SpikeClusterBatch():
 
     # returns specific channel waveforms across all spike times
     def get_single_channel_waveforms(self, id):
-        # assert id in [1,2,3,4,5,6,7,8], 'Channel number must be from 1 to 8'
+        assert id in [1,2,3,4,5,6,7,8], 'Channel number must be from 1 to 8'
         single_channel = []
         for i in range(len(self.event_times)):
             single_channel.append(self.waveforms[id-1][i])
@@ -221,7 +221,7 @@ class SpikeClusterBatch():
 
     # Get specific SpikeCluster() instance
     def get_single_spike_cluster_instance(self, cluster_id):
-        # assert cluster_id in self.cluster_labels, 'Invalid cluster ID'
+        assert cluster_id in self.cluster_labels, 'Invalid cluster ID'
         count = 0
         clusterevent_times = []
         cluster_waveforms = []
@@ -290,6 +290,4 @@ class SpikeClusterBatch():
                 # labelled.append(self.cluster_labels[i])
         # assert len(labelled) == max(self.cluster_labels)
         self.spike_clusters = instances
-
-
 

@@ -11,7 +11,7 @@ import os, sys
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
 
-from library.ensembles import SpikeClusterBatch
+from library.batch_space import SpikeClusterBatch
 
 def sort_spikes_by_cell(clusters: SpikeClusterBatch):
     # spike_times, cluster_labels, waveform

@@ -22,7 +22,7 @@ from x_io.rw.axona.read_tetrode_and_cut import (
     ,load_spike_train_from_paths
 )
 
-from library.workspace import Session, SessionData, SessionMetadata, Study, StudyMetadata
+from library.study_space import Session, SessionData, SessionMetadata, Study, StudyMetadata
 from core.instruments import DevicesMetadata, ImplantMetadata, TrackerMetadata
 from core.subjects import AnimalMetadata
 from core.spikes import Spike, SpikeClusterBatch, SpikeTrain

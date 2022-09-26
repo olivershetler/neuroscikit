@@ -1,3 +1,5 @@
+
+
 import os, sys
 
 # from prototypes.wave_form_sorter.sort_cell_spike_times import sort_cell_spike_times
@@ -5,13 +7,9 @@ import os, sys
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
 
-from library.ensembles import CellEnsemble, CellPopulation, SpikeTrainBatch, SpikeClusterBatch, Cell
 from core.core_utils import *
-from core.subjects import SessionMetadata
-from core.spikes import Spike, SpikeCluster, SpikeTrain
-from library.ensembles import Cell
-from x_io.rw.axona.batch_read import make_session
-
+from library.batch_space import SpikeTrainBatch, SpikeClusterBatch
+from core.spikes import SpikeCluster, SpikeTrain, Spike
 
 
 def test_spike_cluster_batch_class():
@@ -123,42 +121,3 @@ def test_spike_train_batch_class():
     assert type(spike_train2.events_binary[0]) == list
     assert type(spike_train2.event_times[0]) == list
     assert isinstance(instances2[0], SpikeTrain) == True
-
-def test_cell_ensemble():
-    cells = {}
-    for i in range(5):
-        events = make_1D_timestamps()
-        waveforms = make_waveforms
-        session_metadata = SessionMetadata({'session_id': 'id0'})
-        cell = Cell({'events': events, 'signal': waveforms, 'session_metadata': session_metadata})
-        cells['cell_'+ str(i+1)] = cell
-
-    ensemble = CellEnsemble(cells)
-
-    assert isinstance(ensemble, CellEnsemble)
-    assert type(ensemble.cells) == list
-
-    events = make_1D_timestamps()
-    waveforms = make_waveforms
-    session_metadata = SessionMetadata({'session_id': 'id0'})
-    cell_new = Cell({'events': events, 'signal': waveforms, 'session_metadata': session_metadata})
-
-    ensemble.add_cell(cell_new)
-
-    assert ensemble.cells[-1] == cell_new
-
-def test_cell_population():
-    cells = {}
-    for i in range(5):
-        events = make_1D_timestamps()
-        waveforms = make_waveforms
-        session_metadata = SessionMetadata({'session_id': 'id0'})
-        cell = Cell({'events': events, 'signal': waveforms, 'session_metadata': session_metadata})
-        cells['cell_'+ str(i+1)] = cell
-
-    ensemble = CellEnsemble(cells)
-
-    population = CellPopulation()
-
-    assert type(population.ensembles) == list
-

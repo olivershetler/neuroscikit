@@ -10,11 +10,11 @@ PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
 
 from core.spatial import Position2D
-from library.workspace import Session, SessionData, SessionMetadata, Study, StudyMetadata
+from library.study_space import Session, SessionData, SessionMetadata, Study, StudyMetadata
 from core.instruments import DevicesMetadata, ImplantMetadata, TrackerMetadata
 from core.subjects import AnimalMetadata
 from core.spikes import Spike, SpikeTrain
-from library.ensembles import SpikeTrainBatch, SpikeClusterBatch
+from library.batch_space import SpikeTrainBatch, SpikeClusterBatch
 import numpy as np
 
 from x_io.rw.axona.read_tetrode_and_cut import (
