@@ -138,6 +138,8 @@ class SpikeClusterBatch(Workspace):
         self.spike_clusters = []
         self.spike_objects = []
         self.waveforms = waveforms
+
+        self.stats_dict = self._init_stats_dict()
         # self._adjusted_labels = []
 
         # unique = self.get_unique_cluster_labels()
@@ -291,3 +293,15 @@ class SpikeClusterBatch(Workspace):
         # assert len(labelled) == max(self.cluster_labels)
         self.spike_clusters = instances
 
+    def _init_stats_dict(self):
+        stat_dict = {}
+        path = 'library'
+        dir_names = [x[1] for x in os.walk(path)][0]
+        
+        for dir in dir_names:
+            if dir != 'tests' and 'cache' not in dir:
+                stat_dict[dir] = {}
+
+        return stat_dict
+
+    

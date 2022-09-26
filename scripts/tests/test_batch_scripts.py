@@ -182,9 +182,9 @@ def make_study():
     # still need to update cell references after matchings
 
     pos_dict_1 = grab_position_data(session1_pos_path, 511)
-    pos_x_1, pos_y_1, pos_t_1, arena_size_1 = pos_dict_1['x'], pos_dict_1['y'], pos_dict_1['time'], (pos_dict_1['arena_width'], pos_dict_1['arena_height'])
+    pos_x_1, pos_y_1, pos_t_1, arena_size_1 = pos_dict_1['x'], pos_dict_1['y'], pos_dict_1['t'], (pos_dict_1['arena_width'], pos_dict_1['arena_height'])
     pos_dict_2 = grab_position_data(session2_pos_path, 511)
-    pos_x_2, pos_y_2, pos_t_2, arena_size_2 = pos_dict_2['x'], pos_dict_2['y'], pos_dict_2['time'], (pos_dict_2['arena_width'], pos_dict_2['arena_height'])
+    pos_x_2, pos_y_2, pos_t_2, arena_size_2 = pos_dict_2['x'], pos_dict_2['y'], pos_dict_2['t'], (pos_dict_2['arena_width'], pos_dict_2['arena_height'])
 
     s1 = {
         'pos_x': pos_x_1,

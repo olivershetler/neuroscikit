@@ -82,3 +82,8 @@ def make_clusters(timestamps, cluster_count):
         idx = np.random.choice(cluster_count, size=1)[0]
         event_labels.append(int(idx))
     return event_labels
+
+
+def make_2D_arena(count=100):
+    return np.random.sample(count), np.random.sample(count)
+

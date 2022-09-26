@@ -1,143 +1,182 @@
-import os
-import sys
-import numpy as np
+# import os
+# import sys
+# import numpy as np
 
-PROJECT_PATH = os.getcwd()
-sys.path.append(PROJECT_PATH)
+# PROJECT_PATH = os.getcwd()
+# sys.path.append(PROJECT_PATH)
 
-from core.core_utils import make_seconds_index_from_rate
-from core.data_study import Animal
-from library.cluster import feature_wave_PCX, wave_PCA, create_features, feature_energy, isolation_distance, L_ratio, mahal
+# from core.core_utils import make_seconds_index_from_rate
+# from library.cluster import feature_wave_PCX, wave_PCA, create_features, feature_energy, isolation_distance, L_ratio, mahal
+# from library.batch_space import SpikeClusterBatch
+# from core.spikes import SpikeCluster
 
-def make_1D_timestamps(T=2, dt=0.02):
-    time = np.arange(0,T,dt)
+# def make_1D_timestamps(T=2, dt=0.02):
+#     time = np.arange(0,T,dt)
 
-    spk_count = np.random.choice(len(time), size=1)
-    while spk_count <= 10:
-        spk_count = np.random.choice(len(time), size=1)
-    spk_time = np.random.choice(time, size=spk_count, replace=False).tolist()
+#     spk_count = np.random.choice(len(time), size=1)
+#     while spk_count <= 10:
+#         spk_count = np.random.choice(len(time), size=1)
+#     spk_time = np.random.choice(time, size=spk_count, replace=False).tolist()
 
-    return spk_time
+#     return spk_time
 
-def make_2D_arena(count=100):
-    return np.random.sample(count), np.random.sample(count)
+# def make_2D_arena(count=100):
+#     return np.random.sample(count), np.random.sample(count)
 
-def make_waveforms(channel_count, spike_count, samples_per_wave):
-    waveforms = np.zeros((channel_count, spike_count, samples_per_wave))
+# def make_waveforms(channel_count, spike_count, samples_per_wave):
+#     waveforms = np.zeros((channel_count, spike_count, samples_per_wave))
 
-    for i in range(channel_count):
-        for j in range(samples_per_wave):
-            waveforms[i,:,j] = np.random.randint(-20,20,size=spike_count).tolist()
+#     for i in range(channel_count):
+#         for j in range(samples_per_wave):
+#             waveforms[i,:,j] = np.random.randint(-20,20,size=spike_count).tolist()
 
-    return waveforms.tolist()
+#     return waveforms.tolist()
 
-def make_clusters(timestamps, cluster_count):
-    cluster_labels = []
-    for i in range(len(timestamps)):
-        idx = np.random.choice(cluster_count, size=1)[0]
-        cluster_labels.append(int(idx))
-    return cluster_labels
+# def make_clusters(timestamps, cluster_count):
+#     cluster_labels = []
+#     for i in range(len(timestamps)):
+#         idx = np.random.choice(cluster_count, size=1)[0]
+#         cluster_labels.append(int(idx))
+#     return cluster_labels
 
-def test_wave_PCA():
-    cv = np.eye(5)
+# def make_spike_cluster_batch():
+#     event_times = make_1D_timestamps()
+#     ch_count = 4
+#     samples_per_wave = 50
+#     waveforms = make_waveforms(ch_count, len(event_times), samples_per_wave)
+#     cluster_count = 10
 
-    pc, rpc, ev, rev = wave_PCA(cv)
+#     event_labels = make_clusters(event_times, cluster_count)
 
-    assert type(pc) == np.ndarray
-    assert type(rpc) == np.ndarray
-    assert type(ev) == np.ndarray
-    assert type(rev) == np.ndarray
+#     T = 2
+#     dt = .02
 
-def test_feature_wave_PCX():
-    ch_count = 8
-    samples_per_wave = 50
+#     input_dict1 = {}
+#     input_dict1['duration'] = int(T)
+#     input_dict1['sample_rate'] = float(1 / dt)
+#     input_dict1['event_times'] = event_times
+#     input_dict1['event_labels'] = event_labels
 
-    spike_times = make_1D_timestamps()
-    waveforms = make_waveforms(ch_count, len(spike_times), samples_per_wave)
- 
-    wavePCData = feature_wave_PCX(np.array(waveforms))
 
-    assert type(wavePCData) == np.ndarray
+#     for i in range(ch_count):
+#         key = 'channel_' + str(i+1)
+#         input_dict1[key] = waveforms[i]
 
-def test_create_features():
-    ch_count = 8
-    samples_per_wave = 50
+#     spike_cluster_batch = SpikeClusterBatch(input_dict1)
 
-    spike_times = make_1D_timestamps()
-    waveforms = make_waveforms(ch_count, len(spike_times), samples_per_wave)
-    FD = create_features(np.array(waveforms))
+#     return spike_cluster_batch
 
-    assert type(FD) == np.ndarray
+# def make_spike_cluster():
+#     event_times = make_1D_timestamps()
+#     ch_count = 8
+#     samples_per_wave = 50
+#     waveforms = make_waveforms(ch_count, len(event_times), samples_per_wave)
 
-def test_feature_energy():
-    ch_count = 8
-    samples_per_wave = 50
+#     T = 2
+#     dt = .02
+#     idx = np.random.choice(len(event_times), size=1)[0]
 
-    spike_times = make_1D_timestamps()
-    waveforms = make_waveforms(ch_count, len(spike_times), samples_per_wave)
-    E = feature_energy(np.array(waveforms))
+#     input_dict1 = {}
+#     input_dict1['duration'] = int(T)
+#     input_dict1['sample_rate'] = float(1 / dt)
+#     input_dict1['event_times'] = event_times
+#     input_dict1['cluster_label'] = int(idx + 1)
 
-    assert type(E) == np.ndarray
 
-def test_isolation_distance():
-    T = 2
-    dt = .02
-    timebase = make_seconds_index_from_rate(T, 1/dt)
-    ch_count = 8
-    samples_per_wave = 50
+#     for i in range(ch_count):
+#         key = 'channel_' + str(i+1)
+#         input_dict1[key] = waveforms[i]
 
-    spike_times = make_1D_timestamps()
-    waveforms = make_waveforms(ch_count, len(spike_times), samples_per_wave)
-    FD = create_features(np.array(waveforms))
+#     spike_cluster = SpikeCluster(input_dict1)
 
-    cluster_labels = make_clusters(timebase, 10)
+#     return spike_cluster
 
-    iso_dist = isolation_distance(FD, cluster_labels)
+# def test_wave_PCA():
+#     cv = np.eye(5)
 
-    assert type(iso_dist) == float
+#     pc, rpc, ev, rev = wave_PCA(cv)
 
-def test_L_ratio():
-    T = 2
-    dt = .02
-    timebase = make_seconds_index_from_rate(T, 1/dt)
-    ch_count = 8
-    samples_per_wave = 50
+#     assert type(pc) == np.ndarray
+#     assert type(rpc) == np.ndarray
+#     assert type(ev) == np.ndarray
+#     assert type(rev) == np.ndarray
 
-    spike_times = make_1D_timestamps()
-    waveforms = make_waveforms(ch_count, len(spike_times), samples_per_wave)
-    FD = create_features(np.array(waveforms))
+# def test_feature_wave_PCX():
+#     spike_cluster = make_spike_cluster()
+#     spike_cluster_batch = make_spike_cluster_batch()
+    
+#     wavePCData = feature_wave_PCX(spike_cluster)
+#     wavePCData_batch = feature_wave_PCX(spike_cluster_batch)
 
-    cluster_labels = make_clusters(timebase, 10)
-    L, ratio, df = L_ratio(FD, cluster_labels)
+#     assert type(wavePCData) == np.ndarray
+#     assert type(wavePCData_batch) == np.ndarray
 
-    assert type(L) == np.float64
-    assert type(ratio) == np.float64 
-    assert type(df) == int 
+# def test_create_features():
+#     spike_cluster = make_spike_cluster_batch()
+#     FD = create_features(spike_cluster)
+#     assert type(FD) == np.ndarray
 
-def test_mahal():
-    T = 2
-    dt = .02
-    timebase = make_seconds_index_from_rate(T, 1/dt)
-    ch_count = 8
-    samples_per_wave = 50
+#     spike_cluster_batch = make_spike_cluster_batch()
+#     FD = create_features(spike_cluster_batch)
+#     assert type(FD) == np.ndarray
 
-    spike_times = make_1D_timestamps()
-    waveforms = make_waveforms(ch_count, len(spike_times), samples_per_wave)
-    FD = create_features(np.array(waveforms))
+# def test_feature_energy():
+#     spike_cluster = make_spike_cluster()
+#     spike_cluster_batch = make_spike_cluster_batch()
 
-    cluster_labels = make_clusters(timebase, 10)
-    d = mahal(FD, FD[cluster_labels, :])
+#     E = feature_energy(spike_cluster)
+#     assert type(E) == np.ndarray
 
-    assert type(d) == np.ndarray
+#     E = feature_energy(spike_cluster_batch)
+#     assert type(E) == np.ndarray
 
-if __name__ == '__main__':
-    test_feature_wave_PCX()
-    test_feature_energy()
-    test_wave_PCA()
-    test_create_features()
-    test_mahal()
-    test_isolation_distance()
-    test_L_ratio()
+# def test_isolation_distance():
+#     spike_cluster = make_spike_cluster()
+#     spike_cluster_batch = make_spike_cluster_batch()
+
+#     iso_dist = isolation_distance(spike_cluster)
+#     assert type(iso_dist) == float
+
+#     iso_dist = isolation_distance(spike_cluster_batch)
+#     assert type(iso_dist) == float
+
+# def test_L_ratio():
+#     spike_cluster = make_spike_cluster()
+#     spike_cluster_batch = make_spike_cluster_batch()
+
+#     L, ratio, df = L_ratio(spike_cluster)
+
+#     assert type(L) == np.float64
+#     assert type(ratio) == np.float64 
+#     assert type(df) == int 
+
+#     L, ratio, df = L_ratio(spike_cluster_batch)
+
+#     assert type(L) == np.float64
+#     assert type(ratio) == np.float64 
+#     assert type(df) == int 
+
+# def test_mahal():
+#     spike_cluster = make_spike_cluster()
+#     spike_cluster_batch = make_spike_cluster_batch()
+
+#     FD = create_features(spike_cluster)
+#     FD_batch = create_features(spike_cluster_batch)
+
+#     d = mahal(FD, FD[spike_cluster.cluster_labels, :])
+#     assert type(d) == np.ndarray
+
+#     d = mahal(FD_batch, FD_batch[spike_cluster_batch.cluster_labels, :])
+#     assert type(d) == np.ndarray
+
+# if __name__ == '__main__':
+#     # test_feature_wave_PCX()
+#     # test_feature_energy()
+#     # test_wave_PCA()
+#     test_create_features()
+#     # test_mahal()
+#     # test_isolation_distance()
+#     # test_L_ratio()
 
 
 

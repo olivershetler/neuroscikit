@@ -236,6 +236,9 @@ class SpikeCluster(): # collection of spike objects
         self.spike_objects = []
         self.waveforms = waveforms
 
+        self.stats_dict = self._init_stats_dict()
+        self.cluster_labels = [self.label for i in range(len(self.event_times))]
+
     def get_cluster_firing_rate(self):
         T = self.time_index[1] - self.time_index[0]
         rate = float(len(self.event_times) / T)
@@ -320,6 +323,17 @@ class SpikeCluster(): # collection of spike objects
             if channel_keys[i] in self._input_dict.keys():
                 waveforms.append(self._input_dict[channel_keys[i]])
         return waveforms
+
+    def _init_stats_dict(self):
+        stat_dict = {}
+        path = 'library'
+        dir_names = [x[1] for x in os.walk(path)][0]
+
+        for dir in dir_names:
+            if dir != 'tests' and 'cache' not in dir:
+                stat_dict[dir] = {}
+
+        return stat_dict
 
 
 
