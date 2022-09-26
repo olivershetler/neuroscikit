@@ -1,3 +1,4 @@
+from msilib.schema import Class
 import os
 import sys
 
@@ -11,29 +12,46 @@ from core.spikes import *
 from core.spatial import Position2D
 from library.spike import sort_spikes_by_cell
 from library.workspace import Workspace
+from core.instruments import DevicesMetadata, ImplantMetadata, TrackerMetadata
 
 
 class Session(Workspace):
-    def __init__(self, input_dict: dict):
+    def __init__(self, input_dict={}):
         self._input_dict = input_dict
 
         self.session_data, self.session_metadata = self._read_input_dict()
+        
+        if not isinstance(self.session_metadata, SessionMetadata) == 0:
+            self.session_metadata = SessionMetadata()
+            device_metadata = DevicesMetadata(input_dict={}, session_metadata= self)
+            self.session_metadata.metadata['devices'] = device_metadata
+        
+        self.animal_id = None
+        self.set_animal_id()
 
-        self.animal_id = self.session_metadata.metadata['animal'].animal_id
+    def get_animal_id(self):
+        if self.animal_id == None:
+            print('Need to add animal metadata to session')
+        return self.animal_id
+
+    def set_animal_id(self):
+        if 'animal' in self.session_metadata.metadata: 
+            self.animal_id = self.session_metadata.metadata['animal'].animal_id
+            print('Animal ID set')
 
     def _read_input_dict(self):
-        session_data = None
-        session_metadata = None
+        session_data = {}
+        session_metadata = {}
 
         if 'data' in self._input_dict:
             session_data = self._input_dict['data']
         else:
-            print('No session data provided')
+            session_data = SessionData()
 
         if 'metadata' in  self._input_dict:
             session_metadata = self._input_dict['metadata']
         else:
-            print('Mo session metadata provided')
+            session_metadata = SessionMetadata()
 
         return session_data, session_metadata
 
@@ -77,6 +95,24 @@ class Session(Workspace):
                 if 'position' in key or 'pos' in key:
                     pos_dict[key] = self.session_data.data[key]
         return pos_dict
+
+    def make_class(self, ClassName, input_dict: dict):
+        class_object = ClassName(input_dict, session_metadata=self) 
+
+        if 'Metadata' in str(ClassName) or 'metadata' in str(ClassName):
+            if isinstance(class_object, TrackerMetadata):
+                self.session_metadata.metadata['devices']._add_device('axona_led_tracker', class_object)
+            elif isinstance(class_object, ImplantMetadata):
+                self.session_metadata.metadata['devices']._add_device('implant', class_object)
+        else:
+            if isinstance(class_object, SpikeCluster):
+                self.session_data.data['spike_cluster'] = class_object
+            elif isinstance(class_object, SpikeTrain):
+                self.session_data.data['spike_train'] = class_object
+            elif isinstance(class_object, Position2D):
+                self.session_data.data['position'] = class_object
+
+        return class_object
 
 
 class Study(Workspace):
@@ -141,7 +177,7 @@ class Study(Workspace):
       
 
 class SessionData():
-    def __init__(self, input_dict: dict):
+    def __init__(self, input_dict={}):
         self._input_dict = input_dict 
 
         self.data = self._read_input_dict()
@@ -153,6 +189,11 @@ class SessionData():
             core_data_instances[key] = self._input_dict[key]
 
         return core_data_instances
+
+    
+    def _add_session_data(self, key, data_class):
+        assert 'Metadata' not in key and 'metadata' not in key, 'Cannot add metadata class to session data'
+        self.data[key] = data_class
 
 
 

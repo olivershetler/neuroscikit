@@ -25,7 +25,8 @@ from x_io.rw.axona.read_tetrode_and_cut import (
 from library.study_space import Session, SessionData, SessionMetadata, Study, StudyMetadata
 from core.instruments import DevicesMetadata, ImplantMetadata, TrackerMetadata
 from core.subjects import AnimalMetadata
-from core.spikes import Spike, SpikeClusterBatch, SpikeTrain
+from core.spikes import SpikeTrain
+from library.batch_space import SpikeClusterBatch
 
 from x_io.rw.axona.read_pos import (
     grab_position_data,

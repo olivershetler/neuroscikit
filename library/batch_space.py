@@ -14,21 +14,22 @@ class SpikeTrainBatch(Workspace):
     """
     Class to hold collection of 1D spike trains
     """
-    def __init__(self, input_dict):
+    def __init__(self, input_dict, **kwargs):
         self._input_dict = input_dict
 
-        duration, sample_rate, events_binary, event_times = self._read_input_dict()
+        self.duration, self.sample_rate, self.events_binary, self.event_times, self.session_metadata = self._read_input_dict()
 
-        # self.time_index = make_seconds_index_from_rate(duration, sample_rate)
+        if 'session_metadata' in kwargs:
+            if self.session_metadata != None: 
+                print('Ses metadata is in the input dict and init fxn, init fnx will override')
+            self.session_metadata = kwargs['session_metadata']
+
+        self.time_index = make_seconds_index_from_rate(self.duration, self.sample_rate)
 
         # assert ((len(events_binary) == 0) and (len(event_times) == 0)) != True, "No spike data provided"
 
-        self.units = max(len(events_binary), len(event_times))
+        self.units = max(len(self.events_binary), len(self.event_times))
 
-        self.sample_rate = sample_rate
-        self.duration = duration
-        self.event_times = event_times
-        self.events_binary = events_binary
         self.event_labels = []
         self._event_rate = None
         self._spike_train_instances = []
@@ -38,18 +39,25 @@ class SpikeTrainBatch(Workspace):
     def _read_input_dict(self):
         duration = self._input_dict['duration']
         sample_rate = self._input_dict['sample_rate']
+
         events_binary = self._input_dict['events_binary']
         assert type(events_binary) == list, 'Binary spikes are not a list, check inputs'
         if len(events_binary) > 0:
             assert type(events_binary[0]) == list, 'Binary spikes are not nested lists (2D), check inputs are not 1D'
             spike_data_present = True
+
         event_times = self._input_dict['event_times']
         assert type(event_times) == list, 'Spike times are not a list, check inputs'
         if len(event_times) > 0:
             assert type(event_times[0]) == list, 'Spike times are not nested lists (2D), check inputs are not 1D'
             spike_data_present = True
         assert spike_data_present == True, 'No spike times or binary spikes provided'
-        return duration, sample_rate, events_binary, event_times
+
+        session_metadata = None 
+        if 'session_metadata' in self._input_dict:
+            session_metadata = self._input_dict['session_metadata']
+
+        return duration, sample_rate, events_binary, event_times, session_metadata
 
     def _make_spike_train_instance(self):
         # arr to collect SpikeTrain() instances
@@ -133,8 +141,14 @@ class SpikeClusterBatch(Workspace):
     Class to batch process SpikeClusters. Can pass in unorganized set of 1D spike times + cluster labels
     will create a collection of spike clusters with a collection of spikie objects in each cluster
     """
-    def __init__(self, input_dict):
+    def __init__(self, input_dict, **kwargs):
         self._input_dict = input_dict
+
+        if 'session_metadata' in kwargs:
+            self.session_metadata = kwargs['session_metadata']
+        else:
+            self.session_metadata = None
+
         duration, sample_rate, cluster_labels, event_times, waveforms = self._read_input_dict()
 
         assert type(cluster_labels) == list, 'Cluster labels missing'

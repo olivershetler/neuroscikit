@@ -1,9 +1,9 @@
 import numpy as np
 
 class Position2D():
-    def __init__(self, subject, limb, input_dict):
-        self.subject = subject
-        self.limb = limb # e.g. head
+    def __init__(self, input_dict, **kwargs):
+        # self.subject = subject
+        # self.limb = limb # e.g. head
         if 't' in input_dict:
             self.t = input_dict['t']
         elif 'rate' in input_dict and 'x' in input_dict:
@@ -14,6 +14,17 @@ class Position2D():
         if 'y' in input_dict:
             self.y = input_dict['y']
             assert len(self.y) == len(self.t)
+        if 'session_metadata' in input_dict:
+            self.session_metadata = input_dict['session_metadata']
+        else:
+            self.session_metadata = None
+
+        if 'session_metadata' in kwargs:
+            if self.session_metadata != None: 
+                print('Ses metadata is in the input dict and init fxn, init fnx will override')
+            self.session_metadata = kwargs['session_metadata']
+
+        self._input_dict = input_dict
 """
     def speed_from_locations(location) -> np.ndarray:
         '''calculates an averaged/smoothed speed'''

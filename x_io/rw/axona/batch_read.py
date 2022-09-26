@@ -10,7 +10,7 @@ PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
 
 from core.spatial import Position2D
-from library.study_space import Session, SessionData, SessionMetadata, Study, StudyMetadata
+from library.study_space import Animal, Session, SessionData, SessionMetadata, Study, StudyMetadata
 from core.instruments import DevicesMetadata, ImplantMetadata, TrackerMetadata
 from core.subjects import AnimalMetadata
 from core.spikes import Spike, SpikeTrain
@@ -189,9 +189,9 @@ def make_session(cut_file, tet_file, pos_file, settings_dict, ppm):
 
     session_dict = _fill_session_dict(session_dict, implant_data_dict, pos_dict, settings_dict)
 
-    session_classes = _create_session_classes(session_dict, settings_dict)
+    session, session_classes = _create_session_classes(session_dict, settings_dict)
 
-    session = Session(session_classes)
+    assert isinstance(session, Session)
 
     return session
 
@@ -208,26 +208,34 @@ def _create_session_classes(session_dict, settings_dict):
 
     ALL TAKE IN SESSION METADATA
     """
+
+    session = Session()
+    animal_metadata = session.make_class(AnimalMetadata, session_dict['animal'])
+    tracker_metadata = session.make_class(TrackerMetadata, session_dict['devices']['implant'])
+    implant_metadata = session.make_class(ImplantMetadata, session_dict['devices']['axona_led_tracker'])
+    spike_train = session.make_class(SpikeTrain, session_dict['devices']['implant']['implant_data'])
+    spike_cluster = session.make_class(SpikeClusterBatch, session_dict['devices']['implant']['implant_data'])
+    position = session.make_class(Position2D, ('subject' , 'space', session_dict['devices']['axona_led_tracker']))
     
-    animal_metadata = AnimalMetadata(session_dict['animal'])
-    tracker_metadata = TrackerMetadata(session_dict['devices']['implant'])
-    implant_metadata = ImplantMetadata(session_dict['devices']['axona_led_tracker'])
-    devices_dict = {'axona_led_tracker': tracker_metadata, 'implant': implant_metadata}
-    devices_metadata = DevicesMetadata(devices_dict)
+    # animal_metadata = AnimalMetadata(session_dict['animal'])
+    # tracker_metadata = TrackerMetadata(session_dict['devices']['implant'])
+    # implant_metadata = ImplantMetadata(session_dict['devices']['axona_led_tracker'])
+    # devices_dict = {'axona_led_tracker': tracker_metadata, 'implant': implant_metadata}
+    # devices_metadata = DevicesMetadata(devices_dict)
     
-    spike_train = SpikeTrain(session_dict['devices']['implant']['implant_data'])
-    spike_cluster = SpikeClusterBatch(session_dict['devices']['implant']['implant_data'])
+    # spike_train = SpikeTrain(session_dict['devices']['implant']['implant_data'])
+    # spike_cluster = SpikeClusterBatch(session_dict['devices']['implant']['implant_data'])
 
-    # Temporary fix, rmeove this
-    position = Position2D('subject' , 'space', session_dict['devices']['axona_led_tracker'])
+    # # Temporary fix, rmeove this
+    # position = Position2D('subject' , 'space', session_dict['devices']['axona_led_tracker'])
 
-    # Workspace classes
-    session_metadata = SessionMetadata({'animal': animal_metadata, 'devices': devices_metadata})
-    session_data = SessionData({'spike_train': spike_train, 'spike_cluster': spike_cluster, 'position': position})
+    # # Workspace classes
+    # session_metadata = SessionMetadata({'animal': animal_metadata, 'devices': devices_metadata})
+    # session_data = SessionData({'spike_train': spike_train, 'spike_cluster': spike_cluster, 'position': position})
 
-    session_classes = {'metadata': session_metadata, 'data': session_data}
+    session_classes = {'metadata': session.session_metadata, 'data': session.session_data}
 
-    return session_classes 
+    return session, session_classes 
 
 
 

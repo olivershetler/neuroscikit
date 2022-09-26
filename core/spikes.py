@@ -96,9 +96,15 @@ class SpikeTrain():
     events_binary: list[int]
     event_times: list[float]
 
-    def __init__(self,  input_dict):
+    def __init__(self,  input_dict, **kwargs):
         self._input_dict = input_dict
-        self.duration, self.sample_rate, self.events_binary, self.event_times, self.event_labels = self._read_input_dict()
+
+        self.duration, self.sample_rate, self.events_binary, self.event_times, self.event_labels, self.session_metadata = self._read_input_dict()
+
+        if 'session_metadata' in kwargs:
+            if self.session_metadata != None: 
+                print('Ses metadata is in the input dict and init fxn, init fnx will override')
+            self.session_metadata = kwargs['session_metadata']
 
         # assert ((len(self.events_binary) == 0) and (len(self.event_times) == 0)) != True, "No spike data provided"
 
@@ -155,6 +161,7 @@ class SpikeTrain():
         events_binary = [] 
         event_times = []
         event_labels = []
+        session_metadata = None
         if 'events_binary' in self._input_dict:
             events_binary = self._input_dict['events_binary']
             assert type(events_binary) == list, 'Binary spikes are not a list, check inputs'
@@ -163,7 +170,9 @@ class SpikeTrain():
             assert type(event_times) == list, 'Spike times are not a list, check inputs'
         if 'event_labels' in self._input_dict:
             event_labels = self._input_dict['event_labels']
-        return duration, sample_rate, events_binary, event_times, event_labels
+        if 'session_metadata' in self._input_dict:
+            session_metadata = self._input_dict['session_metadata']
+        return duration, sample_rate, events_binary, event_times, event_labels, session_metadata
 
     # lazy eval, called only if get spike rate called and spiek rate not pre filled
     def _set_event_rate(self):
@@ -231,27 +240,28 @@ class SpikeCluster(): # collection of spike objects
 
     Similar methods to SpikeClusterBatch() but for a given cluster and not a collection of cluster
     """
-    def __init__(self, input_dict):
+    def __init__(self, input_dict, **kwargs):
         self._input_dict = input_dict
-        duration, sample_rate, cluster_label, event_times, waveforms = self._read_input_dict()
+
+        self.duration, self.sample_rate, self.cluster_label, self.event_times, self.waveforms, self.session_metadata = self._read_input_dict()
+
+        if 'session_metadata' in kwargs:
+            if self.session_metadata != None: 
+                print('Ses metadata is in the input dict and init fxn, init fnx will override')
+            self.session_metadata = kwargs['session_metadata']
 
         # self._make_spike_object_instances()
 
-        assert type(cluster_label) == int, 'Cluster labels missing'
-        assert len(event_times) > 0, 'Spike times missing'
-        assert len(waveforms) <= 8 and len(waveforms) > 0, 'Cannot have fewer than 0 or more than 8 channels'
+        assert type(self.cluster_label) == int, 'Cluster labels missing'
+        assert len(self.event_times) > 0, 'Spike times missing'
+        assert len(self.waveforms) <= 8 and len(self.waveforms) > 0, 'Cannot have fewer than 0 or more than 8 channels'
 
-        self.time_index = make_seconds_index_from_rate(duration, sample_rate)
+        self.time_index = make_seconds_index_from_rate(self.duration, self.sample_rate)
 
-        self.event_times = event_times
-        self.label = cluster_label
-        self.duration = duration
-        self.sample_rate = sample_rate
         self.spike_objects = []
-        self.waveforms = waveforms
 
         self.stats_dict = self._init_stats_dict()
-        self.cluster_labels = [self.label for i in range(len(self.event_times))]
+        self.cluster_labels = [self.cluster_label for i in range(len(self.event_times))]
 
     def get_cluster_firing_rate(self):
         T = self.time_index[1] - self.time_index[0]
@@ -286,12 +296,12 @@ class SpikeCluster(): # collection of spike objects
             input_dict = {}
             input_dict['duration'] = self.duration
             input_dict['sample_rate'] = self.sample_rate
-            input_dict['cluster_label'] = self.label
+            input_dict['cluster_label'] = self.cluster_label
             if len(self.event_times) > 0:
                 input_dict['spike_time'] = self.event_times[i]
             else:
                 input_dict['spike_time'] = []
-            input_dict['label'] = self.label
+            input_dict['label'] = self.cluster_label
             spike_waveforms = []
             for j in range(len(self.waveforms)):
                 key = 'channel_' + str(j+1)
@@ -307,11 +317,11 @@ class SpikeCluster(): # collection of spike objects
             self._make_spike_object_instances()
         for i in range(len(self.spike_objects)):
             self.spike_objects[i].set_cluster_label(label)
-        self.label = label
+        self.cluster_label = label
         print('Cluster label updated for all SpikeObject in cluster')
 
     def get_cluster_label(self):
-        return self.label
+        return self.cluster_label
 
     def _read_input_dict(self):
         duration = self._input_dict['duration']
@@ -327,7 +337,10 @@ class SpikeCluster(): # collection of spike objects
             spike_data_present = True
         assert spike_data_present == True, 'No spike times or binary spikes provided'
         waveforms = self._extract_waveforms()
-        return duration, sample_rate, cluster_label, event_times, waveforms
+        session_metadata = None
+        if 'session_metadata' in self._input_dict:
+            session_metadata = self._input_dict['session_metadata']
+        return duration, sample_rate, cluster_label, event_times, waveforms, session_metadata
 
     def _extract_waveforms(self):
         input_keys = InputKeys()
