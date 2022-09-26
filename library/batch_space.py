@@ -33,6 +33,8 @@ class SpikeTrainBatch(Workspace):
         self._event_rate = None
         self._spike_train_instances = []
 
+        self.stats_dict = self._init_stats_dict()
+
     def _read_input_dict(self):
         duration = self._input_dict['duration']
         sample_rate = self._input_dict['sample_rate']
@@ -114,6 +116,17 @@ class SpikeTrainBatch(Workspace):
             self._set_event_times()
         else:
             return self.event_times
+
+    def _init_stats_dict(self):
+        stats_dict = {}
+        path = 'library'
+        dir_names = [x[1] for x in os.walk(path)][0]
+        
+        for dir in dir_names:
+            if dir != 'tests' and 'cache' not in dir:
+                stats_dict[dir] = {}
+
+        return stats_dict
 
 class SpikeClusterBatch(Workspace):
     """
@@ -294,14 +307,14 @@ class SpikeClusterBatch(Workspace):
         self.spike_clusters = instances
 
     def _init_stats_dict(self):
-        stat_dict = {}
+        stats_dict = {}
         path = 'library'
         dir_names = [x[1] for x in os.walk(path)][0]
         
         for dir in dir_names:
             if dir != 'tests' and 'cache' not in dir:
-                stat_dict[dir] = {}
+                stats_dict[dir] = {}
 
-        return stat_dict
+        return stats_dict
 
     

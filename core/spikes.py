@@ -106,6 +106,8 @@ class SpikeTrain():
 
         self._event_rate = None
 
+        self.stats_dict = self._init_stats_dict()
+
     def __len__(self):
         if len(self.event_labels) == 0:
             self.get_binary()
@@ -209,6 +211,18 @@ class SpikeTrain():
             if self.events_binary[i] == 1:
                 self.event_labels.append(i)
                 self.event_times.append(self.time_index[i])
+
+    def _init_stats_dict(self):
+        stats_dict = {}
+        path = 'library'
+        dir_names = [x[1] for x in os.walk(path)][0]
+
+        for dir in dir_names:
+            if dir != 'tests' and 'cache' not in dir:
+                stats_dict[dir] = {}
+
+        return stats_dict
+
 
 class SpikeCluster(): # collection of spike objects
     """
@@ -325,15 +339,15 @@ class SpikeCluster(): # collection of spike objects
         return waveforms
 
     def _init_stats_dict(self):
-        stat_dict = {}
+        stats_dict = {}
         path = 'library'
         dir_names = [x[1] for x in os.walk(path)][0]
 
         for dir in dir_names:
             if dir != 'tests' and 'cache' not in dir:
-                stat_dict[dir] = {}
+                stats_dict[dir] = {}
 
-        return stat_dict
+        return stats_dict
 
 
 

@@ -213,6 +213,7 @@ class Animal(Workspace):
         spike_cluster = core_data['spike_cluster']
         assert isinstance(spike_cluster, SpikeClusterBatch)
         good_sorted_cells, good_sorted_waveforms = sort_spikes_by_cell(spike_cluster)
+        print('Session data added, spikes sorted by cell')
         ensemble = CellEnsemble()
         for i in range(len(good_sorted_cells)):
             cell_dict = {'events': good_sorted_cells[i], 'signal': good_sorted_waveforms[i], 'session_metadata': session.session_metadata}

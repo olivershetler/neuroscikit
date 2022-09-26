@@ -63,14 +63,16 @@ class Cell(Workspace):
     def __init__(self, input_dict: dict):
         self._input_dict = input_dict
 
-        self.events, self.signal, self.session_metadata = self._read_input_dict()
+        self.event_times, self.signal, self.session_metadata = self._read_input_dict()
+
+        self.stats_dict = self._init_stats_dict()
 
     def _read_input_dict(self):
-        events = None
+        event_times = None
         waveforms = None 
 
-        if 'events' in self._input_dict:
-            events = self._input_dict['events']
+        if 'event_times' in self._input_dict:
+            event_times = self._input_dict['event_times']
         else:
             print('No event data provided to Cell')
 
@@ -84,5 +86,16 @@ class Cell(Workspace):
         else:
             print('No session metadata provided, cannot effectively track cells')
 
-        return events, signal, session_metadata
+        return event_times, signal, session_metadata
+
+    def _init_stats_dict(self):
+        stats_dict = {}
+        path = 'library'
+        dir_names = [x[1] for x in os.walk(path)][0]
+        
+        for dir in dir_names:
+            if dir != 'tests' and 'cache' not in dir:
+                stats_dict[dir] = {}
+
+        return stats_dict
 

@@ -13,7 +13,7 @@ def test_cell():
     events = make_1D_timestamps()
     waveforms = make_waveforms(4, 100, 50)
     session_metadata = SessionMetadata({'session_id': 'id0'})
-    cell = Cell({'events': events, 'signal': waveforms, 'session_metadata': session_metadata})
+    cell = Cell({'event_times': events, 'signal': waveforms, 'session_metadata': session_metadata})
 
     assert isinstance(cell, Cell)
     assert type(cell.events) == list 
@@ -36,7 +36,7 @@ def test_cell_ensemble():
     events = make_1D_timestamps()
     waveforms = make_waveforms
     session_metadata = SessionMetadata({'session_id': 'id0'})
-    cell_new = Cell({'events': events, 'signal': waveforms, 'session_metadata': session_metadata})
+    cell_new = Cell({'event_times': events, 'signal': waveforms, 'session_metadata': session_metadata})
 
     ensemble.add_cell(cell_new)
 
@@ -54,6 +54,8 @@ def test_cell_population():
     ensemble = CellEnsemble(cells)
 
     population = CellPopulation()
+    population.add_ensemble(ensemble)
 
     assert type(population.ensembles) == list
+    assert len(population.ensembles) == 1
 
