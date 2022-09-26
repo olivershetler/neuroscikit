@@ -5,7 +5,8 @@ import numpy as np
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
 
-from core.data_study import Study, Animal
+from library.workspace import Study
+from library.animal import Animal
 from core.core_utils import make_seconds_index_from_rate
 from _prototypes.wave_form_sorter.sort_cell_spike_times import sort_cell_spike_times
 
@@ -27,7 +28,7 @@ def make_waveforms(channel_count, spike_count, samples_per_wave):
         for j in range(samples_per_wave):
             waveforms[i,:,j] = np.random.randint(-20,20,size=spike_count).tolist()
             for k in range(10):
-                waveforms[i,:,j] += np.random.rand() 
+                waveforms[i,:,j] += np.random.rand()
 
     return waveforms.tolist()
 
