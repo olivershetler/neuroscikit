@@ -1,7 +1,14 @@
 import numpy as np
 from scipy import signal
+import os 
+import sys
 
-def iirfilt(bandtype, data, Fs, Wp, Ws=[], order=3, analog_val=False, automatic=0, Rp=3, As=60, filttype='butter'):
+PROJECT_PATH = os.getcwd()
+sys.path.append(PROJECT_PATH)
+
+from core.ephys import EphysSeries
+
+def iirfilt(ephys_series: EphysSeries, bandtype, Wp, Ws=[], order=3, analog_val=False, automatic=0, Rp=3, As=60, filttype='butter'):
     '''Designs butterworth filter:
     Data is the data that you want filtered
     Fs is the sampling frequency (in Hz)
@@ -34,10 +41,8 @@ def iirfilt(bandtype, data, Fs, Wp, Ws=[], order=3, analog_val=False, automatic=
     bandtype : {‘bandpass’, ‘lowpass’, ‘highpass’, ‘bandstop’}, optional
     '''
 
-    cutoff = Wp
-
-    if Ws != []:
-        cutoff2 = Ws
+    data = ephys_series.signal
+    Fs = ephys_series.sample_rate[0]
 
     b, a = get_a_b(bandtype, Fs, Wp, Ws, order=order, Rp=Rp, As=As, analog_val=analog_val, filttype=filttype, automatic=automatic)
 

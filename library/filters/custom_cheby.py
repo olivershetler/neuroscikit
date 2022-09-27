@@ -1,7 +1,16 @@
 import numpy as np
 from scipy import signal
+import os 
+import sys
 
-def custom_cheby1(data, Fs, N, Rp, Wp, Ws=None, filtresponse='bandpass', analog_value=False, showresponse=0):
+PROJECT_PATH = os.getcwd()
+sys.path.append(PROJECT_PATH)
+
+from core.ephys import EphysSeries
+
+def custom_cheby1(ephys_series: EphysSeries, N, Rp, Wp, Ws=None, filtresponse='bandpass', analog_value=False, showresponse=0):
+    data, Fs = ephys_series.signal, ephys_series.sample_rate[0]
+
     nyquist = Fs/2
 
     if filtresponse == 'bandpass':
@@ -11,7 +20,7 @@ def custom_cheby1(data, Fs, N, Rp, Wp, Ws=None, filtresponse='bandpass', analog_
 
     b, a = signal.cheby1(N, Rp, Wn, 'bandpass', analog=analog_value)
 
-    if data != []:
+    if len(data) > 0:
         if len(data.shape) > 1:
             #print('Filtering multidimensional array!')
             filtered_data = np.zeros((data.shape[0], data.shape[1]))

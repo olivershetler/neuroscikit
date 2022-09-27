@@ -1,7 +1,14 @@
-import numpy as np
 from scipy import signal
+import numpy as np
+import os 
+import sys
 
-def notch_filt(data, Fs, band=10, freq=60, ripple=1, order=2, filter_type='butter', analog_filt=False):
+PROJECT_PATH = os.getcwd()
+sys.path.append(PROJECT_PATH)
+
+from core.ephys import EphysSeries
+
+def notch_filt(ephys_series: EphysSeries, band=10, freq=60, ripple=1, order=2, filter_type='butter', analog_filt=False):
     '''# Required input defintions are as follows;
     # time:   Time between samples
     # band:   The bandwidth around the centerline freqency that you wish to filter
@@ -12,6 +19,8 @@ def notch_filt(data, Fs, band=10, freq=60, ripple=1, order=2, filter_type='butte
     #         is hard coded to FIR filters
     # filter_type: 'butter', 'bessel', 'cheby1', 'cheby2', 'ellip'
     # data:         the data to be filtered'''
+
+    data, Fs = ephys_series.signal, ephys_series.sample_rate[0]
 
     cutoff = freq
     nyq = Fs / 2.0
