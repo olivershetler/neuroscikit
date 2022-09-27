@@ -4,20 +4,9 @@ class Position2D():
     def __init__(self, input_dict, **kwargs):
         # self.subject = subject
         # self.limb = limb # e.g. head
-        if 't' in input_dict:
-            self.t = input_dict['t']
-        elif 'rate' in input_dict and 'x' in input_dict:
-            self.t = np.arange(0, len(input_dict['x']) / input_dict['rate'], 1 / input_dict['rate'])
-        if 'x' in input_dict:
-            self.x = input_dict['x']
-            assert len(self.x) == len(self.t)
-        if 'y' in input_dict:
-            self.y = input_dict['y']
-            assert len(self.y) == len(self.t)
-        if 'session_metadata' in input_dict:
-            self.session_metadata = input_dict['session_metadata']
-        else:
-            self.session_metadata = None
+        self._input_dict = input_dict
+
+        self.t, self.x, self.y, self.arena_height, self.arena_height, self.session_metadata = self._read_input_dict()
 
         if 'session_metadata' in kwargs:
             if self.session_metadata != None: 
@@ -25,6 +14,29 @@ class Position2D():
             self.session_metadata = kwargs['session_metadata']
 
         self._input_dict = input_dict
+
+    def _read_input_dict(self):
+        t, x, y, arena_height, arena_width, session_metadata = None, None, None, None, None, None
+
+        for key in self._input_dict:
+            if key == 't' or key == 'time':
+                t = self._input_dict['t']
+            elif key == 'rate' and 'x' in self._input_dict:
+                t = np.arange(0, len(self._input_dict['x']) / self._input_dict['rate'], 1 / self._input_dict['rate'])
+            elif key == 'x':
+                x = self._input_dict['x']
+            elif key == 'y':
+                y = self._input_dict['y']
+            elif key == 'session_metadata':
+                session_metadata = self._input_dict['session_metadata']
+            elif key == 'arena_height':
+                arena_height = self._input_dict['arena_height']
+            elif key == 'arena_width':
+                arena_width = self._input_dict['arena_width']
+
+        return t, x, y, arena_height, arena_width, session_metadata
+            
+
 """
     def speed_from_locations(location) -> np.ndarray:
         '''calculates an averaged/smoothed speed'''

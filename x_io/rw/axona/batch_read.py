@@ -211,11 +211,22 @@ def _create_session_classes(session_dict, settings_dict):
 
     session = Session()
     animal_metadata = session.make_class(AnimalMetadata, session_dict['animal'])
-    tracker_metadata = session.make_class(TrackerMetadata, session_dict['devices']['implant'])
-    implant_metadata = session.make_class(ImplantMetadata, session_dict['devices']['axona_led_tracker'])
+
+    tracker_dict = {}
+    for key in session_dict['devices']['axona_led_tracker']:
+        if 'data' not in str(key):
+            tracker_dict[key] = session_dict['devices']['axona_led_tracker'][key]
+    tracker_metadata = session.make_class(TrackerMetadata, tracker_dict)
+
+    implant_dict = {}
+    for key in session_dict['devices']['implant']:
+        if 'data' not in str(key):
+            implant_dict[key] = session_dict['devices']['implant'][key]
+    implant_metadata = session.make_class(ImplantMetadata, implant_dict)
+    
     spike_train = session.make_class(SpikeTrain, session_dict['devices']['implant']['implant_data'])
     spike_cluster = session.make_class(SpikeClusterBatch, session_dict['devices']['implant']['implant_data'])
-    position = session.make_class(Position2D, ('subject' , 'space', session_dict['devices']['axona_led_tracker']))
+    position = session.make_class(Position2D, ('subject' , 'space', session_dict['devices']['axona_led_tracker']['led_position_data']))
     
     # animal_metadata = AnimalMetadata(session_dict['animal'])
     # tracker_metadata = TrackerMetadata(session_dict['devices']['implant'])
