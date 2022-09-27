@@ -1,5 +1,6 @@
 import os
 import sys
+import math
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
 print(PROJECT_PATH)
@@ -34,7 +35,7 @@ def test_make_seconds_index_from_rate():
             end = time_index[-1]
             r = lambda n: round(n, 6)
             assert r(second - start) == r(1/sample_rate)
-            assert r(end - start) == r((n_samples-1)/sample_rate)
+            assert math.ceil(r(end - start)) == math.ceil(r((n_samples*sample_rate)/sample_rate))
 
 if __name__ == '__main__':
     test_make_time_index_from_rate()

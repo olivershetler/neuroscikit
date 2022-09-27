@@ -11,13 +11,13 @@ from core.ephys import (
     EphysSeries,
 )
 
-from x_io.intan.load_intan_rhd_format.load_intan_rhd_format import read_rhd_data
-from x_io.intan.read_rhd import read_rhd
+from x_io.rw.intan.load_intan_rhd_format.load_intan_rhd_format import read_rhd_data
+from x_io.rw.intan.read_rhd import read_rhd
 
 cwd = os.getcwd()
 parent_dir = os.path.dirname(cwd)
 data_dir = os.path.join(parent_dir, 'neuroscikit_test_data')
-test_rhd_file_path = os.path.join(data_dir, 'intan/sampledata.rhd')
+test_rhd_file_path = os.path.join(data_dir, 'sampledata.rhd')
 
 np.random.seed(0)
 
