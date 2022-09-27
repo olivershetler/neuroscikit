@@ -45,19 +45,24 @@ class SessionMetadata():
     def __init__(self, input_dict: dict, **kwargs):
         self._input_dict = input_dict   
 
-        self.session_object = None
+        self.metadata, self.session_object = self._read_input_dict()
         if 'session_object' in kwargs:
+            if self.session_object != None: 
+                print('Ses object is in the input dict and init fxn, init fnx will override')
             self.session_object = kwargs['session_object']
 
-        self.metadata = self._read_input_dict()
 
     def _read_input_dict(self):
         core_metadata_instances = {} 
+        session_object = None
         
         for key in self._input_dict:
-            core_metadata_instances[key] = self._input_dict[key]
+            if key == 'session_object':
+                session_object = self._input_dict[key]
+            else:
+                core_metadata_instances[key] = self._input_dict[key]
 
-        return core_metadata_instances
+        return core_metadata_instances, session_object
 
     def _add_metadata(self, key, metadata_class):
         assert key == 'animal' or key == 'devices', 'Cann only add AnimalMetadata and DeviceMetadata objects to session'

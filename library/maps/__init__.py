@@ -14,11 +14,13 @@ from library.maps.firing_rate_vs_time import firing_rate_vs_time
 from library.maps.binary_map import binary_map
 from library.maps.autocorrelation import autocorrelation
 from library.maps.filter_pos_by_speed import filter_pos_by_speed
+from library.maps.hafting_spatial_maps import HaftingOccupancyMap, HaftingRateMap, HaftingSpikeMap
+from library.maps.spatial_spike_train import SpatialSpikeTrain2D
 # from library.maps.spike_pos import spike_pos
 
 
 __all__ = ['rate_map', 'occupancy_map', 'map_blobs', 'firing_rate_vs_time', 'binary_map',
- 'autocorrelation', 'filter_pos_by_speed']
+ 'autocorrelation', 'filter_pos_by_speed', 'HaftingOccupancyMap', 'HaftingRateMap', 'HaftingSpikeMap', 'SpatialSpikeTrain2D']
 
 if __name__ == '__main__':
     pass

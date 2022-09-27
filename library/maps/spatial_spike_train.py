@@ -13,58 +13,72 @@ from core.spikes import SpikeTrain
 
 class SpatialSpikeTrain2D():
 
-    def __init__(self, spike_train: SpikeTrain, position: Position2D, **kwargs):
-        self.spike_train_instance = spike_train
-        self.spike_times = spike_train.event_times
-        self.t, self.x, self.y = position.t, position.x, position.y
+    def __init__(self, input_dict: dict, **kwargs):
+        # spike_train: SpikeTrain, position: Position2D, **kwargs):
+        self._input_dict = input_dict
+        self.spike_train_instance, self.position = self._read_input_dict()
+        self.spike_times = self.spike_train_instance.event_times
+        self.t, self.x, self.y = self.position.t, self.position.x, self.position.y
         if 'session_metadata' in kwargs:
             self.session_metadata = kwargs['session_metadata']
-        if position.arena_height != None and position.arena_width != None:
-            self.arena_size = (position.arena_height, position.arena_width)
+        if self.position.arena_height != None and self.position.arena_width != None:
+            self.arena_size = (self.position.arena_height, self.position.arena_width)
 
         self.spike_x, self.spike_y = self.get_spike_positions()
 
-        assert len(self.x) == len(self.y) == len(self.spike_times)
+        assert len(self.spike_x) == len(self.spike_y) == len(self.spike_times)
 
-        self.stats_dict = {}
-        self._init_stats_dict()
+        self.stats_dict = self._init_stats_dict()
+
+    def _read_input_dict(self):
+        if 'spike_train' in self._input_dict:
+            spike_train = self._input_dict['spike_train']
+            assert isinstance(spike_train, SpikeTrain)
+        if 'position' in self._input_dict:
+            position = self._input_dict['position']
+            assert isinstance(position, Position2D)
+
+        return spike_train, position
+
 
     def _init_stats_dict(self):
         stats_dict = {}
 
         map_names = ['autocorr', 'binary', 'direction', 'pos_vs_speed', 'rate_vs_time', 'hafting', 'occupancy', 'rate', 'spike']
 
-        for map_name in map_names:
-            stats_dict[map_name] = {}
+        for key in map_names:
+            stats_dict[key] = {}
 
         return stats_dict
 
-    def add_map_to_stats(self, map_name, map_data):
+    def add_map_to_stats(self, map_name, map_class):
+        # print(self.stats_dict)
         assert map_name in self.stats_dict, 'check valid map types to add to stats dict, map type not in stats dict'
-        self.stats_dict[map_name] = map_data
+        assert type(map_class) != np.ndarray and type(map_class) != list
+        self.stats_dict[map_name] = map_class
 
     def get_map(self, map_name):
         assert map_name in self.stats_dict, 'check valid map types to add to stats dict, map type not in stats dict'
-        return self.stats_dict[map_name]
+        return self.stats_dict[map_name].map_data
 
     #def spike_pos(ts, x, y, t, cPost, shuffleSpks, shuffleCounter=True):
     def get_spike_positions(self):
-
+        spike_array = np.array(self.spike_times)
         delta_t = self.t[1] - self.t[0]
-        #assert np.all(np.diff(t) == delta_t)
         spike_index = []
-        for i in range(len(self.spike_times)):
-            if self.spike_times[i] >= self.t[i] and self.spike_times[i] < self.t[i] + delta_t:
-                spike_index.append(i)
-
+        for i in range(len(self.t)):
+            id_set_1 = np.where(spike_array >= self.t[i])[0]
+            id_set_2 = np.where(spike_array < self.t[i] + delta_t)[0]
+            for id in id_set_1:
+                if id in id_set_2 and id not in spike_index:
+                    spike_index.append(id)
 
         # def _match(time, time_index, spike_time):
         #     if spike_time >= time and spike_time < time + delta_t:
         #         return time_index
 
         # spike_index = list(filter(_match(self.t, range(len(self.t)), self.spike_times)))
-
-        return np.asarray(self.x)[spike_index], np.asarray(self.y)[spike_index]
+        return np.array(self.x)[spike_index], np.array(self.y)[spike_index]
 
 
         # def shuffle_spike_positions(self, displacement):

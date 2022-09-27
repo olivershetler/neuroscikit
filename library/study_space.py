@@ -24,8 +24,8 @@ class Session(Workspace):
         self.session_data, self.session_metadata = self._read_input_dict()
         
         if not isinstance(self.session_metadata, SessionMetadata) == 0:
-            self.session_metadata = SessionMetadata()
-            device_metadata = DevicesMetadata(input_dict={}, session_metadata= self)
+            self.session_metadata = SessionMetadata({}, session_object=self)
+            device_metadata = DevicesMetadata(input_dict={}, session_metadata=self.session_metadata)
             self.session_metadata.metadata['devices'] = device_metadata
         
         self.animal_id = None
@@ -53,7 +53,7 @@ class Session(Workspace):
         if 'metadata' in  self._input_dict:
             session_metadata = self._input_dict['metadata']
         else:
-            session_metadata = SessionMetadata()
+            session_metadata = SessionMetadata({}, session_object=self)
 
         return session_data, session_metadata
 
@@ -99,7 +99,7 @@ class Session(Workspace):
         return pos_dict
 
     def make_class(self, ClassName, input_dict: dict):
-        class_object = ClassName(input_dict, session_metadata=self) 
+        class_object = ClassName(input_dict, session_metadata=self.session_metadata) 
 
         if 'Metadata' in str(ClassName) or 'metadata' in str(ClassName):
             if isinstance(class_object, TrackerMetadata):
