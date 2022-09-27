@@ -6,7 +6,7 @@ class Position2D():
         # self.limb = limb # e.g. head
         self._input_dict = input_dict
 
-        self.t, self.x, self.y, self.arena_height, self.arena_height, self.session_metadata = self._read_input_dict()
+        self.t, self.x, self.y, self.arena_height, self.arena_width, self.session_metadata = self._read_input_dict()
 
         if 'session_metadata' in kwargs:
             if self.session_metadata != None: 

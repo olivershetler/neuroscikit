@@ -1,26 +1,48 @@
-from .functions import grab_position_data, spikePos
-from .tint import load_neurons
-
+import os, sys
 import numpy as np
-import pandas as pd
-import math
-import matplotlib.pyplot as plt
-from matplotlib.cm import jet
 import multiprocessing as mp
-import concurrent.futures as cf
 import functools
 import itertools
-import time
-from numba import jit, njit
 import cv2
-from PIL import Image
+from numba import jit, njit
+import matplotlib.pyplot as plt
+
+PROJECT_PATH = os.getcwd()
+sys.path.append(PROJECT_PATH)
+
+from library.maps.spatial_spike_train import SpatialSpikeTrain2D
+from core.spatial import Position2D
+
 
 class HaftingOccupancyMap():
-    def __init__(self, subject_locations, resolution, ):
-        pass
+    def __init__(self, spatial_spike_train: SpatialSpikeTrain2D, **kwargs):
+        self.x = spatial_spike_train.x
+        self.y = spatial_spike_train.y
+        self.t = spatial_spike_train.t
+        self.arena_size = spatial_spike_train.arena_size
+
+        self.occupancy_map = None
+
+        self.session_metadata = None
+        self.smoothing_factor = None
+        if 'smoothing_factor' in kwargs:
+            self.smoothing_factor = kwargs['smoothing_factor']
+        elif 'settings' in kwargs and 'smoothing_factor' in kwargs['settings']:
+            self.smoothing_factor = kwargs['settings']['smoothing_factor']
+        if 'session_metadata' in kwargs:
+            self.session_metadata = kwargs['session_metadata']
+
+    def get_occupancy_map(self, smoothing_factor=None):
+        if smoothing_factor == None:
+            smoothing_factor = self.smoothing_factor
+            assert smoothing_factor != None, 'Need to add smoothing factor to function inputs'
+
+        self.occupancy_map = self.compute_occupancy_map(self.t, self.x, self.y, self.arena_size, self.smoothing_factor)
+
+        return self.occupancy_map
 
     @staticmethod
-    def compute_occupancy_map(pos_time, pos_x, pos_y, smoothing_factor, arena_size, resolution=64, mask_threshold=1):
+    def compute_occupancy_map(pos_t, pos_x, pos_y, arena_size, smoothing_factor, resolution=64, mask_threshold=1):
 
         arena_ratio = arena_size[0]/arena_size[1]
         h = smoothing_factor #smoothing factor in centimeters
@@ -36,7 +58,7 @@ class HaftingOccupancyMap():
             y_vec = np.linspace(min(pos_y), max(pos_y), int(resolution))
 
         executor = mp.Pool(mp.cpu_count()) # change this to mp.cpu_count() if you want to use all cores
-        futures = list(executor.map(functools.partial(_pos_pdf, pos_x, pos_y, pos_time, smoothing_factor), ((x, y) for x, y in itertools.product(x_vec, y_vec))))
+        futures = list(executor.map(functools.partial(_pos_pdf, pos_x, pos_y, pos_t, smoothing_factor), ((x, y) for x, y in itertools.product(x_vec, y_vec))))
         occupancy_map = np.array(futures).reshape(len(y_vec), len(x_vec))
 
         mask_values = functools.partial(_mask_points_far_from_curve, mask_threshold, pos_x, pos_y)
@@ -61,8 +83,28 @@ class HaftingOccupancyMap():
 
 
 class HaftingSpikeMap():
-    def __init__(self, spatial_spike_train: SpatialSpikeTrain2D):
-        pass
+    def __init__(self, spatial_spike_train: SpatialSpikeTrain2D, **kwargs):
+        self.spike_x, self.spike_y = spatial_spike_train.get_spike_positions()
+
+        self.spike_map = None
+
+        self.session_metadata = None
+        self.smoothing_factor = None
+        if 'smoothing_factor' in kwargs:
+            self.smoothing_factor = kwargs['smoothing_factor']
+        elif 'settings' in kwargs and 'smoothing_factor' in kwargs['settings']:
+            self.smoothing_factor = kwargs['settings']['smoothing_factor']
+        if 'session_metadata' in kwargs:
+            self.session_metadata = kwargs['session_metadata']
+
+    def get_spike_map(self):
+        if smoothing_factor == None:
+            smoothing_factor = self.smoothing_factor
+            assert smoothing_factor != None, 'Need to add smoothing factor to function inputs'
+
+        self.spike_map = self.compute_spike_map(self.spike_x, self.spike_y, self.smoothing_factor)
+
+        return self.spike_map
 
     def compute_spike_map(spike_x, spike_y, smoothing_factor, arena_size, resolution=64):
         arena_ratio = arena_size[0]/arena_size[1]
@@ -98,8 +140,28 @@ class HaftingSpikeMap():
         return spike_map
 
 class HaftingRateMap():
-    def __init__(self, occupancy_map: HaftingOccupancyMap, spike_map: HaftingSpikeMap):
-        pass
+    def __init__(self, spatial_spike_train: SpatialSpikeTrain2D, **kwargs):
+        
+        self.occupancy_map = spatial_spike_train.get_map('occupancy')
+        self.spike_map = spatial_spike_train.get_map('spike')
+
+        assert isinstance(self.occupancy_map, HaftingOccupancyMap)
+        assert isinstance(self.spike_map, HaftingSpikeMap)
+
+        self.ratemap = None
+
+        self.session_metadata = None
+        self.smoothing_factor = None
+        if 'smoothing_factor' in kwargs:
+            self.smoothing_factor = kwargs['smoothing_factor']
+        elif 'settings' in kwargs and 'smoothing_factor' in kwargs['settings']:
+            self.smoothing_factor = kwargs['settings']['smoothing_factor']
+        if 'session_metadata' in kwargs:
+            self.session_metadata = kwargs['session_metadata']
+
+    def get_rate_map(self):
+        self.ratemap = self.compute_rate_map(self.occupancy_map, self.spike_map)
+        return self.ratemap
 
     def compute_rate_map(occupancy_map, spike_map):
         '''
@@ -122,8 +184,8 @@ class HaftingRateMap():
 
         return rate_map
 
-    @njit
-    def _compute_unmasked_ratemap(occpancy_map, spike_map):
+@njit
+def _compute_unmasked_ratemap(occpancy_map, spike_map):
         return spike_map/occpancy_map
 
 def _interpolate_matrix(matrix, new_size=(256,256), cv2_interpolation_method=cv2.INTER_NEAREST):
@@ -232,18 +294,3 @@ def save_map(occupancy_map, title, units_label, file_name, directory):
     plt.savefig(directory + '/' + file_name + '.png')
     plt.close('all')
 
-"""
-def main():
-    for res in [64]:
-        start = time.time()
-        occupancy_map = compute_occupancy_map(pos_t, pos_x, pos_y, smoothing, arena_size, resolution=res)
-        #spike_map = compute_spike_map(spike_x, spike_y, smoothing, arena_size, resolution=res)
-        #rate_map = compute_rate_map(occupancy_map, spike_map)
-        end = time.time()
-        print(end - start)
-        save_map(occupancy_map, title='Occupancy Map', units_label='Time (Seconds)', file_name='occupancy_map_' + str(res), directory=None)
-
-
-if __name__ == '__main__':
-    main()
-"""

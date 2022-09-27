@@ -2,6 +2,8 @@ from msilib.schema import Class
 import os
 import sys
 
+from library.maps.spatial_spike_train import SpatialSpikeTrain2D
+
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
 
@@ -55,7 +57,7 @@ class Session(Workspace):
 
         return session_data, session_metadata
 
-    def get_core_instances(self):
+    def get_object_instances(self):
         instances = {}
         instances ['animal_metadata'] = self.get_animal_metadata()
         device_metadata = self.get_devices_metadata()
@@ -111,6 +113,8 @@ class Session(Workspace):
                 self.session_data.data['spike_train'] = class_object
             elif isinstance(class_object, Position2D):
                 self.session_data.data['position'] = class_object
+            elif isinstance(class_object, SpatialSpikeTrain2D):
+                self.session_data.data['spatial_spike_train'] = class_object
 
         return class_object
 

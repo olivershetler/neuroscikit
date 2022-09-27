@@ -8,9 +8,9 @@ R3: Darivation / Derived From / Computed From
 R4: Attribute / Property / Feature / Nested Class (">")
 
 Classes:
-    - Study > Implant(Device)(Animal)() > LED_Signal()(Session)() > Position(Acquisition)()()
-    - Study > Implant(Device)(Animal)() > Session > Cell()()(Ephys) > Spike > SpikeTime
-    - Study > Implant(Device)(Animal)() > Session > Channel > Ephys(Acquisition)()()
+    - Study > ImplantMetadata(Device)(Animal)() > LED_Signal()(Session)() > Position(Acquisition)()()
+    - Study > ImplantMetadata(Device)(Animal)() > Session > Cell()()(Ephys) > Spike > SpikeTime
+    - Study > ImplantMetadata(Device)(Animal)() > Session > Channel > Ephys(Acquisition)()()
 
 
     - Study > Environment > Arena > ArenaGeometry

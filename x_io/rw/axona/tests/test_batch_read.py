@@ -173,10 +173,6 @@ def test__group_session_files():
     assert len(cut_files) == len(tetrode_files)
     assert len(tetrode_files) == len(pos_files)
 
-
-
-
-
 def test_batch_sessions():
 
     cut_files, tetrode_files, pos_files = _grab_tetrode_cut_position_files([data_dir], pos_files=[], cut_files=[], tetrode_files=[])

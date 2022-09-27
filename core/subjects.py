@@ -1,18 +1,8 @@
-
-from importlib.metadata import metadata
 import os
 import sys
-from unittest.mock import NonCallableMagicMock
 
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
-
-from abc import ABC
-
-
-# from core.core_utils import (
-#     make_seconds_index_from_rate,
-# )
 
 
 
@@ -26,7 +16,6 @@ class AnimalMetadata():
             if self.session_metadata != None: 
                 print('Ses metadata is in the input dict and init fxn, init fnx will override')
             self.session_metadata = kwargs['session_metadata']
-
 
 
     def _read_input_dict(self):
@@ -53,8 +42,12 @@ class AnimalMetadata():
 
 
 class SessionMetadata():
-    def __init__(self, input_dict={}):
-        self._input_dict = input_dict 
+    def __init__(self, input_dict: dict, **kwargs):
+        self._input_dict = input_dict   
+
+        self.session_object = None
+        if 'session_object' in kwargs:
+            self.session_object = kwargs['session_object']
 
         self.metadata = self._read_input_dict()
 
