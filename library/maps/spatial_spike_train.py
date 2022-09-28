@@ -59,7 +59,7 @@ class SpatialSpikeTrain2D():
 
     def get_map(self, map_name):
         assert map_name in self.stats_dict, 'check valid map types to add to stats dict, map type not in stats dict'
-        return self.stats_dict[map_name].map_data
+        return self.stats_dict[map_name]
 
     #def spike_pos(ts, x, y, t, cPost, shuffleSpks, shuffleCounter=True):
     def get_spike_positions(self):

@@ -6,6 +6,7 @@ import itertools
 import cv2
 from numba import jit, njit
 import matplotlib.pyplot as plt
+from library import spike
 
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
@@ -198,11 +199,15 @@ class HaftingRateMap():
         Returns:
             rate_map: spike density divided by occupancy density
         '''
-        assert occupancy_map.shape == spike_map.shape
+        occ_map_data = occupancy_map.map_data
+        spike_map_data = spike_map.map_data
+        
+        assert occ_map_data.shape == spike_map_data.shape
 
-        rate_map = _compute_unmasked_ratemap(occupancy_map, spike_map)
+        rate_map = _compute_unmasked_ratemap(occ_map_data, spike_map_data)
 
-        rate_map = np.ma.array(rate_map, mask=occupancy_map.mask)
+        # rate_map = np.ma.array(rate_map, mask=occupancy_map.mask)
+        rate_map = np.ma.array(rate_map, mask=occ_map_data)
 
         return rate_map
 
