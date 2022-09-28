@@ -8,6 +8,7 @@ sys.path.append(PROJECT_PATH)
 from core.core_utils import make_seconds_index_from_rate
 from library.maps import binary_map, rate_map, spike_pos, occupancy_map, spatial_tuning_curve
 from library.scores import border_score, grid_score, hd_score, shuffle_spikes
+from library.lib_utils import make_2D_arena
 
 def make_1D_timestamps(T=2, dt=0.02):
     time = np.arange(0,T,dt)

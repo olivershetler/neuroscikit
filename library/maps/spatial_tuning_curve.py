@@ -2,6 +2,12 @@ import numpy as np
 #from opexebo.analysis import place_field, border_score
 import math
 from opexebo.analysis import tuning_curve, angular_occupancy
+import os,sys
+
+PROJECT_PATH = os.getcwd()
+sys.path.append(PROJECT_PATH)
+
+from library.spatial_spike_train import SpatialSpikeTrain2D
 
 def _smooth(array: np.ndarray, window: int) -> np.ndarray:
 
@@ -86,7 +92,8 @@ def _get_head_direction(x: np.ndarray, y: np.ndarray) -> np.ndarray:
 
     return angles
 
-def spatial_direction_tuning_curve(x: np.ndarray, y: np.ndarray, t: np.ndarray, spike_times: np.ndarray, smoothing: int) -> tuple:
+# def spatial_tuning_curve(x: np.ndarray, y: np.ndarray, t: np.ndarray, spike_times: np.ndarray, smoothing: int) -> tuple:
+def spatial_tuning_curve(spatial_spike_train: SpatialSpikeTrain2D, smoothing: int) -> tuple:
 
     '''
         Compute a polar plot of the average directional firing of a neuron.
@@ -111,6 +118,10 @@ def spatial_direction_tuning_curve(x: np.ndarray, y: np.ndarray, t: np.ndarray, 
             bin_array (np.ndarray):
                 Bins of angles (360 split into 36 bins of width 10 degrees)
     '''
+    spike_times = np.array(spatial_spike_train.spike_times)
+    t = np.array(spatial_spike_train.t)
+    x = np.array(spatial_spike_train.x)
+    y = np.array(spatial_spike_train.y)
 
     # Compute head direction angles
     hd_angles = _get_head_direction(x, y)
@@ -136,5 +147,9 @@ def spatial_direction_tuning_curve(x: np.ndarray, y: np.ndarray, t: np.ndarray, 
     bin_array = bin_array
     tuned_data[tuned_data == np.nan] = 0
     tuned_data = _smooth(tuned_data,smoothing)
+
+    dir_dict = {'tuned_data': tuned_data, 'spike_angles': spike_angles, 'ang_occ': ang_occ, 'bin_array': bin_array}
+
+    spatial_spike_train.add_map_to_stats('spatial_tuning', dir_dict)
 
     return tuned_data, spike_angles, ang_occ, bin_array

@@ -5,10 +5,11 @@ import numpy as np
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
 
-from library.maps import HaftingSpikeMap, HaftingOccupancyMap, HaftingRateMap
+from library.hafting_spatial_maps import HaftingSpikeMap, HaftingOccupancyMap, HaftingRateMap
 from library.study_space import Session
-from core.core_utils import make_1D_timestamps, make_2D_arena, make_seconds_index_from_rate
-from library.maps import SpatialSpikeTrain2D
+from core.core_utils import make_1D_timestamps, make_seconds_index_from_rate
+from library.lib_utils import make_2D_arena
+from library.spatial_spike_train import SpatialSpikeTrain2D
 from core.spikes import SpikeTrain
 from core.spatial import Position2D
 from core.spatial import Position2D
@@ -133,7 +134,7 @@ def test_hafting_rate_map():
 
     assert isinstance(hafting_rate, HaftingRateMap)
     assert type(hafting_rate.map_data) == np.ma.core.MaskedArray
-    print(hafting_rate.map_data)
+   
     assert 'spatial_spike_train' in session_metadata.session_object.get_spike_data()
     assert isinstance(session_metadata.session_object.session_data.data['spatial_spike_train'], SpatialSpikeTrain2D)
     assert session_metadata.session_object.session_data.data['spatial_spike_train'] == spatial_spike_train

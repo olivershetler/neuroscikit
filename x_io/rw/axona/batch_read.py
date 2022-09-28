@@ -223,7 +223,7 @@ def _create_session_classes(session_dict, settings_dict):
         if 'data' not in str(key):
             implant_dict[key] = session_dict['devices']['implant'][key]
     implant_metadata = session.make_class(ImplantMetadata, implant_dict)
-    
+
     spike_train = session.make_class(SpikeTrain, session_dict['devices']['implant']['implant_data'])
     spike_cluster = session.make_class(SpikeClusterBatch, session_dict['devices']['implant']['implant_data'])
     position = session.make_class(Position2D, ('subject' , 'space', session_dict['devices']['axona_led_tracker']['led_position_data']))
@@ -254,7 +254,7 @@ def _fill_session_dict(session_dict, implant_data_dict, pos_dict, settings_dict)
     devices = settings_dict['devices']
 
     if devices['axona_led_tracker'] == True:
-        session_dict['devices']['axona_led_tracker'] = pos_dict
+        session_dict['devices']['axona_led_tracker']['led_position_data'] = pos_dict
 
     if devices['implant'] == True:
         session_dict['devices']['implant']['implant_data'] = implant_data_dict

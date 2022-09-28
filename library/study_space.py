@@ -2,12 +2,10 @@ from msilib.schema import Class
 import os
 import sys
 
-from library.maps.spatial_spike_train import SpatialSpikeTrain2D
-
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
 
-from core.subjects import StudyMetadata, SessionMetadata
+from core.subjects import AnimalMetadata, StudyMetadata, SessionMetadata
 from library.ensemble_space import Cell, CellEnsemble, CellPopulation
 from library.batch_space import SpikeClusterBatch, SpikeTrainBatch
 from core.spikes import * 
@@ -15,6 +13,7 @@ from core.spatial import Position2D
 from library.spike import sort_spikes_by_cell
 from library.workspace import Workspace
 from core.instruments import DevicesMetadata, ImplantMetadata, TrackerMetadata
+from library.spatial_spike_train import SpatialSpikeTrain2D
 
 
 class Session(Workspace):
@@ -26,10 +25,28 @@ class Session(Workspace):
         if not isinstance(self.session_metadata, SessionMetadata) == 0:
             self.session_metadata = SessionMetadata({}, session_object=self)
             device_metadata = DevicesMetadata(input_dict={}, session_metadata=self.session_metadata)
+            animal_metadata = AnimalMetadata(input_dict={}, session_metadata=self.session_metadata)
             self.session_metadata.metadata['devices'] = device_metadata
+            self.session_metadata.metadata['animal'] = animal_metadata
         
         self.animal_id = None
         self.set_animal_id()
+
+        spk_data = self.get_spike_data()
+        spk_data_keys = list(spk_data.keys())
+        if len(spk_data_keys) > 0:
+            self.time_index = spk_data[spk_data_keys[0]].time_index
+        else:
+            self.time_index = None
+    
+    def update_time_index(self):
+        spk_data = self.get_spike_data()
+        spk_data_keys = list(spk_data.keys())
+        for i in range(len(spk_data_keys)):
+            time_index = spk_data[spk_data_keys[0]].time_index
+            if self.time_index != None:
+                assert self.time_index == time_index
+        self.time_index = time_index
 
     def get_animal_id(self):
         if self.animal_id == None:
@@ -106,8 +123,10 @@ class Session(Workspace):
                 self.session_metadata.metadata['devices']._add_device('axona_led_tracker', class_object)
             elif isinstance(class_object, ImplantMetadata):
                 self.session_metadata.metadata['devices']._add_device('implant', class_object)
+            elif isinstance(class_object, AnimalMetadata):
+                self.session_metadata.metadata['animal'] = class_object
         else:
-            if isinstance(class_object, SpikeCluster):
+            if isinstance(class_object, SpikeClusterBatch):
                 self.session_data.data['spike_cluster'] = class_object
             elif isinstance(class_object, SpikeTrain):
                 self.session_data.data['spike_train'] = class_object
@@ -115,6 +134,7 @@ class Session(Workspace):
                 self.session_data.data['position'] = class_object
             elif isinstance(class_object, SpatialSpikeTrain2D):
                 self.session_data.data['spatial_spike_train'] = class_object
+            self.update_time_index()
 
         return class_object
 
@@ -261,12 +281,11 @@ class Animal(Workspace):
         print('Session data added, spikes sorted by cell')
         ensemble = CellEnsemble()
         for i in range(len(good_sorted_cells)):
-            cell_dict = {'events': good_sorted_cells[i], 'signal': good_sorted_waveforms[i], 'session_metadata': session.session_metadata}
+            cell_dict = {'event_times': good_sorted_cells[i], 'signal': good_sorted_waveforms[i], 'session_metadata': session.session_metadata}
             cell = Cell(cell_dict)
             ensemble.add_cell(cell)
         
-        self.ensembles.append(ensemble)
-        self.sessions.append(session)
+        return ensemble
         
 
     

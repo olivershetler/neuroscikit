@@ -49,7 +49,7 @@ settings_dict = {'ppm': 511, 'sessions': [session_settings,]}
 def test_animal():
     session = make_session(cut_file, tet_file, pos_file, session_settings, settings_dict['ppm'])
 
-    animal_instance = Animal({'session_1': session})
+    animal_instance = Animal({'session_1': session, 'session_2': session})
     
     assert type(animal_instance.ensembles) == list
     assert type(animal_instance.sessions) == list

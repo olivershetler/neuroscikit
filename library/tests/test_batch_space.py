@@ -113,7 +113,7 @@ def test_spike_train_batch_class():
     rate_list2 = spike_train2.get_indiv_event_rate()
     instances2 = spike_train2.get_spike_train_instances()
 
-    assert type(rate2) == np.float64
+    assert type(rate2) == np.float64 or type(rate2) == float
     assert type(rate_list2) == list
     assert type(spike_train2.events_binary) == list
     assert type(spike_train2.event_times) == list

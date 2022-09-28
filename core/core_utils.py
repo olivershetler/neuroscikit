@@ -83,9 +83,3 @@ def make_clusters(timestamps, cluster_count):
         event_labels.append(int(idx))
     return event_labels
 
-
-def make_2D_arena(count=100):
-    return np.random.sample(count), np.random.sample(count)
-
-def make_velocity(count=100):
-    return np.random.sample(count)

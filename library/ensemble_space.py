@@ -67,6 +67,8 @@ class Cell(Workspace):
 
         self.stats_dict = self._init_stats_dict()
 
+        self.time_index = self.session_metadata.session_object.time_index
+
     def _read_input_dict(self):
         event_times = None
         waveforms = None 

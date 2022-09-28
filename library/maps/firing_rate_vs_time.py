@@ -2,6 +2,15 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
+import os
+import sys
+
+PROJECT_PATH = os.getcwd()
+sys.path.append(PROJECT_PATH)
+
+from core.spikes import SpikeCluster, SpikeTrain
+from library.ensemble_space import Cell
+
 def _check_inputs(data, spike_times, interval):
     '''
     This is an amalgamated test function for the compute_firing_rate function and the compute_average_speed function.
@@ -185,8 +194,8 @@ def plot_speed_vs_firing_rate(spike_train, speed, spike_times, figname='speed_vs
 
 
 
-def firing_rate_vs_time(spike_times: np.ndarray, pos_t: np.ndarray, window: int) -> tuple:
-
+# def firing_rate_vs_time(spike_times: np.ndarray, pos_t: np.ndarray, window: int) -> tuple:
+def firing_rate_vs_time(spike_class: Cell | SpikeTrain | SpikeCluster, window: int) -> tuple:
     '''
         Computes firing rate as a function of time
 
@@ -210,6 +219,16 @@ def firing_rate_vs_time(spike_times: np.ndarray, pos_t: np.ndarray, window: int)
             firing_time: (np.ndarray):
                 spike_times of when firing occured
         '''
+
+    spike_times = spike_class.event_times
+
+    pos_t = np.array(spike_class.time_index)
+
+    if type(spike_times) == list:
+        spike_times = np.array(spike_times)
+
+    if type(spike_times) == list:
+        spike_times = np.asarray(spike_times)
 
     # Initialize zero time elapsed, zero spike events, and zero bin times.
     time_elapsed = 0
@@ -248,5 +267,7 @@ def firing_rate_vs_time(spike_times: np.ndarray, pos_t: np.ndarray, window: int)
 
     firing_rate = np.array(firing_rate).reshape((len(firing_rate), 1))
     rate_vector[index_values] = firing_rate
+
+    spike_class.stats_dict['rate_vector'] = rate_vector
 
     return rate_vector, firing_time

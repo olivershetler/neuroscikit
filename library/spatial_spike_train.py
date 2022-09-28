@@ -2,7 +2,7 @@ from turtle import pos
 import numpy as np
 import os, sys
 
-from core.subjects import SessionMetadata 
+from core.subjects import SessionMetadata
 
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
@@ -44,17 +44,17 @@ class SpatialSpikeTrain2D():
     def _init_stats_dict(self):
         stats_dict = {}
 
-        map_names = ['autocorr', 'binary', 'direction', 'pos_vs_speed', 'rate_vs_time', 'hafting', 'occupancy', 'rate', 'spike']
+        map_names = ['autocorr', 'binary', 'spatial_tuning', 'pos_vs_speed', 'rate_vs_time', 'hafting', 'occupancy', 'rate', 'spike', 'map_blobs']
 
         for key in map_names:
-            stats_dict[key] = {}
+            stats_dict[key] = None
 
         return stats_dict
 
     def add_map_to_stats(self, map_name, map_class):
         # print(self.stats_dict)
         assert map_name in self.stats_dict, 'check valid map types to add to stats dict, map type not in stats dict'
-        assert type(map_class) != np.ndarray and type(map_class) != list
+        # assert type(map_class) != np.ndarray and type(map_class) != list
         self.stats_dict[map_name] = map_class
 
     def get_map(self, map_name):
@@ -84,6 +84,14 @@ class SpatialSpikeTrain2D():
         # def shuffle_spike_positions(self, displacement):
         #     pass
 
+    # def make_rate_map(self):
+    #     HaftingRateMap(self)
+
+    # def make_occupancy_map(self):
+    #     HaftingOccupancyMap(self)
+
+    # def make_spike_map(self):
+    #     HaftingSpikeMap(self)
 
 
 

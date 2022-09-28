@@ -1,6 +1,7 @@
 import os
 import sys
 import numpy as np
+
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
 

@@ -1,6 +1,7 @@
 import os
 import sys
 
+
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
 
@@ -10,9 +11,12 @@ import cv2
 from PIL import Image
 from library.maps.map_utils import _compute_resize_ratio, _interpolate_matrix
 from opexebo.analysis import autocorrelation as opexebo_autocorrelation
+from library.spatial_spike_train import SpatialSpikeTrain2D
+from library.hafting_spatial_maps import HaftingRateMap
 
 
-def autocorrelation(ratemap: np.ndarray, pos_x: np.ndarray, pos_y: np.ndarray, arena_size: tuple) -> np.ndarray:
+# def autocorrelation(ratemap: np.ndarray, arena_size: tuple) -> np.ndarray:
+def autocorrelation(spatial_map: SpatialSpikeTrain2D | HaftingRateMap, **kwargs):
     '''
         Compute the autocorrelation map from ratemap
 
@@ -29,10 +33,29 @@ def autocorrelation(ratemap: np.ndarray, pos_x: np.ndarray, pos_y: np.ndarray, a
             np.ndarray:
                 autocorr_OPEXEBO
     '''
+    
+    if 'smoothing_factor' in kwargs:
+        smoothing_factor = kwargs['smoothing_factor']
+    else:
+        smoothing_factor = 3
+
+    if isinstance(spatial_map, HaftingRateMap):
+        ratemap = spatial_map.get_rate_map(smoothing_factor)
+    elif isinstance(spatial_map, SpatialSpikeTrain2D):
+        ratemap = spatial_map.get_map('rate')
+        if ratemap == None:
+            ratemap = HaftingRateMap(spatial_map).get_rate_map(smoothing_factor)
+            # ratemap = spatial_map.get_map('rate')
+    arena_size = spatial_map.arena_size
 
     x_resize, y_resize = _compute_resize_ratio(arena_size)
     autocorr_OPEXEBO = opexebo_autocorrelation(ratemap)
     autocorr_OPEXEBO = _interpolate_matrix(autocorr_OPEXEBO, cv2_interpolation_method=cv2.INTER_NEAREST) #_resize_numpy2D(autocorr_OPEXEBO, x_resize, y_resize)
+
+    if isinstance(spatial_map, HaftingRateMap):
+        spatial_map.spatial_spike_train.add_map_to_stats('autocorr', autocorr_OPEXEBO)
+    elif isinstance(spatial_map, SpatialSpikeTrain2D):
+        spatial_map.add_map_to_stats('autocorr', autocorr_OPEXEBO)
 
     return autocorr_OPEXEBO
 

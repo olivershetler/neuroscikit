@@ -2,14 +2,13 @@ import os
 import sys
 from turtle import pos
 
-from library.maps.spatial_spike_train import SpatialSpikeTrain2D
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
 
 
 import numpy as np
-from library.maps.occupancy_map import occupancy_map
-from library.maps.spatial_spike_maps import spike_map
+from library.maps import occupancy_map
+# from library.maps import spike_map
 from core.spatial import Position2D
 from core.spikes import SpikeTrain
 

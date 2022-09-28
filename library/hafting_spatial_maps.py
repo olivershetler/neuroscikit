@@ -6,12 +6,11 @@ import itertools
 import cv2
 from numba import jit, njit
 import matplotlib.pyplot as plt
-from library import spike
 
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
 
-from library.maps.spatial_spike_train import SpatialSpikeTrain2D
+from library.spatial_spike_train import SpatialSpikeTrain2D
 from core.spatial import Position2D
 
 
@@ -35,9 +34,11 @@ class HaftingOccupancyMap():
             self.session_metadata = kwargs['session_metadata']
 
     def get_occupancy_map(self, smoothing_factor=None):
-        if smoothing_factor == None:
+        if self.smoothing_factor != None:
             smoothing_factor = self.smoothing_factor
             assert smoothing_factor != None, 'Need to add smoothing factor to function inputs'
+        else:
+            self.smoothing_factor = smoothing_factor
 
         self.map_data = self.compute_occupancy_map(self.t, self.x, self.y, self.arena_size, smoothing_factor)
 
@@ -111,9 +112,11 @@ class HaftingSpikeMap():
     #     return spatial_spike_train
 
     def get_spike_map(self, smoothing_factor=None):
-        if smoothing_factor == None:
+        if self.smoothing_factor != None:
             smoothing_factor = self.smoothing_factor
             assert smoothing_factor != None, 'Need to add smoothing factor to function inputs'
+        else:
+            self.smoothing_factor = smoothing_factor
 
         self.map_data = self.compute_spike_map(self.spike_x, self.spike_y, smoothing_factor, self.arena_size)
 
@@ -158,8 +161,13 @@ class HaftingRateMap():
     def __init__(self, spatial_spike_train: SpatialSpikeTrain2D, **kwargs):
         
         self.occ_map = spatial_spike_train.get_map('occupancy')
+        if self.occ_map == None:
+            self.occ_map = HaftingOccupancyMap(spatial_spike_train)
         self.spike_map = spatial_spike_train.get_map('spike')
+        if self.spike_map == None:
+            self.spike_map = HaftingSpikeMap(spatial_spike_train)
         self.spatial_spike_train = spatial_spike_train
+        self.arena_size = spatial_spike_train.arena_size
 
         assert isinstance(self.occ_map, HaftingOccupancyMap)
         assert isinstance(self.spike_map, HaftingSpikeMap)
@@ -199,8 +207,15 @@ class HaftingRateMap():
         Returns:
             rate_map: spike density divided by occupancy density
         '''
-        occ_map_data = occupancy_map.map_data
-        spike_map_data = spike_map.map_data
+        if self.smoothing_factor != None:
+            occ_map_data = occupancy_map.get_occupancy_map(self.smoothing_factor)
+            spike_map_data = spike_map.get_spike_map(self.smoothing_factor)
+        else:
+            print('No smoothing factor provided, proceeding with value of 3')
+            occ_map_data = occupancy_map.get_occupancy_map(3)
+            spike_map_data = spike_map.get_spike_map(3)
+            
+        
         
         assert occ_map_data.shape == spike_map_data.shape
 

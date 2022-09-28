@@ -8,15 +8,16 @@ sys.path.append(PROJECT_PATH)
 from library.ensemble_space import CellEnsemble, CellPopulation, Cell
 from core.core_utils import *
 from core.subjects import SessionMetadata
+from library.study_space import Session
 
 def test_cell():
     events = make_1D_timestamps()
     waveforms = make_waveforms(4, 100, 50)
-    session_metadata = SessionMetadata({'session_id': 'id0'})
-    cell = Cell({'event_times': events, 'signal': waveforms, 'session_metadata': session_metadata})
+    session = Session()
+    cell = Cell({'event_times': events, 'signal': waveforms, 'session_metadata': session.session_metadata})
 
     assert isinstance(cell, Cell)
-    assert type(cell.events) == list 
+    assert type(cell.event_times) == list 
     assert waveforms == cell.signal
 
 def test_cell_ensemble():
@@ -24,8 +25,8 @@ def test_cell_ensemble():
     for i in range(5):
         events = make_1D_timestamps()
         waveforms = make_waveforms
-        session_metadata = SessionMetadata({'session_id': 'id0'})
-        cell = Cell({'events': events, 'signal': waveforms, 'session_metadata': session_metadata})
+        session = Session()
+        cell = Cell({'events': events, 'signal': waveforms, 'session_metadata': session.session_metadata})
         cells['cell_'+ str(i+1)] = cell
 
     ensemble = CellEnsemble(cells)
@@ -35,8 +36,8 @@ def test_cell_ensemble():
 
     events = make_1D_timestamps()
     waveforms = make_waveforms
-    session_metadata = SessionMetadata({'session_id': 'id0'})
-    cell_new = Cell({'event_times': events, 'signal': waveforms, 'session_metadata': session_metadata})
+    session = Session()
+    cell_new = Cell({'event_times': events, 'signal': waveforms, 'session_metadata': session.session_metadata})
 
     ensemble.add_cell(cell_new)
 
@@ -47,8 +48,8 @@ def test_cell_population():
     for i in range(5):
         events = make_1D_timestamps()
         waveforms = make_waveforms
-        session_metadata = SessionMetadata({'session_id': 'id0'})
-        cell = Cell({'events': events, 'signal': waveforms, 'session_metadata': session_metadata})
+        session = Session()
+        cell = Cell({'events': events, 'signal': waveforms, 'session_metadata': session.session_metadata})
         cells['cell_'+ str(i+1)] = cell
 
     ensemble = CellEnsemble(cells)

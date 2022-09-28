@@ -7,6 +7,7 @@ class Position2D():
         self._input_dict = input_dict
 
         self.t, self.x, self.y, self.arena_height, self.arena_width, self.session_metadata = self._read_input_dict()
+        self.time_index = self.t
 
         if 'session_metadata' in kwargs:
             if self.session_metadata != None: 
@@ -14,6 +15,7 @@ class Position2D():
             self.session_metadata = kwargs['session_metadata']
 
         self._input_dict = input_dict
+        self.stats_dict = {}
 
     def _read_input_dict(self):
         t, x, y, arena_height, arena_width, session_metadata = None, None, None, None, None, None

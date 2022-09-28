@@ -46,6 +46,7 @@ class SessionMetadata():
         self._input_dict = input_dict   
 
         self.metadata, self.session_object = self._read_input_dict()
+        
         if 'session_object' in kwargs:
             if self.session_object != None: 
                 print('Ses object is in the input dict and init fxn, init fnx will override')

@@ -13,71 +13,7 @@ from library.cluster import create_features
 from library.batch_space import SpikeClusterBatch
 from core.spikes import SpikeCluster
 from library.ensemble_space import Cell
-
-def make_spike_cluster_batch():
-    event_times = make_1D_timestamps()
-    ch_count = 4
-    samples_per_wave = 50
-    waveforms = make_waveforms(ch_count, len(event_times), samples_per_wave)
-    cluster_count = 10
-
-    event_labels = make_clusters(event_times, cluster_count)
-
-    T = 2
-    dt = .02
-
-    input_dict1 = {}
-    input_dict1['duration'] = int(T)
-    input_dict1['sample_rate'] = float(1 / dt)
-    input_dict1['event_times'] = event_times
-    input_dict1['event_labels'] = event_labels
-
-
-    for i in range(ch_count):
-        key = 'channel_' + str(i+1)
-        input_dict1[key] = waveforms[i]
-
-    spike_cluster_batch = SpikeClusterBatch(input_dict1)
-
-    return spike_cluster_batch
-
-def make_spike_cluster():
-    event_times = make_1D_timestamps()
-    ch_count = 8
-    samples_per_wave = 50
-    waveforms = make_waveforms(ch_count, len(event_times), samples_per_wave)
-
-    T = 2
-    dt = .02
-    idx = np.random.choice(len(event_times), size=1)[0]
-
-    input_dict1 = {}
-    input_dict1['duration'] = int(T)
-    input_dict1['sample_rate'] = float(1 / dt)
-    input_dict1['event_times'] = event_times
-    input_dict1['cluster_label'] = int(idx + 1)
-
-
-    for i in range(ch_count):
-        key = 'channel_' + str(i+1)
-        input_dict1[key] = waveforms[i]
-
-    spike_cluster = SpikeCluster(input_dict1)
-
-    return spike_cluster
-
-def make_cell():
-    event_times = make_1D_timestamps()
-    ch_count = 4
-    samples_per_wave = 50
-    waveforms = make_waveforms(ch_count, len(event_times), samples_per_wave)
-    session_metadata = 'ses1'
-
-    inp_dict = {'event_times': event_times, 'signal': waveforms, 'session_metadata': session_metadata}
-
-    cell = Cell(inp_dict)
-
-    return cell
+from library.lib_utils import make_spike_cluster, make_spike_cluster_batch, make_cell
 
 def test_sort_cell_spike_times():
   
