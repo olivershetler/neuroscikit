@@ -42,6 +42,7 @@ class Session(Workspace):
     def update_time_index(self):
         spk_data = self.get_spike_data()
         spk_data_keys = list(spk_data.keys())
+        time_index = None
         for i in range(len(spk_data_keys)):
             time_index = spk_data[spk_data_keys[0]].time_index
             if self.time_index != None:
