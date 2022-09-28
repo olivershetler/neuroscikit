@@ -6,25 +6,7 @@ PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
 
 from library.maps import rate_map, spike_pos, autocorrelation, filter_pos_by_speed, firing_rate_vs_time, map_blobs, occupancy_map, spatial_tuning_curve, spike_map, binary_map
-from core.core_utils import make_seconds_index_from_rate
-
-
-def make_1D_timestamps(T=2, dt=0.02):
-    time = np.arange(0,T,dt)
-
-    spk_count = np.random.choice(len(time), size=1)
-    while spk_count <= 10:
-        spk_count = np.random.choice(len(time), size=1)
-    spk_time = np.random.choice(time, size=spk_count, replace=False).tolist()
-
-    return spk_time
-
-def make_2D_arena(count=100):
-    return np.random.sample(count), np.random.sample(count)
-
-def make_velocity(count=100):
-    return np.random.sample(count)
-
+from core.core_utils import make_seconds_index_from_rate, make_1D_timestamps, make_2D_arena, make_velocity
 
 def test_rate_map():  
 

@@ -206,8 +206,8 @@ class HaftingRateMap():
 
         rate_map = _compute_unmasked_ratemap(occ_map_data, spike_map_data)
 
-        # rate_map = np.ma.array(rate_map, mask=occupancy_map.mask)
-        rate_map = np.ma.array(rate_map, mask=occ_map_data)
+        rate_map = np.ma.array(rate_map, mask=occ_map_data.mask)
+        # rate_map = np.ma.array(rate_map, mask=occ_map_data)
 
         return rate_map
 

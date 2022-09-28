@@ -132,9 +132,8 @@ def test_hafting_rate_map():
     rate_map = hafting_rate.get_rate_map(smoothing_factor=3)
 
     assert isinstance(hafting_rate, HaftingRateMap)
-
     assert type(hafting_rate.map_data) == np.ma.core.MaskedArray
-
+    print(hafting_rate.map_data)
     assert 'spatial_spike_train' in session_metadata.session_object.get_spike_data()
     assert isinstance(session_metadata.session_object.session_data.data['spatial_spike_train'], SpatialSpikeTrain2D)
     assert session_metadata.session_object.session_data.data['spatial_spike_train'] == spatial_spike_train
