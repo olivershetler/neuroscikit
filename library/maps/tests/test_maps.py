@@ -5,9 +5,9 @@ import numpy as np
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
 
-from library.maps import autocorrelation, filter_pos_by_speed, firing_rate_vs_time, map_blobs, spatial_tuning_curve
+from library.maps import autocorrelation, filter_pos_by_speed, firing_rate_vs_time, map_blobs, spatial_tuning_curve, binary_map
 from core.core_utils import make_seconds_index_from_rate, make_1D_timestamps
-from library.lib_utils import make_2D_arena, make_cell, make_spike_cluster, make_spike_cluster_batch
+from library.lib_utils import make_2D_arena, make_cell, make_spike_cluster, make_spike_cluster_batch, make_spatial_spike_train
 from library.study_space import Session
 from core.spikes import SpikeTrain
 from core.spatial import Position2D
@@ -15,28 +15,7 @@ from library.spatial_spike_train import SpatialSpikeTrain2D
 from library.hafting_spatial_maps import HaftingRateMap
 
 def test_autocorrelation():
-    T = 2
-    dt = .02
-
-    event_times = make_1D_timestamps(T, dt)
-    t = make_seconds_index_from_rate(T, 1/dt)
-    x, y = make_2D_arena(count=len(t))
-
-    pos_dict = {'x': x, 'y': t, 't': t, 'arena_height': max(y) - min(y), 'arena_width': max(x) - min(x)}
-
-    spike_dict = {}
-    spike_dict['duration'] = int(T)
-    spike_dict['sample_rate'] = float(1 / dt)
-    spike_dict['events_binary'] = []
-    spike_dict['event_times'] = event_times
-
-    session = Session()
-    session_metadata = session.session_metadata
-
-    spike_train = session.make_class(SpikeTrain, spike_dict)
-    position = session.make_class(Position2D, pos_dict)
-
-    spatial_spike_train = session.make_class(SpatialSpikeTrain2D, {'spike_train': spike_train, 'position': position})
+    spatial_spike_train, session_metadata = make_spatial_spike_train()
 
     autocorr = autocorrelation(spatial_spike_train)
 
@@ -81,28 +60,7 @@ def test_firing_rate_vs_time():
     assert 'rate_vector' in cluster_batch.stats_dict
 
 def test_map_blobs():
-    T = 2
-    dt = .02
-
-    event_times = make_1D_timestamps(T, dt)
-    t = make_seconds_index_from_rate(T, 1/dt)
-    x, y = make_2D_arena(count=len(t))
-
-    pos_dict = {'x': x, 'y': t, 't': t, 'arena_height': max(y) - min(y), 'arena_width': max(x) - min(x)}
-
-    spike_dict = {}
-    spike_dict['duration'] = int(T)
-    spike_dict['sample_rate'] = float(1 / dt)
-    spike_dict['events_binary'] = []
-    spike_dict['event_times'] = event_times
-
-    session = Session()
-    session_metadata = session.session_metadata
-
-    spike_train = session.make_class(SpikeTrain, spike_dict)
-    position = session.make_class(Position2D, pos_dict)
-
-    spatial_spike_train = session.make_class(SpatialSpikeTrain2D, {'spike_train': spike_train, 'position': position})
+    spatial_spike_train, session_metadata = make_spatial_spike_train()
 
     image, n_labels, labels, centroids, field_sizes = map_blobs(spatial_spike_train)
 
@@ -114,29 +72,7 @@ def test_map_blobs():
     assert len(centroids) == len(field_sizes)
 
 def test_spatial_tuning_curve():
-
-    T = 2
-    dt = .02
-
-    event_times = make_1D_timestamps(T, dt)
-    t = make_seconds_index_from_rate(T, 1/dt)
-    x, y = make_2D_arena(count=len(t))
-
-    pos_dict = {'x': x, 'y': t, 't': t, 'arena_height': max(y) - min(y), 'arena_width': max(x) - min(x)}
-
-    spike_dict = {}
-    spike_dict['duration'] = int(T)
-    spike_dict['sample_rate'] = float(1 / dt)
-    spike_dict['events_binary'] = []
-    spike_dict['event_times'] = event_times
-
-    session = Session()
-    session_metadata = session.session_metadata
-
-    spike_train = session.make_class(SpikeTrain, spike_dict)
-    position = session.make_class(Position2D, pos_dict)
-
-    spatial_spike_train = session.make_class(SpatialSpikeTrain2D, {'spike_train': spike_train, 'position': position})
+    spatial_spike_train, session_metadata = make_spatial_spike_train()
 
     tuned_data, spike_angles, ang_occ, bin_array = spatial_tuning_curve(spatial_spike_train, 3)
 
@@ -146,6 +82,14 @@ def test_spatial_tuning_curve():
     assert type(bin_array) == np.ndarray
     assert 'spatial_tuning' in spatial_spike_train.stats_dict
     assert type(spatial_spike_train.get_map('spatial_tuning')) == dict
+
+def test_binary_map():
+    spatial_spike_train, session_metadata = make_spatial_spike_train()
+
+    binmap = binary_map(spatial_spike_train)
+
+    assert type(binmap) == np.ndarray
+
 
 # def test_spike_pos():
 
@@ -189,29 +133,6 @@ def test_spatial_tuning_curve():
 #     spike_map_smooth, spike_map_raw = spike_map(pos_x, pos_y, pos_y, arena_size, spikex, spikey, kernlen, std)
 
 #     assert len(spike_map_smooth) == len(spike_map_raw)
-
-# def test_binary_map():
-#     T = 2
-#     dt = .02
-#     pos_t = make_seconds_index_from_rate(T, 1/dt)
-
-#     smoothing_factor = 5
-#     # Kernel size
-#     kernlen = int(smoothing_factor*8)
-#     # Standard deviation size
-#     std = int(0.2*kernlen)
-#     arena_size = (1,1)
-
-#     spk_times = make_1D_timestamps()
-#     pos_x, pos_y = make_2D_arena(len(pos_t))
-
-#     spikex, spikey, spiket, _ = spike_pos(spk_times, pos_x, pos_y, pos_t, pos_t, False, False)
-
-#     rate_map_smooth, rate_map_raw = rate_map(pos_x, pos_y, pos_t, arena_size, spikex, spikey, kernlen, std)    
-
-#     binmap = binary_map(rate_map_smooth)
-
-#     assert type(binmap) == np.ndarray
 
 # def test_occupancy_map():
 #     T = 2

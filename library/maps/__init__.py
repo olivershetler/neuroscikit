@@ -6,7 +6,6 @@ sys.path.append(PROJECT_PATH)
  
 
 from library.maps.spatial_tuning_curve import spatial_tuning_curve
-# from library.maps.spike_map import spike_map
 from library.maps.rate_map import rate_map
 from library.maps.occupancy_map import occupancy_map
 from library.maps.map_blobs import map_blobs

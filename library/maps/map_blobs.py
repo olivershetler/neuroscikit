@@ -47,9 +47,11 @@ def map_blobs(spatial_map: SpatialSpikeTrain2D | HaftingRateMap, **kwargs):
     if isinstance(spatial_map, HaftingRateMap):
         ratemap = spatial_map.get_rate_map(smoothing_factor)
     elif isinstance(spatial_map, SpatialSpikeTrain2D):
-        ratemap = spatial_map.get_map('rate')
-        if ratemap == None:
+        rate_obj = spatial_map.get_map('rate')
+        if rate_obj == None:
             ratemap = HaftingRateMap(spatial_map).get_rate_map(smoothing_factor)
+        else:
+            ratemap = rate_obj.get_rate_map(smoothing_factor)
 
 
     # Create kernel for convolutional smoothing

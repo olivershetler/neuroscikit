@@ -2,7 +2,6 @@ from datetime import datetime, timedelta
 from random import sample
 import numpy as np
 import os, sys
-from core.subjects import SessionMetadata
 
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
@@ -11,8 +10,11 @@ from library.batch_space import SpikeClusterBatch
 from core.spikes import SpikeCluster
 from library.ensemble_space import Cell
 from library.study_space import Session
-from core.core_utils import make_1D_timestamps, make_waveforms, make_clusters
+from core.core_utils import make_1D_timestamps, make_waveforms, make_clusters, make_seconds_index_from_rate
 from core.spikes import SpikeTrain
+from core.spatial import Position2D
+from core.subjects import SessionMetadata
+from library.spatial_spike_train import SpatialSpikeTrain2D
 
 def make_spike_cluster_batch():
     event_times = make_1D_timestamps()
@@ -86,3 +88,29 @@ def make_2D_arena(count=100):
 
 def make_velocity(count=100):
     return np.random.sample(count)
+
+def make_spatial_spike_train():
+    T = 2
+    dt = .02
+
+    event_times = make_1D_timestamps(T, dt)
+    t = make_seconds_index_from_rate(T, 1/dt)
+    x, y = make_2D_arena(count=len(t))
+
+    pos_dict = {'x': x, 'y': t, 't': t, 'arena_height': max(y) - min(y), 'arena_width': max(x) - min(x)}
+
+    spike_dict = {}
+    spike_dict['duration'] = int(T)
+    spike_dict['sample_rate'] = float(1 / dt)
+    spike_dict['events_binary'] = []
+    spike_dict['event_times'] = event_times
+
+    session = Session()
+    session_metadata = session.session_metadata
+
+    spike_train = session.make_class(SpikeTrain, spike_dict)
+    position = session.make_class(Position2D, pos_dict)
+
+    spatial_spike_train = session.make_class(SpatialSpikeTrain2D, {'spike_train': spike_train, 'position': position})
+
+    return spatial_spike_train, session_metadata

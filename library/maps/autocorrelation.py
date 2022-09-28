@@ -33,7 +33,7 @@ def autocorrelation(spatial_map: SpatialSpikeTrain2D | HaftingRateMap, **kwargs)
             np.ndarray:
                 autocorr_OPEXEBO
     '''
-    
+
     if 'smoothing_factor' in kwargs:
         smoothing_factor = kwargs['smoothing_factor']
     else:
@@ -42,10 +42,12 @@ def autocorrelation(spatial_map: SpatialSpikeTrain2D | HaftingRateMap, **kwargs)
     if isinstance(spatial_map, HaftingRateMap):
         ratemap = spatial_map.get_rate_map(smoothing_factor)
     elif isinstance(spatial_map, SpatialSpikeTrain2D):
-        ratemap = spatial_map.get_map('rate')
-        if ratemap == None:
+        rate_obj = spatial_map.get_map('rate')
+        if rate_obj == None:
             ratemap = HaftingRateMap(spatial_map).get_rate_map(smoothing_factor)
-            # ratemap = spatial_map.get_map('rate')
+        else:
+            ratemap = rate_obj.get_rate_map(smoothing_factor)
+
     arena_size = spatial_map.arena_size
 
     x_resize, y_resize = _compute_resize_ratio(arena_size)

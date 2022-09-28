@@ -31,6 +31,9 @@ class SpatialSpikeTrain2D():
         self.stats_dict = self._init_stats_dict()
 
     def _read_input_dict(self):
+        spike_train = None 
+        position = None 
+        
         if 'spike_train' in self._input_dict:
             spike_train = self._input_dict['spike_train']
             assert isinstance(spike_train, SpikeTrain)

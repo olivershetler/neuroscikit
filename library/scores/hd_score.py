@@ -2,6 +2,9 @@
 import numpy as  np
 import matplotlib.pyplot as plt
 import math
+from library.maps.spatial_tuning_curve import spatial_tuning_curve
+
+from library.spatial_spike_train import SpatialSpikeTrain2D
 
 def _moving_sum(array, window):
     ret = np.cumsum(array, dtype=float)
@@ -20,7 +23,25 @@ def _get_rolling_sum(array_in, window):
     return array_out
 
 # called by batch_process module only
-def hd_score(angles, window_size=23):
+# def hd_score(angles, window_size=23):
+def hd_score(spatial_spike_train: SpatialSpikeTrain2D, **kwargs):
+    if 'smoothing_factor' in kwargs:
+        smoothing_factor = kwargs['smoothing_factor']
+    else:
+        smoothing_factor = 3
+
+    if 'window_size' in kwargs:
+        window_size = kwargs['window_size']
+    else:
+        window_size = 23
+
+    spatial_tuning_data = spatial_spike_train.get_map('spatial_tuning')
+    if spatial_tuning_data == None:
+        spatial_tuning_data = spatial_tuning_curve(spatial_spike_train, smoothing_factor)
+        angles = spatial_spike_train.get_map('spatial_tuning')['spike_angles']
+    else:
+        angles = spatial_tuning_data['spike_angles']
+
     angles = angles[~np.isnan(angles)]
     theta = np.linspace(0, 2*np.pi, 361)  # x axis
 

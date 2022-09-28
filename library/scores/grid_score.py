@@ -1,6 +1,10 @@
 import os
 import sys
 
+from library.hafting_spatial_maps import HaftingOccupancyMap, HaftingRateMap
+from library.maps.occupancy_map import occupancy_map
+from library.spatial_spike_train import SpatialSpikeTrain2D
+
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
  
@@ -13,9 +17,11 @@ from library.maps.autocorrelation import autocorrelation
 from library.maps.rate_map import rate_map
 from library.scores.shuffle_spikes import shuffle_spikes
 
-def grid_score(occupancy_map: np.ndarray, ts: np.ndarray, pos_x: np.ndarray,
-                       pos_y: np.ndarray, pos_t: np.ndarray, arena_size: tuple,
-                       spikex: np.ndarray, spikey: np.ndarray, kernlen: int, std: int):
+# def grid_score(occupancy_map: np.ndarray, ts: np.ndarray, pos_x: np.ndarray,
+#                        pos_y: np.ndarray, pos_t: np.ndarray, arena_size: tuple,
+#                        spikex: np.ndarray, spikey: np.ndarray, kernlen: int, std: int):
+
+def grid_score(spatial_spike_train: SpatialSpikeTrain2D, **kwargs):
 
     '''
         Computes the grid score of neuron given spike data.
@@ -34,16 +40,22 @@ def grid_score(occupancy_map: np.ndarray, ts: np.ndarray, pos_x: np.ndarray,
             kenrnlen, std (int):
                 kernel size and standard deviation of kernel for convolutional smoothing.
     '''
+    if 'smoothing_factor' in kwargs:
+        smoothing_factor = kwargs['smoothing_factor']
+    else:
+        smoothing_factor = 3
 
-    # Extract and flatten spike arrays
-    unshuffled_spike_xy = np.zeros((2,len(ts)))
-    unshuffled_spike_xy[0] = spikex.flatten()
-    unshuffled_spike_xy[1] = spikey.flatten()
+    ratemap_obj = spatial_spike_train.get_map('rate')
+    if ratemap_obj == None:
+        ratemap = HaftingRateMap(spatial_spike_train).get_rate_map(smoothing_factor)
+    else:
+        ratemap = ratemap_obj.get_rate_map(smoothing_factor)
 
-    # Compute ratemaps, autocorrelation, and finally grid_score
-    rate_map_smooth, rate_map_raw = rate_map(pos_x, pos_y, pos_t, arena_size, spikex, spikey, kernlen, std)
-    autocorr_map = autocorrelation(rate_map_smooth,pos_x,pos_y,arena_size)
-    grid_score_object = opexebo_grid_score(autocorr_map)
+    autocorr = spatial_spike_train.get_map('autocorr')
+    if autocorr == None:
+        autocorr = autocorrelation(spatial_spike_train)
+
+    grid_score_object = opexebo_grid_score(autocorr)
     true_grid_score = grid_score_object[0]
 
     return true_grid_score

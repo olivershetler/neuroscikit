@@ -1,18 +1,22 @@
 import os
 import sys
 
+from library.hafting_spatial_maps import HaftingRateMap
+
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
  
 
 import numpy as np
-from library.maps.binary_map import binary_map
 from library.scores.shuffle_spikes import shuffle_spikes
-from library.maps.rate_map import rate_map
 from openpyxl.worksheet.dimensions import ColumnDimension
 from openpyxl.utils.cell import get_column_letter
+from library.spatial_spike_train import SpatialSpikeTrain2D
+from library.maps import binary_map
 
-def border_score(binary_map: np.ndarray, rate_map: np.ndarray) -> tuple:
+
+# def border_score(binary_map: np.ndarray, rate_map: np.ndarray) -> tuple:
+def border_score(spatial_spike_train: SpatialSpikeTrain2D, **kwargs) -> tuple:
 
     '''
         Computes 4 scores which each reflect selectivity of neurons firing at arena edges,
@@ -34,11 +38,25 @@ def border_score(binary_map: np.ndarray, rate_map: np.ndarray) -> tuple:
             tuple: top_bscore, bottom_bscore, left_bscore, right_bscore
     '''
 
+
+    if 'smoothing_factor' in kwargs:
+        smoothing_factor = kwargs['smoothing_factor']
+    else:
+        smoothing_factor = 3
+
+    if spatial_spike_train.get_map('rate') == None:
+        rate_map_obj = HaftingRateMap(spatial_spike_train)
+        spatial_spike_train.add_map_to_stats('rate', rate_map_obj)
+    rate_map = spatial_spike_train.get_map('rate').get_rate_map(smoothing_factor)
+
+    bin_map = binary_map(spatial_spike_train)
+
+
     # If for whatever reason the supplied binary map does not match rate map dimensions, throw error.
-    if binary_map.shape != rate_map.shape:
+    if bin_map.shape != rate_map.shape:
         raise Exception("The binary map and rate map must have the same dimensions")
 
-    shortest_side = min(binary_map.shape[0], binary_map.shape[1]) / 2
+    shortest_side = min(bin_map.shape[0], bin_map.shape[1]) / 2
 
     # Initializing top, bottom, left, right proportion coverage of map
     top_coverage = 0
@@ -53,19 +71,19 @@ def border_score(binary_map: np.ndarray, rate_map: np.ndarray) -> tuple:
     right_distance_sum = 0
 
     # Compute coverage on each side
-    top_coverage = sum(binary_map[0]) / len(binary_map[0])
-    bottom_coverage = sum(binary_map[len(binary_map)-1]) / len(binary_map[0])
-    left_coverage = sum(binary_map[:,0]) / len(binary_map[:,0])
-    right_coverage = sum(binary_map[:,binary_map.shape[1]-1]) / len(binary_map[:,0])
+    top_coverage = sum(bin_map[0]) / len(bin_map[0])
+    bottom_coverage = sum(bin_map[len(bin_map)-1]) / len(bin_map[0])
+    left_coverage = sum(bin_map[:,0]) / len(bin_map[:,0])
+    right_coverage = sum(bin_map[:,bin_map.shape[1]-1]) / len(bin_map[:,0])
 
-    indices = np.argwhere(binary_map > 0)
+    indices = np.argwhere(bin_map > 0)
 
     # Compute distances of all field pixels to each edge
     for index in indices:
         top_distance_sum += (index[0]) *  rate_map[index[0], index[1]]
-        bottom_distance_sum += (len(binary_map[0]) - index[0]) * rate_map[index[0], index[1]]
+        bottom_distance_sum += (len(bin_map[0]) - index[0]) * rate_map[index[0], index[1]]
         left_distance_sum += index[1] * rate_map[index[0], index[1]]
-        right_distance_sum += (len(binary_map[:,0]) - index[1]) * rate_map[index[0], index[1]]
+        right_distance_sum += (len(bin_map[:,0]) - index[1]) * rate_map[index[0], index[1]]
 
     avg_top_dist    = (top_distance_sum / len(indices))     / shortest_side
     avg_bottom_dist = (bottom_distance_sum / len(indices))  / shortest_side
