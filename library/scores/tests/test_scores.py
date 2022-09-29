@@ -6,8 +6,13 @@ PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
 
 from library.lib_test_utils import make_2D_arena, make_spatial_spike_train
-from library.scores import border_score, grid_score, hd_score
+from library.hafting_spatial_maps import HaftingOccupancyMap, HaftingRateMap, HaftingSpikeMap
+from library.scores import border_score, grid_score, hd_score, rate_map_coherence
 from library.lib_test_utils import make_2D_arena
+from core.core_utils import make_seconds_index_from_rate
+from core.core_utils import make_1D_timestamps
+from library.scores.rate_map_stats import rate_map_stats
+from library.scores.shuffle_spikes import shuffle_spikes
 
 def test_border_score():
     spatial_spike_train, session_metadata = make_spatial_spike_train()
@@ -29,6 +34,40 @@ def test_hd_score():
     smooth_hd = hd_score(spatial_spike_train)
 
     assert type(smooth_hd) == np.ndarray
+
+def test_rate_map_coherence():
+    spatial_spike_train, session_metadata = make_spatial_spike_train()
+    coherence = rate_map_coherence(spatial_spike_train)
+
+    assert type(coherence) == np.float64
+
+def test_rate_map_stats():
+    spatial_spike_train, session_metadata = make_spatial_spike_train()
+    ratemap = HaftingRateMap(spatial_spike_train)
+    occmap = HaftingOccupancyMap(spatial_spike_train)
+    spkmap = HaftingSpikeMap(spatial_spike_train)
+    spatial_spike_train.add_map_to_stats('rate', ratemap)
+    spatial_spike_train.add_map_to_stats('occupancy', occmap)
+    spatial_spike_train.add_map_to_stats('spike', spkmap)
+    map_stats = rate_map_stats(spatial_spike_train)
+
+    assert type(map_stats) == dict
+    assert 'spatial_information_rate' in map_stats
+
+def test_shuffle_spikes():
+    T = 100
+    dt = .1
+
+    event_times = make_1D_timestamps(T, dt)
+    t = make_seconds_index_from_rate(T, 1/dt)
+    x, y = make_2D_arena(count=len(t))
+
+    shuffled_spikes = shuffle_spikes(np.array(event_times), np.array(x), np.array(y), np.array(t))
+
+    assert type(shuffled_spikes) == list
+
+def test_speed_score():
+    pass
 
 # def test_shuffle_spikes():
 #     T = 10

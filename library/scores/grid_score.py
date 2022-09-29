@@ -45,16 +45,17 @@ def grid_score(spatial_spike_train: SpatialSpikeTrain2D, **kwargs):
             kenrnlen, std (int):
                 kernel size and standard deviation of kernel for convolutional smoothing.
     '''
+
     if 'smoothing_factor' in kwargs:
         smoothing_factor = kwargs['smoothing_factor']
     else:
-        smoothing_factor = 3
+        smoothing_factor = spatial_spike_train.session_metadata.session_object.smoothing_factor
 
     ratemap_obj = spatial_spike_train.get_map('rate')
     if ratemap_obj == None:
-        ratemap = HaftingRateMap(spatial_spike_train).get_rate_map(smoothing_factor)
+        ratemap, _ = HaftingRateMap(spatial_spike_train).get_rate_map(smoothing_factor)
     else:
-        ratemap = ratemap_obj.get_rate_map(smoothing_factor)
+        ratemap, _ = ratemap_obj.get_rate_map(smoothing_factor)
 
     autocorr = spatial_spike_train.get_map('autocorr')
     if autocorr == None:

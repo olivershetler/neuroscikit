@@ -1,6 +1,8 @@
 import os
 import sys
 
+from library import spatial
+
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
  
@@ -41,12 +43,12 @@ def border_score(spatial_spike_train: SpatialSpikeTrain2D, **kwargs) -> tuple:
     if 'smoothing_factor' in kwargs:
         smoothing_factor = kwargs['smoothing_factor']
     else:
-        smoothing_factor = 3
+        smoothing_factor = spatial_spike_train.session_metadata.session_object.smoothing_factor
 
     if spatial_spike_train.get_map('rate') == None:
         rate_map_obj = HaftingRateMap(spatial_spike_train)
         spatial_spike_train.add_map_to_stats('rate', rate_map_obj)
-    rate_map = spatial_spike_train.get_map('rate').get_rate_map(smoothing_factor)
+    rate_map, _ = spatial_spike_train.get_map('rate').get_rate_map(smoothing_factor)
 
     bin_map = binary_map(spatial_spike_train)
 

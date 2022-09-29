@@ -3,9 +3,18 @@
 """Provide function for calculating statistics of a Rate Map"""
 
 import numpy as np
+import os
+import sys
 
+PROJECT_PATH = os.getcwd()
+sys.path.append(PROJECT_PATH)
 
-def rate_map_stats(rate_map, time_map, debug=False):
+from library.spatial_spike_train import SpatialSpikeTrain2D
+import library.opexebo.defaults as default 
+import library.opexebo.errors as errors 
+
+# def rate_map_stats(rate_map, time_map, debug=False):
+def rate_map_stats(spatial_spike_train: SpatialSpikeTrain2D, debug=False):
     '''
     Calculate statistics of a rate map that depend on probability distribution
     function (PDF)
@@ -57,6 +66,8 @@ def rate_map_stats(rate_map, time_map, debug=False):
 
     Copyright (C) 2019 by Simon Ball
     '''
+    rate_map = spatial_spike_train.get_map('rate').get_rate_map()
+    time_map = spatial_spike_train.get_map('occupancy').get_occupancy_map()
 
     if type(rate_map) != np.ma.MaskedArray:
         rate_map = np.ma.masked_invalid(rate_map, copy=True)

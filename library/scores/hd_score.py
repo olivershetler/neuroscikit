@@ -1,5 +1,3 @@
-""""""""""""""""""""""""""" From Opexebo https://pypi.org/project/opexebo/ """""""""""""""""""""""""""
-
 import numpy as  np
 import matplotlib.pyplot as plt
 import math
@@ -32,10 +30,11 @@ def _get_rolling_sum(array_in, window):
 # called by batch_process module only
 # def hd_score(angles, window_size=23):
 def hd_score(spatial_spike_train: SpatialSpikeTrain2D, **kwargs):
+
     if 'smoothing_factor' in kwargs:
         smoothing_factor = kwargs['smoothing_factor']
     else:
-        smoothing_factor = 3
+        smoothing_factor = spatial_spike_train.session_metadata.session_object.smoothing_factor
 
     if 'window_size' in kwargs:
         window_size = kwargs['window_size']
