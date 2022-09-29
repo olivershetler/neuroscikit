@@ -19,6 +19,7 @@ class SpatialSpikeTrain2D():
         self.spike_train_instance, self.position = self._read_input_dict()
         self.spike_times = self.spike_train_instance.event_times
         self.t, self.x, self.y = self.position.t, self.position.x, self.position.y
+        
         if 'session_metadata' in kwargs:
             self.session_metadata = kwargs['session_metadata']
         if self.position.arena_height != None and self.position.arena_width != None:

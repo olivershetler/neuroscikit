@@ -1,7 +1,11 @@
+""""""""""""""""""""""""""" From Opexebo https://pypi.org/project/opexebo/ """""""""""""""""""""""""""
+
 """ Provides a function for Gaussian smoothing """
 # Hack to speed up the borked Astropy configuration search
 import os
 import pathlib
+
+from library.hafting_spatial_maps import HaftingRateMap
 os.environ["HOMESHARE"] = str(pathlib.Path.home())
 import sys
 
@@ -38,7 +42,7 @@ import library.opexebo.defaults as default
 # https://github.com/astropy/astropy/issues/6511
 
 
-def gaussian_smooth(data, sigma, **kwargs):
+def gaussian_smooth(data: np.ndarray | np.ma.MaskedArray, sigma, **kwargs):
     '''Smooth provided data with a Gaussian kernel
 
     The smoothing is done with a routine from the astronomical package astropy

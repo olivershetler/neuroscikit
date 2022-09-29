@@ -12,14 +12,9 @@ from core.ephys import (
     EphysSeries,
 )
 
-from library.filters.__init__ import *
-
-# from library.custom_cheby import custom_cheby1
-# from library.dc_blocker_filter import dcblock
-# from library.fast_fourier_transform import fast_fourier
-# from library.infinite_impulse_response_filter import iirfilt
-# from library.notch_filter import notch_filt
-
+from library.filters import *
+from library.lib_test_utils import make_spatial_spike_train
+from library.hafting_spatial_maps import HaftingRateMap
 
 from x_io.rw.intan.load_intan_rhd_format.load_intan_rhd_format import read_rhd_data
 from x_io.rw.intan.read_rhd import read_rhd
@@ -108,6 +103,13 @@ def test_notch_filter():
     assert filtered_dict['notch_filt']['butter'].all() == filtered.all()
     assert collection.signal['channel_0'].filtered.all() == filtered.all()
 
+def test_gaussian_smooth():
+    spatial_spike_train, _ = make_spatial_spike_train()
+    ratemap = HaftingRateMap(spatial_spike_train)
+    spatial_spike_train.add_map_to_stats('rate', ratemap)
+    smoothed_data = gaussian_smooth(spatial_spike_train.get_map('rate').get_rate_map()[0], 1)
+
+    assert type(smoothed_data) == np.ndarray or type(smoothed_data) == np.ma.MaskedArray
 
 if __name__ == '__main__':
     pass
