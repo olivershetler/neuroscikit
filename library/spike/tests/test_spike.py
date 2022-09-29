@@ -13,7 +13,7 @@ from library.cluster import create_features
 from library.batch_space import SpikeClusterBatch
 from core.spikes import SpikeCluster
 from library.ensemble_space import Cell
-from library.lib_utils import make_spike_cluster, make_spike_cluster_batch, make_cell
+from library.lib_test_utils import make_spike_cluster, make_spike_cluster_batch, make_cell
 
 def test_sort_cell_spike_times():
   

@@ -5,11 +5,9 @@ import numpy as np
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
 
-from core.core_utils import make_seconds_index_from_rate, make_1D_timestamps
-from library.lib_utils import make_2D_arena, make_spatial_spike_train
-from library.maps import binary_map, rate_map, occupancy_map, spatial_tuning_curve
+from library.lib_test_utils import make_2D_arena, make_spatial_spike_train
 from library.scores import border_score, grid_score, hd_score
-from library.lib_utils import make_2D_arena
+from library.lib_test_utils import make_2D_arena
 
 def test_border_score():
     spatial_spike_train, session_metadata = make_spatial_spike_train()

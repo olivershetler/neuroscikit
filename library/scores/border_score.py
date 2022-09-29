@@ -1,8 +1,6 @@
 import os
 import sys
 
-from library.hafting_spatial_maps import HaftingRateMap
-
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
  
@@ -13,6 +11,7 @@ from openpyxl.worksheet.dimensions import ColumnDimension
 from openpyxl.utils.cell import get_column_letter
 from library.spatial_spike_train import SpatialSpikeTrain2D
 from library.maps import binary_map
+from library.hafting_spatial_maps import HaftingRateMap
 
 
 # def border_score(binary_map: np.ndarray, rate_map: np.ndarray) -> tuple:

@@ -8,7 +8,7 @@ sys.path.append(PROJECT_PATH)
 from library.hafting_spatial_maps import HaftingSpikeMap, HaftingOccupancyMap, HaftingRateMap
 from library.study_space import Session
 from core.core_utils import make_1D_timestamps, make_seconds_index_from_rate
-from library.lib_utils import make_2D_arena
+from library.lib_test_utils import make_2D_arena
 from library.spatial_spike_train import SpatialSpikeTrain2D
 from core.spikes import SpikeTrain
 from core.spatial import Position2D

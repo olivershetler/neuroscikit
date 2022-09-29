@@ -7,7 +7,7 @@ sys.path.append(PROJECT_PATH)
 
 from library.maps import autocorrelation, filter_pos_by_speed, firing_rate_vs_time, map_blobs, spatial_tuning_curve, binary_map
 from core.core_utils import make_seconds_index_from_rate, make_1D_timestamps
-from library.lib_utils import make_2D_arena, make_cell, make_spike_cluster, make_spike_cluster_batch, make_spatial_spike_train
+from library.lib_test_utils import make_2D_arena, make_cell, make_spike_cluster, make_spike_cluster_batch, make_spatial_spike_train
 from library.study_space import Session
 from core.spikes import SpikeTrain
 from core.spatial import Position2D

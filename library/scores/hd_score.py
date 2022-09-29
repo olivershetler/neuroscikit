@@ -1,8 +1,15 @@
+""""""""""""""""""""""""""" From Opexebo https://pypi.org/project/opexebo/ """""""""""""""""""""""""""
 
 import numpy as  np
 import matplotlib.pyplot as plt
 import math
-from library.maps.spatial_tuning_curve import spatial_tuning_curve
+import os
+import sys
+
+PROJECT_PATH = os.getcwd()
+sys.path.append(PROJECT_PATH)
+ 
+from library.maps import spatial_tuning_curve
 
 from library.spatial_spike_train import SpatialSpikeTrain2D
 
