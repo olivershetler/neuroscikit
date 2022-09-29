@@ -1,6 +1,8 @@
 import os
 import sys
 
+from library import spatial
+
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
  
@@ -29,22 +31,25 @@ def binary_map(spatial_map: HaftingRateMap | SpatialSpikeTrain2D, **kwargs):
     if 'smoothing_factor' in kwargs:
         smoothing_factor = kwargs['smoothing_factor']
     else:
-        smoothing_factor = 3
+        smoothing_factor = spatial_map.session_metadata.session_object.smoothing_factor
 
     if isinstance(spatial_map, HaftingRateMap):
-        ratemap = spatial_map.get_rate_map(smoothing_factor)
+        ratemap, _ = spatial_map.get_rate_map(smoothing_factor)
     elif isinstance(spatial_map, SpatialSpikeTrain2D):
         rate_obj = spatial_map.get_map('rate')
         if rate_obj == None:
-            ratemap = HaftingRateMap(spatial_map).get_rate_map(smoothing_factor)
+            ratemap, _ = HaftingRateMap(spatial_map).get_rate_map(smoothing_factor)
         else:
-            ratemap = rate_obj.get_rate_map(smoothing_factor)
+            ratemap, _ = rate_obj.get_rate_map(smoothing_factor)
 
     binary_map = np.copy(ratemap)
     binary_map[  binary_map >= np.percentile(binary_map.flatten(), 75)  ] = 1
     binary_map[  binary_map < np.percentile(binary_map.flatten(), 75)  ] = 0
-
-    spatial_map.stats_dict['binary'] = binary_map
+    
+    if isinstance(spatial_map, HaftingRateMap):
+        spatial_map.spatial_spike_train.add_map_to_stats('binary', binary_map)
+    elif isinstance(spatial_map, SpatialSpikeTrain2D):
+        spatial_map.add_map_to_stats('binary', binary_map)
 
     return binary_map
 

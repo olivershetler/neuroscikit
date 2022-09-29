@@ -106,11 +106,41 @@ def make_spatial_spike_train():
     spike_dict['event_times'] = event_times
 
     session = Session()
+    session.set_smoothing_factor(3)
     session_metadata = session.session_metadata
 
     spike_train = session.make_class(SpikeTrain, spike_dict)
     position = session.make_class(Position2D, pos_dict)
 
     spatial_spike_train = session.make_class(SpatialSpikeTrain2D, {'spike_train': spike_train, 'position': position})
+
+    spatial_spike_train.session_metadata.session_object.set_smoothing_factor(3)
+
+    return spatial_spike_train, session_metadata
+
+    T = 2
+    dt = .02
+
+    event_times = make_1D_timestamps(T, dt)
+    t = make_seconds_index_from_rate(T, 1/dt)
+    x, y = make_2D_arena(count=len(t))
+
+    pos_dict = {'x': x, 'y': t, 't': t, 'arena_height': max(y) - min(y), 'arena_width': max(x) - min(x)}
+
+    spike_dict = {}
+    spike_dict['duration'] = int(T)
+    spike_dict['sample_rate'] = float(1 / dt)
+    spike_dict['events_binary'] = []
+    spike_dict['event_times'] = event_times
+
+    session = Session()
+    session_metadata = session.session_metadata
+
+    spike_train = session.make_class(SpikeTrain, spike_dict)
+    position = session.make_class(Position2D, pos_dict)
+
+    spatial_spike_train = session.make_class(SpatialSpikeTrain2D, {'spike_train': spike_train, 'position': position})
+
+    spatial_spike_train.session_metadata.session_object.set_smoothing_factor(3)
 
     return spatial_spike_train, session_metadata

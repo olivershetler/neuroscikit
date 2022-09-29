@@ -24,14 +24,19 @@ class HaftingOccupancyMap():
 
         self.map_data = None
 
-        self.session_metadata = None
-        self.smoothing_factor = None
+        if 'session_metadata' in kwargs:
+            self.session_metadata = kwargs['session_metadata']
+        else:
+            self.session_metadata = spatial_spike_train.session_metadata
+        
+        self.smoothing_factor = self.session_metadata.session_object.smoothing_factor
+
         if 'smoothing_factor' in kwargs:
+            print('overriding session smoothing factor for input smoothing facator')
             self.smoothing_factor = kwargs['smoothing_factor']
         elif 'settings' in kwargs and 'smoothing_factor' in kwargs['settings']:
             self.smoothing_factor = kwargs['settings']['smoothing_factor']
-        if 'session_metadata' in kwargs:
-            self.session_metadata = kwargs['session_metadata']
+            print('overriding session smoothing factor for input smoothing facator')
 
     def get_occupancy_map(self, smoothing_factor=None):
         if self.smoothing_factor != None:
@@ -95,15 +100,19 @@ class HaftingSpikeMap():
         self.arena_size = self.spatial_spike_train.arena_size
         self.map_data = None
 
-        self.session_metadata = None
-        self.smoothing_factor = None
+        if 'session_metadata' in kwargs:
+            self.session_metadata = kwargs['session_metadata']
+        else:
+            self.session_metadata = spatial_spike_train.session_metadata
+        
+        self.smoothing_factor = self.session_metadata.session_object.smoothing_factor
+
         if 'smoothing_factor' in kwargs:
+            print('overriding session smoothing factor for input smoothing facator')
             self.smoothing_factor = kwargs['smoothing_factor']
         elif 'settings' in kwargs and 'smoothing_factor' in kwargs['settings']:
             self.smoothing_factor = kwargs['settings']['smoothing_factor']
-        if 'session_metadata' in kwargs:
-            self.session_metadata = kwargs['session_metadata']
-
+            print('overriding session smoothing factor for input smoothing facator')
     # def _read_input_dict(self):
     #     spatial_spike_train = None
     #     if 'spatial_spike_train' in self._input_dict:
@@ -173,26 +182,32 @@ class HaftingRateMap():
         assert isinstance(self.spike_map, HaftingSpikeMap)
 
         self.map_data = None
+        self.raw_map_data = None
 
-        self.session_metadata = None
-        self.smoothing_factor = None
+        if 'session_metadata' in kwargs:
+            self.session_metadata = kwargs['session_metadata']
+        else:
+            self.session_metadata = spatial_spike_train.session_metadata
+        
+        self.smoothing_factor = self.session_metadata.session_object.smoothing_factor
+
         if 'smoothing_factor' in kwargs:
+            print('overriding session smoothing factor for input smoothing facator')
             self.smoothing_factor = kwargs['smoothing_factor']
         elif 'settings' in kwargs and 'smoothing_factor' in kwargs['settings']:
             self.smoothing_factor = kwargs['settings']['smoothing_factor']
-        if 'session_metadata' in kwargs:
-            self.session_metadata = kwargs['session_metadata']
+            print('overriding session smoothing factor for input smoothing facator')
 
     def get_rate_map(self, smoothing_factor=None):
         if smoothing_factor == None:
             smoothing_factor = self.smoothing_factor
             assert smoothing_factor != None, 'Need to add smoothing factor to function inputs'
 
-        self.map_data = self.compute_rate_map(self.occ_map, self.spike_map)
+        self.map_data, self.raw_map_data = self.compute_rate_map(self.occ_map, self.spike_map)
 
         self.spatial_spike_train.add_map_to_stats('rate', self)
 
-        return self.map_data
+        return self.map_data, self.raw_map_data
 
     def compute_rate_map(self, occupancy_map, spike_map):
         '''
@@ -219,12 +234,12 @@ class HaftingRateMap():
         
         assert occ_map_data.shape == spike_map_data.shape
 
-        rate_map = _compute_unmasked_ratemap(occ_map_data, spike_map_data)
+        rate_map_raw = _compute_unmasked_ratemap(occ_map_data, spike_map_data)
 
-        rate_map = np.ma.array(rate_map, mask=occ_map_data.mask)
+        rate_map = np.ma.array(rate_map_raw, mask=occ_map_data.mask)
         # rate_map = np.ma.array(rate_map, mask=occ_map_data)
 
-        return rate_map
+        return rate_map, rate_map_raw
 
 def _compute_unmasked_ratemap(occpancy_map, spike_map):
         return spike_map/occpancy_map

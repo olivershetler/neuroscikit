@@ -130,7 +130,7 @@ def test_hafting_rate_map():
 
     hafting_rate = HaftingRateMap(spatial_spike_train)
 
-    rate_map = hafting_rate.get_rate_map(smoothing_factor=3)
+    rate_map, _ = hafting_rate.get_rate_map(smoothing_factor=3)
 
     assert isinstance(hafting_rate, HaftingRateMap)
     assert type(hafting_rate.map_data) == np.ma.core.MaskedArray

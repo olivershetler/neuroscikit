@@ -175,6 +175,8 @@ def batch_sessions(sorted_files, settings_dict):
 
         session = make_session(sorted_files[i][2], sorted_files[i][1], sorted_files[i][0], settings_dict['sessions'][i], settings_dict['ppm'])
 
+        session.set_smoothing_factor(settings_dict['smoothing_factor'])
+
         sessions['session_'+str(i+1)] = session
 
     return sessions

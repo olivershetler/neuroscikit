@@ -17,7 +17,7 @@ from library.spatial_spike_train import SpatialSpikeTrain2D
 
 
 class Session(Workspace):
-    def __init__(self, input_dict={}):
+    def __init__(self, input_dict={}, **kwargs):
         self._input_dict = input_dict
 
         self.session_data, self.session_metadata = self._read_input_dict()
@@ -38,6 +38,14 @@ class Session(Workspace):
             self.time_index = spk_data[spk_data_keys[0]].time_index
         else:
             self.time_index = None
+
+        if 'smoothing_factor' in kwargs:
+            self.smoothing_factor = kwargs['smoothing_factor']
+        else:
+            self.smoothing_factor = None
+
+    def set_smoothing_factor(self, smoothing_factor):
+        self.smoothing_factor = smoothing_factor
     
     def update_time_index(self):
         spk_data = self.get_spike_data()
@@ -57,7 +65,7 @@ class Session(Workspace):
     def set_animal_id(self):
         if 'animal' in self.session_metadata.metadata: 
             self.animal_id = self.session_metadata.metadata['animal'].animal_id
-            print('Animal ID set')
+            # print('Animal ID set')
 
     def _read_input_dict(self):
         session_data = {}

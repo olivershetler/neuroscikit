@@ -22,6 +22,13 @@ def test_autocorrelation():
     assert type(autocorr) == np.ndarray
     assert 'autocorr' in spatial_spike_train.stats_dict
 
+    hafting_rate = HaftingRateMap(spatial_spike_train)
+
+    autocorr = autocorrelation(hafting_rate)
+
+    assert type(autocorr) == np.ndarray
+    assert 'autocorr' in spatial_spike_train.stats_dict
+
 def test_filter_pos_by_speed():
 
     T = 2
@@ -71,6 +78,16 @@ def test_map_blobs():
     assert len(np.unique(labels)) == n_labels
     assert len(centroids) == len(field_sizes)
 
+    
+    hafting_rate = HaftingRateMap(spatial_spike_train)
+    image, n_labels, labels, centroids, field_sizes = map_blobs(hafting_rate)
+
+    assert type(centroids) == np.ndarray
+    assert 'map_blobs' in hafting_rate.spatial_spike_train.stats_dict
+    assert len(image) == len(labels)
+    assert len(np.unique(labels)) == n_labels
+    assert len(centroids) == len(field_sizes)
+
 def test_spatial_tuning_curve():
     spatial_spike_train, session_metadata = make_spatial_spike_train()
 
@@ -87,6 +104,12 @@ def test_binary_map():
     spatial_spike_train, session_metadata = make_spatial_spike_train()
 
     binmap = binary_map(spatial_spike_train)
+
+    assert type(binmap) == np.ndarray
+
+    hafting_rate = HaftingRateMap(spatial_spike_train)
+
+    binmap = binary_map(hafting_rate)
 
     assert type(binmap) == np.ndarray
 
