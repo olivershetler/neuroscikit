@@ -5,6 +5,7 @@
 import numpy as np
 import os
 import sys
+from library.hafting_spatial_maps import HaftingRateMap
 
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
@@ -17,7 +18,7 @@ from library.spatial_spike_train import SpatialSpikeTrain2D
 from core.spatial import Position2D
 
 
-def accumulate_spatial(spatial_object: Position2D | SpatialSpikeTrain2D, **kwargs):
+def accumulate_spatial(spatial_object: Position2D | SpatialSpikeTrain2D | np.ndarray, **kwargs):
     """
     Given a list of positions, create a histogram of those positions. The
     resulting histogram is typically referred to as a map.
@@ -80,9 +81,13 @@ def accumulate_spatial(spatial_object: Position2D | SpatialSpikeTrain2D, **kwarg
         `x`, or (`x`, `y`), where `x`, `y` are 1d np.ndarrays
         Here `x`, `y` correspond to the output histogram
     """
-    pos_x, pos_y, arena_size = spatial_object.x, spatial_object.y, spatial_object.arena_size
 
-    pos = np.vstack((pos_x, pos_y)).T
+    if isinstance(spatial_object, SpatialSpikeTrain2D) or isinstance(spatial_object, Position2D):
+        pos_x, pos_y, arena_size = spatial_object.x, spatial_object.y, spatial_object.arena_size
+        pos = np.vstack((pos_x, pos_y)).T
+    else:
+        pos = spatial_object
+        arena_size = kwargs.get("arena_size")
 
     dims = pos.ndim
     if dims not in (1, 2):
