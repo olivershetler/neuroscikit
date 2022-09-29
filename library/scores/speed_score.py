@@ -12,9 +12,10 @@ sys.path.append(PROJECT_PATH)
 import library.opexebo.defaults as default
 from library.opexebo.errors import SpeedBandwidthError, ArgumentError
 from library.filters import gaussian_smooth
+from library.spatial_spike_train import SpatialSpikeTrain2D
 
 
-def speed_score(spike_times, tracking_times, tracking_speeds, **kwargs):
+def speed_score(spatial_spike_train: SpatialSpikeTrain2D, **kwargs):
     '''
     Calculate Speed score.
 
@@ -100,6 +101,11 @@ def speed_score(spike_times, tracking_times, tracking_speeds, **kwargs):
 
     Copyright (C) 2019 by Simon Ball
     '''
+    x, y, t = spatial_spike_train.x, spatial_spike_train.y, spatial_spike_train.t 
+    spike_times = np.array(spatial_spike_train.spike_times)
+    tracking_times = np.array(spatial_spike_train.t)
+    tracking_speeds = _speed2D(x, y, t).squeeze()
+
     # Check that the provided arrays have correct dimensions
     if spike_times.ndim != 1:
         raise ArgumentError("spike_times must be an Nx1 array. You have provided"\
@@ -292,3 +298,18 @@ def _spiketimes_to_spikerate(spike_times, tracking_times, sampling_rate):
     spike_rate = spikes_per_frame *sampling_rate
 
     return spike_rate
+
+def _speed2D(x, y, t):
+    """calculates an averaged/smoothed speed"""
+
+    N = len(x)
+    v = np.zeros((N, 1))
+
+    for index in range(1, N-1):
+        v[index] = np.sqrt((x[index + 1] - x[index - 1]) ** 2 + (y[index + 1] - y[index - 1]) ** 2) / (
+        t[index + 1] - t[index - 1])
+
+    v[0] = v[1]
+    v[-1] = v[-2]
+
+    return v

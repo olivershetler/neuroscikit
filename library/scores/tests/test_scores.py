@@ -7,12 +7,13 @@ sys.path.append(PROJECT_PATH)
 
 from library.lib_test_utils import make_2D_arena, make_spatial_spike_train
 from library.hafting_spatial_maps import HaftingOccupancyMap, HaftingRateMap, HaftingSpikeMap
-from library.scores import border_score, grid_score, hd_score, rate_map_coherence
+from library.scores import border_score, grid_score, hd_score, rate_map_coherence, speed_score
 from library.lib_test_utils import make_2D_arena
 from core.core_utils import make_seconds_index_from_rate
 from core.core_utils import make_1D_timestamps
 from library.scores.rate_map_stats import rate_map_stats
 from library.scores.shuffle_spikes import shuffle_spikes
+
 
 def test_border_score():
     spatial_spike_train, session_metadata = make_spatial_spike_train()
@@ -67,7 +68,12 @@ def test_shuffle_spikes():
     assert type(shuffled_spikes) == list
 
 def test_speed_score():
-    pass
+    spatial_spike_train, session_metadata = make_spatial_spike_train()
+
+    scores, bounds = speed_score(spatial_spike_train) 
+
+    assert type(scores) == dict
+    assert type(bounds) == tuple 
 
 # def test_shuffle_spikes():
 #     T = 10
