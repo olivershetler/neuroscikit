@@ -14,9 +14,12 @@ from skimage import measure, morphology
 import library.opexebo.defaults as default
 import library.opexebo.errors as err
 from library.lib_utils import peak_search
+from library.hafting_spatial_maps import HaftingRateMap
+from library.spatial_spike_train import SpatialSpikeTrain2D
 
 
-def place_field(firing_map, **kwargs):
+# def place_field(firing_map, **kwargs):
+def place_field(spatial_map: SpatialSpikeTrain2D | HaftingRateMap, **kwargs):
     '''
     Locate place fields on a firing map.
 
@@ -94,6 +97,21 @@ def place_field(firing_map, **kwargs):
 
     Copyright (C) 2018 by Vadim Frolov, (C) 2019 by Simon Ball, Horst Obenhaus
     '''
+    
+    if 'smoothing_factor' in kwargs:
+        smoothing_factor = kwargs['smoothing_factor']
+    else:
+        smoothing_factor = spatial_map.session_metadata.session_object.smoothing_factor
+
+    if isinstance(spatial_map, HaftingRateMap):
+        firing_map, _ = spatial_map.get_rate_map(smoothing_factor)
+    elif isinstance(spatial_map, SpatialSpikeTrain2D):
+        rate_obj = spatial_map.get_map('rate')
+        if rate_obj == None:
+            firing_map, _ = HaftingRateMap(spatial_map).get_rate_map(smoothing_factor)
+        else:
+            firing_map, _ = rate_obj.get_rate_map(smoothing_factor)
+
     ##########################################################################
     #####                   Part 1: Handle inputs
     # Get keyword arguments

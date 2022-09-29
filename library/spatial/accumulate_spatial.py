@@ -13,9 +13,11 @@ sys.path.append(PROJECT_PATH)
 import library.opexebo.defaults as default
 import library.opexebo.errors as err
 from library.lib_utils import bin_width_to_bin_number
+from library.spatial_spike_train import SpatialSpikeTrain2D
+from core.spatial import Position2D
 
 
-def accumulate_spatial(pos, arena_size, **kwargs):
+def accumulate_spatial(spatial_object: Position2D | SpatialSpikeTrain2D, **kwargs):
     """
     Given a list of positions, create a histogram of those positions. The
     resulting histogram is typically referred to as a map.
@@ -78,6 +80,10 @@ def accumulate_spatial(pos, arena_size, **kwargs):
         `x`, or (`x`, `y`), where `x`, `y` are 1d np.ndarrays
         Here `x`, `y` correspond to the output histogram
     """
+    pos_x, pos_y, arena_size = spatial_object.x, spatial_object.y, spatial_object.arena_size
+
+    pos = np.vstack((pos_x, pos_y)).T
+
     dims = pos.ndim
     if dims not in (1, 2):
         raise ValueError("pos should have either 1 or 2 dimensions. You have"\
@@ -91,7 +97,6 @@ def accumulate_spatial(pos, arena_size, **kwargs):
           " (x_min, x_max, y_min, y_max). You provided type %s" % type(limits))
 
     arena_size, is_2d = _validatekeyword__arena_size(arena_size, dims)
-
     
     ###########################################################################
     ####### Handle the decision of bin_edges

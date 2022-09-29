@@ -17,6 +17,8 @@ class Position2D():
         self._input_dict = input_dict
         self.stats_dict = {}
 
+        self.arena_size = (self.arena_height, self.arena_width)
+
     def _read_input_dict(self):
         t, x, y, arena_height, arena_width, session_metadata = None, None, None, None, None, None
 
