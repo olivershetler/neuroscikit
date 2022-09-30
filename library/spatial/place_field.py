@@ -14,8 +14,8 @@ from skimage import measure, morphology
 import library.opexebo.defaults as default
 import library.opexebo.errors as err
 from library.lib_utils import peak_search
-from library.hafting_spatial_maps import HaftingRateMap
-from library.spatial_spike_train import SpatialSpikeTrain2D
+from library.hafting_spatial_maps import HaftingRateMap, SpatialSpikeTrain2D
+# from library.spatial_spike_train import SpatialSpikeTrain2D
 
 
 # def place_field(firing_map, **kwargs):

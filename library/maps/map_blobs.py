@@ -8,8 +8,8 @@ sys.path.append(PROJECT_PATH)
 import numpy as np
 import cv2
 from library.maps.map_utils import _gkern
-from library.hafting_spatial_maps import HaftingRateMap
-from library.spatial_spike_train import SpatialSpikeTrain2D
+from library.hafting_spatial_maps import HaftingRateMap, SpatialSpikeTrain2D
+# from library.spatial_spike_train import SpatialSpikeTrain2D
 
 # Taken from https://stackoverflow.com/questions/59144828/opencv-getting-all-blob-pixels
 #public
@@ -47,11 +47,7 @@ def map_blobs(spatial_map: SpatialSpikeTrain2D | HaftingRateMap, **kwargs):
     if isinstance(spatial_map, HaftingRateMap):
         ratemap, _ = spatial_map.get_rate_map(smoothing_factor)
     elif isinstance(spatial_map, SpatialSpikeTrain2D):
-        rate_obj = spatial_map.get_map('rate')
-        if rate_obj == None:
-            ratemap, _ = HaftingRateMap(spatial_map).get_rate_map(smoothing_factor)
-        else:
-            ratemap, _ = rate_obj.get_rate_map(smoothing_factor)
+        ratemap, _ = spatial_map.get_map('rate').get_rate_map(smoothing_factor)
 
 
     # Create kernel for convolutional smoothing

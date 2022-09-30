@@ -6,7 +6,8 @@ import os,sys
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
 
-from library.spatial_spike_train import SpatialSpikeTrain2D
+# from library.spatial_spike_train import SpatialSpikeTrain2D
+from library.hafting_spatial_maps import SpatialSpikeTrain2D
 # from library.opexebo import opexebo_tuning_curve, angular_occupancy
 import library.opexebo.defaults as default
 import library.opexebo.errors as err
@@ -97,7 +98,7 @@ def _get_head_direction(x: np.ndarray, y: np.ndarray) -> np.ndarray:
     return angles
 
 # def spatial_tuning_curve(x: np.ndarray, y: np.ndarray, t: np.ndarray, spike_times: np.ndarray, smoothing: int) -> tuple:
-def spatial_tuning_curve(spatial_spike_train: SpatialSpikeTrain2D, smoothing: int) -> tuple:
+def spatial_tuning_curve(spatial_spike_train: SpatialSpikeTrain2D) -> tuple:
 
     '''
         Compute a polar plot of the average directional firing of a neuron.
@@ -123,6 +124,7 @@ def spatial_tuning_curve(spatial_spike_train: SpatialSpikeTrain2D, smoothing: in
                 Bins of angles (360 split into 36 bins of width 10 degrees)
     '''
     spike_times = np.array(spatial_spike_train.spike_times)
+    smoothing = spatial_spike_train.session_metadata.session_object.smoothing_factor
     t = np.array(spatial_spike_train.t)
     x = np.array(spatial_spike_train.x)
     y = np.array(spatial_spike_train.y)

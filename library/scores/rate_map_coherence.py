@@ -6,8 +6,9 @@ import os
 import pathlib
 from library import spatial
 
-from library.spatial_spike_train import SpatialSpikeTrain2D
-from library.hafting_spatial_maps import HaftingRateMap
+# from library.spatial_spike_train import SpatialSpikeTrain2D
+from library.hafting_spatial_maps import HaftingRateMap, SpatialSpikeTrain2D
+# from library.spatial_spike_train import SpatialSpikeTrain2D
 os.environ["HOMESHARE"] = str(pathlib.Path.home())
 
 import numpy as np
@@ -53,11 +54,8 @@ def rate_map_coherence(spatial_map: SpatialSpikeTrain2D | HaftingRateMap, **kwar
     if isinstance(spatial_map, HaftingRateMap):
         _, rate_map_raw = spatial_map.get_rate_map(smoothing_factor)
     elif isinstance(spatial_map, SpatialSpikeTrain2D):
-        rate_obj = spatial_map.get_map('rate')
-        if rate_obj == None:
-            _, rate_map_raw= HaftingRateMap(spatial_map).get_rate_map(smoothing_factor)
-        else:
-            _, rate_map_raw = rate_obj.get_rate_map(smoothing_factor)
+        _, rate_map_raw = spatial_map.get_map('rate').get_rate_map(smoothing_factor)
+
 
     kernel = np.array([[0.125, 0.125, 0.125],
                       [0.125, 0,     0.125],

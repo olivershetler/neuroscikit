@@ -8,13 +8,13 @@ sys.path.append(PROJECT_PATH)
 
 from library.batch_space import SpikeClusterBatch
 from core.spikes import SpikeCluster
-from library.ensemble_space import Cell
+from library.ensemble_space import Cell, CellEnsemble
 from library.study_space import Session
 from core.core_utils import make_1D_timestamps, make_waveforms, make_clusters, make_seconds_index_from_rate
 from core.spikes import SpikeTrain
 from core.spatial import Position2D
 from core.subjects import SessionMetadata
-from library.spatial_spike_train import SpatialSpikeTrain2D
+from library.hafting_spatial_maps import SpatialSpikeTrain2D
 
 def make_spike_cluster_batch():
     event_times = make_1D_timestamps()
@@ -77,11 +77,12 @@ def make_cell():
     waveforms = make_waveforms(ch_count, len(event_times), samples_per_wave)
     session = Session()
     session.make_class(SpikeTrain, {'event_times': event_times, 'sample_rate': 1/dt, 'duration': T})
-    inp_dict = {'event_times': event_times, 'signal': waveforms, 'session_metadata': session.session_metadata}
+    cell = Cell({'event_times': event_times, 'signal': waveforms, 'session_metadata': session.session_metadata})
 
-    cell = Cell(inp_dict)
+    cell_ensemble = session.make_class(CellEnsemble, {})
+    cell_ensemble.add_cell(cell)
 
-    return cell
+    return cell_ensemble.cells[0]
 
 def make_2D_arena(count=100):
     return np.random.sample(count), np.random.sample(count)

@@ -11,9 +11,9 @@ import numpy as np
 from library.scores.shuffle_spikes import shuffle_spikes
 from openpyxl.worksheet.dimensions import ColumnDimension
 from openpyxl.utils.cell import get_column_letter
-from library.spatial_spike_train import SpatialSpikeTrain2D
+# from library.spatial_spike_train import SpatialSpikeTrain2D
 from library.maps import binary_map
-from library.hafting_spatial_maps import HaftingRateMap
+from library.hafting_spatial_maps import HaftingRateMap, SpatialSpikeTrain2D
 
 
 # def border_score(binary_map: np.ndarray, rate_map: np.ndarray) -> tuple:
@@ -45,12 +45,14 @@ def border_score(spatial_spike_train: SpatialSpikeTrain2D, **kwargs) -> tuple:
     else:
         smoothing_factor = spatial_spike_train.session_metadata.session_object.smoothing_factor
 
-    if spatial_spike_train.get_map('rate') == None:
-        rate_map_obj = HaftingRateMap(spatial_spike_train)
-        spatial_spike_train.add_map_to_stats('rate', rate_map_obj)
     rate_map, _ = spatial_spike_train.get_map('rate').get_rate_map(smoothing_factor)
 
-    bin_map = binary_map(spatial_spike_train)
+    if spatial_spike_train.get_map('binary') is None:
+        bin_map = binary_map(spatial_spike_train)
+        spatial_spike_train.add_map_to_stats('binary', bin_map)
+    bin_map = spatial_spike_train.get_map('binary')
+
+    # bin_map = binary_map(spatial_spike_train)
 
 
     # If for whatever reason the supplied binary map does not match rate map dimensions, throw error.

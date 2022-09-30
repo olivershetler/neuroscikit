@@ -6,7 +6,7 @@ PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
 
 from library.lib_test_utils import make_2D_arena, make_spatial_spike_train
-from library.hafting_spatial_maps import HaftingOccupancyMap, HaftingRateMap, HaftingSpikeMap
+from library.hafting_spatial_maps import HaftingOccupancyMap, HaftingRateMap, HaftingSpikeMap, SpatialSpikeTrain2D
 from library.scores import border_score, grid_score, hd_score, rate_map_coherence, speed_score
 from library.lib_test_utils import make_2D_arena
 from core.core_utils import make_seconds_index_from_rate

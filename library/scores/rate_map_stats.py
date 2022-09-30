@@ -9,7 +9,7 @@ import sys
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
 
-from library.spatial_spike_train import SpatialSpikeTrain2D
+from library.hafting_spatial_maps import SpatialSpikeTrain2D
 import library.opexebo.defaults as default 
 import library.opexebo.errors as errors 
 
@@ -66,8 +66,8 @@ def rate_map_stats(spatial_spike_train: SpatialSpikeTrain2D, debug=False):
 
     Copyright (C) 2019 by Simon Ball
     '''
-    rate_map = spatial_spike_train.get_map('rate').get_rate_map()
-    time_map = spatial_spike_train.get_map('occupancy').get_occupancy_map()
+    rate_map, _ = spatial_spike_train.get_map('rate').get_rate_map()
+    time_map = spatial_spike_train.get_map('occupancy').raw_map_data
 
     if type(rate_map) != np.ma.MaskedArray:
         rate_map = np.ma.masked_invalid(rate_map, copy=True)

@@ -8,7 +8,7 @@ sys.path.append(PROJECT_PATH)
 from core.spatial import Position2D
 from library.spatial import accumulate_spatial, fit_ellipse, place_field
 from library.lib_test_utils import make_2D_arena, make_spatial_spike_train
-from library.hafting_spatial_maps import HaftingRateMap
+from library.hafting_spatial_maps import HaftingRateMap, SpatialSpikeTrain2D
 
 def test_accumulate_spatial():
     spatial_spike_train, _ = make_spatial_spike_train()

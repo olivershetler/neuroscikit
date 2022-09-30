@@ -11,8 +11,8 @@ from library.lib_test_utils import make_2D_arena, make_cell, make_spike_cluster,
 from library.study_space import Session
 from core.spikes import SpikeTrain
 from core.spatial import Position2D
-from library.spatial_spike_train import SpatialSpikeTrain2D
-from library.hafting_spatial_maps import HaftingRateMap
+# from library.spatial_spike_train import SpatialSpikeTrain2D
+from library.hafting_spatial_maps import HaftingRateMap, SpatialSpikeTrain2D
 
 def test_autocorrelation():
     spatial_spike_train, session_metadata = make_spatial_spike_train()
@@ -91,7 +91,7 @@ def test_map_blobs():
 def test_spatial_tuning_curve():
     spatial_spike_train, session_metadata = make_spatial_spike_train()
 
-    tuned_data, spike_angles, ang_occ, bin_array = spatial_tuning_curve(spatial_spike_train, 3)
+    tuned_data, spike_angles, ang_occ, bin_array = spatial_tuning_curve(spatial_spike_train)
 
     assert type(tuned_data) == np.ndarray
     assert type(spike_angles) == np.ndarray

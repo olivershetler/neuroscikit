@@ -1,11 +1,11 @@
 import os
 import sys
 
-from core.spatial import Position2D
 
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
 
+from core.spatial import Position2D
 
 import cv2
 import numpy as np

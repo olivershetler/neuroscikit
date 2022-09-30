@@ -12,7 +12,7 @@ sys.path.append(PROJECT_PATH)
 import library.opexebo.defaults as default
 from library.opexebo.errors import SpeedBandwidthError, ArgumentError
 from library.filters import gaussian_smooth
-from library.spatial_spike_train import SpatialSpikeTrain2D
+from library.hafting_spatial_maps import SpatialSpikeTrain2D
 
 
 def speed_score(spatial_spike_train: SpatialSpikeTrain2D, **kwargs):
@@ -102,9 +102,9 @@ def speed_score(spatial_spike_train: SpatialSpikeTrain2D, **kwargs):
     Copyright (C) 2019 by Simon Ball
     '''
     x, y, t = spatial_spike_train.x, spatial_spike_train.y, spatial_spike_train.t 
-    spike_times = np.array(spatial_spike_train.spike_times)
-    tracking_times = np.array(spatial_spike_train.t)
-    tracking_speeds = _speed2D(x, y, t).squeeze()
+    spike_times = np.array(spatial_spike_train.spike_times).flatten()
+    tracking_times = np.array(spatial_spike_train.t).flatten()
+    tracking_speeds = _speed2D(x, y, t).squeeze().flatten()
 
     # Check that the provided arrays have correct dimensions
     if spike_times.ndim != 1:

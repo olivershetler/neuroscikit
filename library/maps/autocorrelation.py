@@ -11,8 +11,8 @@ import numpy as np
 import cv2
 from PIL import Image
 from library.maps.map_utils import _compute_resize_ratio, _interpolate_matrix
-from library.spatial_spike_train import SpatialSpikeTrain2D
-from library.hafting_spatial_maps import HaftingRateMap
+# from library.spatial_spike_train import SpatialSpikeTrain2D
+from library.hafting_spatial_maps import HaftingRateMap, SpatialSpikeTrain2D
 
 
 # import numpy.matlib  # Not included in the default numpy namespace
@@ -49,11 +49,8 @@ def autocorrelation(spatial_map: SpatialSpikeTrain2D | HaftingRateMap, **kwargs)
     if isinstance(spatial_map, HaftingRateMap):
         ratemap, _ = spatial_map.get_rate_map(smoothing_factor)
     elif isinstance(spatial_map, SpatialSpikeTrain2D):
-        rate_obj = spatial_map.get_map('rate')
-        if rate_obj == None:
-            ratemap, _ = HaftingRateMap(spatial_map).get_rate_map(smoothing_factor)
-        else:
-            ratemap, _ = rate_obj.get_rate_map(smoothing_factor)
+        ratemap, _ = spatial_map.get_map('rate').get_rate_map(smoothing_factor)
+
 
     arena_size = spatial_map.arena_size
 

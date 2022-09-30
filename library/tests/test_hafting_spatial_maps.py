@@ -5,15 +5,30 @@ import numpy as np
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
 
-from library.hafting_spatial_maps import HaftingSpikeMap, HaftingOccupancyMap, HaftingRateMap
+from library.hafting_spatial_maps import HaftingSpikeMap, HaftingOccupancyMap, HaftingRateMap, SpatialSpikeTrain2D
 from library.study_space import Session
 from core.core_utils import make_1D_timestamps, make_seconds_index_from_rate
 from library.lib_test_utils import make_2D_arena
-from library.spatial_spike_train import SpatialSpikeTrain2D
+# from library.spatial_spike_train import SpatialSpikeTrain2D
 from core.spikes import SpikeTrain
 from core.spatial import Position2D
 from core.spatial import Position2D
 from core.subjects import SessionMetadata
+
+def test_spatial_spike_train():
+    spike_times = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+    spike_train = SpikeTrain({'event_times': spike_times, 'duration': 1, 'sample_rate': 50})
+    x = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+    y = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+    t = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+    location = Position2D({'x': x, 'y': y, 't': t})
+
+    spatial_spike_train = SpatialSpikeTrain2D({'spike_train':spike_train, 'position': location})
+
+    assert len(spatial_spike_train.x) == len(spatial_spike_train.y) == len(spatial_spike_train.spike_times)
+    assert spatial_spike_train.x == x
+    assert spatial_spike_train.y == y
+    assert spatial_spike_train.spike_times == spike_times
 
 def test_hafting_occupancy_map():
 
@@ -44,7 +59,7 @@ def test_hafting_occupancy_map():
 
     hafting_occupancy = HaftingOccupancyMap(spatial_spike_train)
 
-    occ_map = hafting_occupancy.get_occupancy_map(smoothing_factor=3)
+    occ_map, _, _ = hafting_occupancy.get_occupancy_map(smoothing_factor=3)
 
     assert isinstance(hafting_occupancy, HaftingOccupancyMap)
     assert hafting_occupancy.x.all() == pos_dict['x'].all() 

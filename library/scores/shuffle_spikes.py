@@ -50,7 +50,7 @@ def shuffle_spikes(ts: np.ndarray, pos_x: np.ndarray,
 
     return shuffled_spikes
 
-
+""""""""""""""""""""""""""" From Opexebo https://pypi.org/project/opexebo/ """""""""""""""""""""""""""
 
 def _shuffle(
     times: np.ndarray,

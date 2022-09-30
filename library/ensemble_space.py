@@ -34,13 +34,20 @@ class CellEnsemble(Workspace):
     """
     To manipulate groups of cells, flexible class, optional input is instances of Cell, can also add cells individually
     """
-    def __init__(self, input_dict=None):
+    def __init__(self, input_dict=None, **kwargs):
         self._input_dict = input_dict
         
         self.cells = []
 
         if self._input_dict != None:
             self.cells = self._read_input_dict()
+
+        if 'sessison_metadata' in kwargs:
+            self.session_metadata == kwargs['session_metadata']
+            self.animal_id = self.session_metadata.metadata['animal'].animal_id
+        else:
+            self.session_metadata = None
+            self.animal_id = None
 
     def _read_input_dict(self):
         cells = []
@@ -60,14 +67,26 @@ class Cell(Workspace):
     """
     A single cell belonging to a session of an animal
     """
-    def __init__(self, input_dict: dict):
+    def __init__(self, input_dict: dict, **kwargs):
         self._input_dict = input_dict
 
         self.event_times, self.signal, self.session_metadata = self._read_input_dict()
 
         self.stats_dict = self._init_stats_dict()
+        # self.stats_dict = {}
 
-        self.time_index = self.session_metadata.session_object.time_index
+        if 'sessison_metadata' in kwargs and self.session_metadata is None:
+            self.session_metadata == kwargs['session_metadata']
+        elif self.session_metadata is not None:
+            self.animal_id = self.session_metadata.metadata['animal'].animal_id
+            self.time_index = self.session_metadata.session_object.time_index
+        else:
+            self.animal_id = None
+            self.session_metadata = None
+            self.time_index = None
+ 
+
+        
 
     def _read_input_dict(self):
         event_times = None

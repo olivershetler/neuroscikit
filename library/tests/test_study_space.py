@@ -54,14 +54,14 @@ def test_animal():
 
     animal_instance = Animal({'session_1': session, 'session_2': session})
     
-    assert type(animal_instance.ensembles) == list
-    assert type(animal_instance.sessions) == list
+    assert type(animal_instance.ensembles) == dict
+    assert type(animal_instance.sessions) == dict
     assert isinstance(animal_instance.population, CellPopulation)
 
     animal_instance.add_session(session)
 
-    assert len(animal_instance.ensembles) == 2
-    assert len(animal_instance.sessions) == 2
+    assert len(animal_instance.ensembles) == 3
+    assert len(animal_instance.sessions) == 3
 
 def test_session():
 

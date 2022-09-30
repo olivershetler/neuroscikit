@@ -5,7 +5,6 @@
 import numpy as np
 import os
 import sys
-from library.hafting_spatial_maps import HaftingRateMap
 
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
@@ -14,7 +13,7 @@ sys.path.append(PROJECT_PATH)
 import library.opexebo.defaults as default
 import library.opexebo.errors as err
 from library.lib_utils import bin_width_to_bin_number
-from library.spatial_spike_train import SpatialSpikeTrain2D
+from library.hafting_spatial_maps import SpatialSpikeTrain2D
 from core.spatial import Position2D
 
 

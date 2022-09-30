@@ -9,7 +9,7 @@ sys.path.append(PROJECT_PATH)
  
 from library.maps import spatial_tuning_curve
 
-from library.spatial_spike_train import SpatialSpikeTrain2D
+from library.hafting_spatial_maps import SpatialSpikeTrain2D
 
 def _moving_sum(array, window):
     ret = np.cumsum(array, dtype=float)
@@ -31,22 +31,20 @@ def _get_rolling_sum(array_in, window):
 # def hd_score(angles, window_size=23):
 def hd_score(spatial_spike_train: SpatialSpikeTrain2D, **kwargs):
 
-    if 'smoothing_factor' in kwargs:
-        smoothing_factor = kwargs['smoothing_factor']
-    else:
-        smoothing_factor = spatial_spike_train.session_metadata.session_object.smoothing_factor
+    # if 'smoothing_factor' in kwargs:
+    #     smoothing_factor = kwargs['smoothing_factor']
+    # else:
+    #     smoothing_factor = spatial_spike_train.session_metadata.session_object.smoothing_factor
 
     if 'window_size' in kwargs:
         window_size = kwargs['window_size']
     else:
         window_size = 23
 
-    spatial_tuning_data = spatial_spike_train.get_map('spatial_tuning')
-    if spatial_tuning_data == None:
-        spatial_tuning_data = spatial_tuning_curve(spatial_spike_train, smoothing_factor)
+    if spatial_spike_train.get_map('spatial_tuning') is None:
+        spatial_tuning_data = spatial_tuning_curve(spatial_spike_train)
         angles = spatial_spike_train.get_map('spatial_tuning')['spike_angles']
-    else:
-        angles = spatial_tuning_data['spike_angles']
+    angles = spatial_tuning_data = spatial_spike_train.get_map('spatial_tuning')['spike_angles']
 
     angles = angles[~np.isnan(angles)]
     theta = np.linspace(0, 2*np.pi, 361)  # x axis

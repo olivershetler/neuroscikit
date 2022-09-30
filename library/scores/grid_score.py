@@ -6,9 +6,9 @@ sys.path.append(PROJECT_PATH)
  
 
 import numpy as np
-from library.hafting_spatial_maps import HaftingOccupancyMap, HaftingRateMap
+from library.hafting_spatial_maps import SpatialSpikeTrain2D
 from library.maps import occupancy_map
-from library.spatial_spike_train import SpatialSpikeTrain2D
+# from library.spatial_spike_train import SpatialSpikeTrain2D
 from openpyxl.worksheet.dimensions import ColumnDimension
 from openpyxl.utils.cell import get_column_letter
 from library.maps import autocorrelation
@@ -51,15 +51,12 @@ def grid_score(spatial_spike_train: SpatialSpikeTrain2D, **kwargs):
     else:
         smoothing_factor = spatial_spike_train.session_metadata.session_object.smoothing_factor
 
-    ratemap_obj = spatial_spike_train.get_map('rate')
-    if ratemap_obj == None:
-        ratemap, _ = HaftingRateMap(spatial_spike_train).get_rate_map(smoothing_factor)
-    else:
-        ratemap, _ = ratemap_obj.get_rate_map(smoothing_factor)
+    ratemap, _ = spatial_spike_train.get_map('rate').get_rate_map(smoothing_factor)
 
-    autocorr = spatial_spike_train.get_map('autocorr')
-    if autocorr == None:
+    if spatial_spike_train.get_map('autocorr') is None:
         autocorr = autocorrelation(spatial_spike_train)
+        spatial_spike_train.add_map_to_stats('autocorr', autocorr)
+    autocorr = spatial_spike_train.get_map('autocorr')
 
     grid_score_object = opexebo_grid_score(autocorr)
     true_grid_score = grid_score_object[0]
