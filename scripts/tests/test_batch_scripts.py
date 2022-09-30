@@ -33,6 +33,7 @@ from core.core_utils import (
 
 from scripts.batch_map.batch_map import batch_map
 from x_io.rw.axona.batch_read import make_study
+from scripts.batch_spike_analysis import batch_spike_analysis
 
 cwd = os.getcwd()
 parent_dir = os.path.dirname(cwd)
@@ -70,7 +71,6 @@ def test_batch_map():
 
 
 # def test_batch_neurofunc():
-#     study = make_study()
 
 #     tasks = {}
 #     keys = ['binary_map', 'autocorrelation_map', 'sparsity', 'selectivity', 'information', 'coherence', 'speed_score', 'hd_score', 'tuning_curve', 'grid_score', 'border_score', 'field_sizes']
@@ -81,19 +81,25 @@ def test_batch_map():
 
 #     assert study.animals[0].stat_dict != None
 
-# def test_batch_spike_analysis():
-#     study = make_study()
+def test_batch_spike_analysis():
 
-#     # tasks = {}
-#     # keys = ['binary_map', 'autocorrelation_map', 'sparsity', 'selectivity', 'information', 'coherence', 'speed_score', 'hd_score', 'tuning_curve', 'grid_score', 'border_score', 'field_sizes']
-#     # for key in keys:
-#     #     tasks[key] = True
+    batch_spike_analysis(study)
 
-#     batch_spike_analysis(study)
+    # test_keys = ['spike']
 
-#     assert study.animals[0].stat_dict != None
+    # for key in test_keys:
+    #     print(key)
+    assert 'spike' in study.animals[0].sessions['session_1'].get_cell_data()['cell_ensemble'].cells[0].stats_dict
+
+    # test_keys = ['cluster']
+
+    # for key in test_keys:
+    #     print(key)
+    assert 'cluster' in study.animals[0].sessions['session_1'].get_spike_data()['spike_cluster'].stats_dict
+
 
 if __name__ == '__main__':
     # test_batch_neurofunc()
-    # test_batch_spike_analysis()
+    test_batch_spike_analysis()
     test_batch_map()
+    # pass

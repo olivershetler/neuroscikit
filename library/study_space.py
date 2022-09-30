@@ -34,10 +34,10 @@ class Session(Workspace):
         spk_data = self.get_spike_data()
         spk_data_keys = list(spk_data.keys())
 
-        if len(spk_data_keys) > 0:
-            self.time_index = spk_data[spk_data_keys[0]].time_index
-        else:
-            self.time_index = None
+        # if len(spk_data_keys) > 0:
+        #     self.time_index = spk_data[spk_data_keys[0]].time_index
+        # else:
+        self.time_index = None
 
         if 'smoothing_factor' in kwargs:
             self.smoothing_factor = kwargs['smoothing_factor']
@@ -47,14 +47,13 @@ class Session(Workspace):
     def set_smoothing_factor(self, smoothing_factor):
         self.smoothing_factor = smoothing_factor
     
-    def update_time_index(self):
+    def update_time_index(self, class_object):
         spk_data = self.get_spike_data()
-        spk_data_keys = list(spk_data.keys())
-        time_index = None
-        for i in range(len(spk_data_keys)):
-            time_index = spk_data[spk_data_keys[0]].time_index
-            if self.time_index != None:
-                assert self.time_index == time_index
+        # time_index = None
+        # for i in range(len(spk_data_keys)):
+        sample_rate = class_object.sample_rate
+        duration = class_object.duration
+        time_index = make_seconds_index_from_rate(duration, sample_rate)
         self.time_index = time_index
 
     def get_animal_id(self):
@@ -157,7 +156,10 @@ class Session(Workspace):
                 self.session_data.data['position'] = class_object
             elif isinstance(class_object, SpatialSpikeTrain2D):
                 self.session_data.data['spatial_spike_train'] = class_object
-            self.update_time_index()
+
+            if self.time_index is None and not isinstance(class_object, Position2D):
+                self.update_time_index(class_object)
+                class_object.time_index = self.time_index
 
         return class_object
 
@@ -306,11 +308,11 @@ class Animal(Workspace):
         assert 'spike_cluster' in core_data, 'Need cluster label data to sort valid cells'
         spike_cluster = core_data['spike_cluster']
         assert isinstance(spike_cluster, SpikeClusterBatch)
-        good_sorted_cells, good_sorted_waveforms = sort_spikes_by_cell(spike_cluster)
+        good_sorted_cells, good_sorted_waveforms, good_clusters = sort_spikes_by_cell(spike_cluster)
         print('Session data added, spikes sorted by cell')
         ensemble = session.make_class(CellEnsemble, None)
         for i in range(len(good_sorted_cells)):
-            cell_dict = {'event_times': good_sorted_cells[i], 'signal': good_sorted_waveforms[i], 'session_metadata': session.session_metadata}
+            cell_dict = {'event_times': good_sorted_cells[i], 'signal': good_sorted_waveforms[i], 'session_metadata': session.session_metadata, 'cluster': good_clusters[i]}
             # cell = Cell(cell_dict)
             cell = session.make_class(Cell, cell_dict)
             ensemble.add_cell(cell)

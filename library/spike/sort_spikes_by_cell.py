@@ -29,9 +29,11 @@ def sort_spikes_by_cell(clusters: SpikeClusterBatch):
 
     cells = []
     sorted_waveforms = []
+    indiv_clusters = clusters.get_spike_cluster_instances()
     good_cells = []
     good_sorted_waveforms = []
     good_sorted_label_ids = []
+    good_clusters = []
 
     labels = np.unique(cluster_labels)
     # comes in shape (channel count, spike time, nmb samples) but is nested list not numpy
@@ -41,6 +43,7 @@ def sort_spikes_by_cell(clusters: SpikeClusterBatch):
         idx = np.where(cluster_labels == lbl)
         cells.append(np.array(spike_times)[idx])
         sorted_waveforms.append(waves[idx,:,:].squeeze())
+        # sorted_clusters.append(indiv_clusters[idx])
 
     empty_cell = 1
     for j in range(len(sorted_waveforms)):
@@ -53,6 +56,7 @@ def sort_spikes_by_cell(clusters: SpikeClusterBatch):
         good_cells.append(cells[j])
         good_sorted_label_ids.append(j)
         good_sorted_waveforms.append(sorted_waveforms[j])
+        good_clusters.append(indiv_clusters[j])
 
 
-    return good_cells, good_sorted_waveforms
+    return good_cells, good_sorted_waveforms, good_clusters

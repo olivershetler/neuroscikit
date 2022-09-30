@@ -18,9 +18,6 @@ def find_burst(spike_class: Cell | SpikeTrain | SpikeCluster, maxisi=0.01, req_b
     ts = spike_class.event_times
 
     if type(ts) == list:
-        ts = np.array(ts)
-
-    if type(ts) == list:
         ts = np.asarray(ts)
 
     if len(ts) < 2:

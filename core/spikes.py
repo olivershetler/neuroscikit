@@ -108,9 +108,12 @@ class SpikeTrain():
 
         # assert ((len(self.events_binary) == 0) and (len(self.event_times) == 0)) != True, "No spike data provided"
 
-        self.time_index = make_seconds_index_from_rate(self.duration, self.sample_rate)
+        # self.time_index = make_seconds_index_from_rate(self.duration, self.sample_rate)
+        self.time_index = self.session_metadata.session_object.time_index
 
         self._event_rate = None
+
+        self.dir_names = self.session_metadata.dir_names
 
         self.stats_dict = self._init_stats_dict()
 
@@ -223,10 +226,8 @@ class SpikeTrain():
 
     def _init_stats_dict(self):
         stats_dict = {}
-        path = 'library'
-        dir_names = [x[1] for x in os.walk(path)][0]
 
-        for dir in dir_names:
+        for dir in self.dir_names:
             if dir != 'tests' and 'cache' not in dir:
                 stats_dict[dir] = {}
 
@@ -243,7 +244,9 @@ class SpikeCluster(): # collection of spike objects
     def __init__(self, input_dict, **kwargs):
         self._input_dict = input_dict
 
+
         self.duration, self.sample_rate, self.cluster_label, self.event_times, self.waveforms, self.session_metadata = self._read_input_dict()
+
 
         if 'session_metadata' in kwargs:
             if self.session_metadata != None: 
@@ -255,13 +258,14 @@ class SpikeCluster(): # collection of spike objects
         assert type(self.cluster_label) == int, 'Cluster labels missing'
         assert len(self.event_times) > 0, 'Spike times missing'
         assert len(self.waveforms) <= 8 and len(self.waveforms) > 0, 'Cannot have fewer than 0 or more than 8 channels'
-
-        self.time_index = make_seconds_index_from_rate(self.duration, self.sample_rate)
-
+        # self.time_index = make_seconds_index_from_rate(self.duration, self.sample_rate)
+        self.time_index = self.session_metadata.session_object.time_index
         self.spike_objects = []
-
+        self.dir_names = self.session_metadata.dir_names
         self.stats_dict = self._init_stats_dict()
         self.cluster_labels = [self.cluster_label for i in range(len(self.event_times))]
+
+    
 
     def get_cluster_firing_rate(self):
         T = self.time_index[1] - self.time_index[0]
@@ -353,10 +357,8 @@ class SpikeCluster(): # collection of spike objects
 
     def _init_stats_dict(self):
         stats_dict = {}
-        path = 'library'
-        dir_names = [x[1] for x in os.walk(path)][0]
 
-        for dir in dir_names:
+        for dir in self.dir_names:
             if dir != 'tests' and 'cache' not in dir:
                 stats_dict[dir] = {}
 

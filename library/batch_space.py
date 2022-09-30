@@ -24,7 +24,8 @@ class SpikeTrainBatch(Workspace):
                 print('Ses metadata is in the input dict and init fxn, init fnx will override')
             self.session_metadata = kwargs['session_metadata']
 
-        self.time_index = make_seconds_index_from_rate(self.duration, self.sample_rate)
+        # self.time_index = make_seconds_index_from_rate(self.duration, self.sample_rate)
+        self.time_index = self.session_metadata.session_object.time_index
 
         # assert ((len(events_binary) == 0) and (len(event_times) == 0)) != True, "No spike data provided"
 
@@ -33,7 +34,7 @@ class SpikeTrainBatch(Workspace):
         self.event_labels = []
         self._event_rate = None
         self._spike_train_instances = []
-
+        self.dir_names = self.session_metadata.dir_names
         self.stats_dict = self._init_stats_dict()
 
     def _read_input_dict(self):
@@ -76,6 +77,7 @@ class SpikeTrainBatch(Workspace):
                 input_dict['event_times'] = self.event_times[i]
             else:
                 input_dict['event_times'] = []
+            input_dict['session_metadata'] = self.session_metadata
             instances.append(SpikeTrain(input_dict))
 
         self._spike_train_instances = instances
@@ -127,10 +129,8 @@ class SpikeTrainBatch(Workspace):
 
     def _init_stats_dict(self):
         stats_dict = {}
-        path = 'library'
-        dir_names = [x[1] for x in os.walk(path)][0]
         
-        for dir in dir_names:
+        for dir in self.dir_names:
             if dir != 'tests' and 'cache' not in dir:
                 stats_dict[dir] = {}
 
@@ -156,7 +156,8 @@ class SpikeClusterBatch(Workspace):
         assert len(event_times) > 0, 'Spike times missing'
         assert len(waveforms) <= 8 and len(waveforms) > 0, 'Cannot have fewer than 0 or more than 8 channels'
 
-        self.time_index = make_seconds_index_from_rate(duration, sample_rate)
+        # self.time_index = make_seconds_index_from_rate(duration, sample_rate)
+        self.time_index = self.session_metadata.session_object.time_index
 
         self.event_times = event_times
         self.cluster_labels = cluster_labels
@@ -303,6 +304,7 @@ class SpikeClusterBatch(Workspace):
         for i in self.get_unique_cluster_labels():
             # if self.cluster_labels[i] not in labelled:
             input_dict = {}
+            input_dict['session_metadata'] = self.session_metadata
             input_dict['duration'] = self.duration
             input_dict['sample_rate'] = self.sample_rate
             input_dict['cluster_label'] = i

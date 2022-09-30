@@ -70,10 +70,7 @@ class Cell(Workspace):
     def __init__(self, input_dict: dict, **kwargs):
         self._input_dict = input_dict
 
-        self.event_times, self.signal, self.session_metadata = self._read_input_dict()
-
-        self.stats_dict = self._init_stats_dict()
-        # self.stats_dict = {}
+        self.event_times, self.signal, self.session_metadata, self.cluster = self._read_input_dict()
 
         if 'sessison_metadata' in kwargs and self.session_metadata is None:
             self.session_metadata == kwargs['session_metadata']
@@ -84,6 +81,18 @@ class Cell(Workspace):
             self.animal_id = None
             self.session_metadata = None
             self.time_index = None
+
+
+        self.dir_names = self.session_metadata.dir_names
+        self.stats_dict = self._init_stats_dict()
+        # self.stats_dict = {}
+
+
+        if 'spike_cluster' in self.session_metadata.session_object.get_spike_data():
+            self.spike_cluster = self.session_metadata.session_object.get_spike_data()['spike_cluster']
+        else:
+            self.spike_cluster = None
+
  
 
         
@@ -91,6 +100,7 @@ class Cell(Workspace):
     def _read_input_dict(self):
         event_times = None
         waveforms = None 
+        cluster = None
 
         if 'event_times' in self._input_dict:
             event_times = self._input_dict['event_times']
@@ -107,16 +117,23 @@ class Cell(Workspace):
         else:
             print('No session metadata provided, cannot effectively track cells')
 
-        return event_times, signal, session_metadata
+        if 'cluster' in self._input_dict:
+            cluster = self._input_dict['cluster']
+        else:
+            print('No cluster reference provided, cannot use certain lib/cluster modules')
+
+        return event_times, signal, session_metadata, cluster
 
     def _init_stats_dict(self):
         stats_dict = {}
-        path = 'library'
-        dir_names = [x[1] for x in os.walk(path)][0]
         
-        for dir in dir_names:
+        for dir in self.dir_names:
             if dir != 'tests' and 'cache' not in dir:
                 stats_dict[dir] = {}
 
         return stats_dict
+    
+    def add_cluster_stats(self):
+        for key in self.cluster.stats_dict:
+            self.stats_dict[key] = self.cluster.stats_dict[key]
 

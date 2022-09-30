@@ -52,6 +52,7 @@ class SessionMetadata():
                 print('Ses object is in the input dict and init fxn, init fnx will override')
             self.session_object = kwargs['session_object']
 
+        self.dir_names = [x[1] for x in os.walk('library')][0]
 
     def _read_input_dict(self):
         core_metadata_instances = {} 

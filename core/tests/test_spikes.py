@@ -2,6 +2,8 @@ import os
 import sys
 import numpy as np
 
+from library.study_space import Session
+
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
 
@@ -67,7 +69,8 @@ def test_spike_train_class():
     input_dict1['events_binary'] = []
     input_dict1['event_times'] = event_times
 
-    spike_train1 = SpikeTrain(input_dict1)
+    ses = Session()
+    spike_train1 = ses.make_class(SpikeTrain, input_dict1)
 
     rate1 = spike_train1.get_event_rate()
     events_binary1 = spike_train1.get_binary()
@@ -85,7 +88,8 @@ def test_spike_train_class():
     input_dict2['events_binary'] = events_binary2
     input_dict2['event_times'] = []
 
-    spike_train2 = SpikeTrain(input_dict2)
+    ses = Session()
+    spike_train2 = ses.make_class(SpikeTrain, input_dict2)
 
     rate2 = spike_train2.get_event_rate()
     event_times2 = spike_train2.get_event_times()
@@ -154,7 +158,8 @@ def test_spike_cluster_class():
         key = 'channel_' + str(i+1)
         input_dict1[key] = waveforms[i]
 
-    spike_cluster = SpikeCluster(input_dict1)
+    ses = Session()
+    spike_cluster = ses.make_class(SpikeCluster, input_dict1)
 
     all_channel_waveforms = spike_cluster.get_all_channel_waveforms()
     rate = spike_cluster.get_cluster_firing_rate()

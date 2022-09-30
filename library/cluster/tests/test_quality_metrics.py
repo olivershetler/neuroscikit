@@ -11,6 +11,7 @@ from core.core_utils import make_1D_timestamps, make_waveforms, make_clusters
 from core.spikes import SpikeCluster
 from library.batch_space import SpikeClusterBatch
 from library.cluster.features import create_features
+from library.study_space import Session
 
 def make_spike_cluster_batch():
     event_times = make_1D_timestamps()
@@ -35,7 +36,8 @@ def make_spike_cluster_batch():
         key = 'channel_' + str(i+1)
         input_dict1[key] = waveforms[i]
 
-    spike_cluster_batch = SpikeClusterBatch(input_dict1)
+    ses = Session()
+    spike_cluster_batch = ses.make_class(SpikeClusterBatch, input_dict1)
 
     return spike_cluster_batch
 
@@ -60,7 +62,8 @@ def make_spike_cluster():
         key = 'channel_' + str(i+1)
         input_dict1[key] = waveforms[i]
 
-    spike_cluster = SpikeCluster(input_dict1)
+    ses = Session()
+    spike_cluster = ses.make_class(SpikeCluster, input_dict1)
 
     return spike_cluster
 

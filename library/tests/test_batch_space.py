@@ -10,6 +10,7 @@ sys.path.append(PROJECT_PATH)
 from core.core_utils import *
 from library.batch_space import SpikeTrainBatch, SpikeClusterBatch
 from core.spikes import SpikeCluster, SpikeTrain, Spike
+from library.study_space import Session
 
 
 def test_spike_cluster_batch_class():
@@ -24,18 +25,19 @@ def test_spike_cluster_batch_class():
     T = 2
     dt = .02
 
+    ses = Session()
+
     input_dict1 = {}
     input_dict1['duration'] = int(T)
     input_dict1['sample_rate'] = float(1 / dt)
     input_dict1['event_times'] = event_times
     input_dict1['event_labels'] = event_labels
 
-
     for i in range(ch_count):
         key = 'channel_' + str(i+1)
         input_dict1[key] = waveforms[i]
 
-    spike_cluster_batch = SpikeClusterBatch(input_dict1)
+    spike_cluster_batch = ses.make_class(SpikeClusterBatch, input_dict1)
 
     all_channel_waveforms = spike_cluster_batch.get_all_channel_waveforms()
     rate = spike_cluster_batch.get_single_cluster_firing_rate(event_labels[0])
@@ -77,12 +79,14 @@ def test_spike_train_batch_class():
     T = 2
     dt = .02
 
+    ses = Session()
+    ses.time_index = make_seconds_index_from_rate(T, 1/dt)
     input_dict1 = {}
     input_dict1['duration'] = int(T)
     input_dict1['sample_rate'] = float(1 / dt)
     input_dict1['events_binary'] = []
     input_dict1['event_times'] = event_times
-
+    input_dict1['session_metadata'] = ses.session_metadata
     spike_train1 = SpikeTrainBatch(input_dict1)
     rate1 = spike_train1.get_average_event_rate()
     rate_list1 = spike_train1.get_indiv_event_rate()
@@ -105,7 +109,7 @@ def test_spike_train_batch_class():
     input_dict2['sample_rate'] = float(1 / dt)
     input_dict2['events_binary'] = events_binary2
     input_dict2['event_times'] = []
-
+    input_dict2['session_metadata'] = ses.session_metadata
     spike_train2 = SpikeTrainBatch(input_dict2)
 
     spike_train2.get_event_times()

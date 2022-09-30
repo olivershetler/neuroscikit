@@ -39,13 +39,14 @@ def make_spike_cluster_batch():
         key = 'channel_' + str(i+1)
         input_dict1[key] = waveforms[i]
 
-    spike_cluster_batch = SpikeClusterBatch(input_dict1)
+    ses = Session()
+    spike_cluster_batch = ses.make_class(SpikeClusterBatch, input_dict1)
 
     return spike_cluster_batch
 
 def make_spike_cluster():
     event_times = make_1D_timestamps()
-    ch_count = 8
+    ch_count = 4
     samples_per_wave = 50
     waveforms = make_waveforms(ch_count, len(event_times), samples_per_wave)
 
@@ -64,6 +65,11 @@ def make_spike_cluster():
         key = 'channel_' + str(i+1)
         input_dict1[key] = waveforms[i]
 
+    ses = Session()
+    input_dict1['session_metadata'] = ses.session_metadata
+    
+    ses.make_class(SpikeTrain, input_dict1)
+
     spike_cluster = SpikeCluster(input_dict1)
 
     return spike_cluster
@@ -75,11 +81,16 @@ def make_cell():
     ch_count = 4
     samples_per_wave = 50
     waveforms = make_waveforms(ch_count, len(event_times), samples_per_wave)
-    session = Session()
-    session.make_class(SpikeTrain, {'event_times': event_times, 'sample_rate': 1/dt, 'duration': T})
-    cell = Cell({'event_times': event_times, 'signal': waveforms, 'session_metadata': session.session_metadata})
+    ses = Session()
+    input_dict = {'event_times': event_times, 'sample_rate': 1/dt, 'duration': T, 'cluster_label': 2, 'session_metadata':ses.session_metadata}
+    for i in range(ch_count):
+        key = 'channel_' + str(i+1)
+        input_dict[key] = waveforms[i]
+    ses.make_class(SpikeTrain, input_dict)
+    cluster = SpikeCluster(input_dict)
+    cell = Cell({'event_times': event_times, 'signal': waveforms, 'session_metadata': ses.session_metadata, 'cluster': cluster})
 
-    cell_ensemble = session.make_class(CellEnsemble, {})
+    cell_ensemble = ses.make_class(CellEnsemble, {})
     cell_ensemble.add_cell(cell)
 
     return cell_ensemble.cells[0]
