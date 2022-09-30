@@ -61,7 +61,7 @@ implant = {'implant_id': 'id', 'implant_type': 'tetrode', 'implant_geometry': 's
 session_settings = {'channel_count': 4, 'animal': animal, 'devices': devices, 'implant': implant}
 
 
-settings_dict = {'ppm': 511, 'sessions': [session_settings,]}
+settings_dict = {'ppm': 511, 'sessions': [session_settings,], 'smoothing_factor': 3}
 
 
 def test__init_implant_data():
@@ -133,7 +133,7 @@ def test__fill_session_dict():
 
     session_dict = _fill_session_dict(session_dict, implant_data_dict, pos_dict, settings_dict['sessions'][0])
 
-    assert 'x' in session_dict['devices']['axona_led_tracker']
+    assert 'x' in session_dict['devices']['axona_led_tracker']['led_position_data']
     assert 'event_times' in session_dict['devices']['implant']['implant_data']
 
 def test_make_session():
