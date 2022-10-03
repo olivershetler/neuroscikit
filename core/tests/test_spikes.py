@@ -2,10 +2,10 @@ import os
 import sys
 import numpy as np
 
-from library.study_space import Session
-
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
+
+from library.study_space import Session
 
 from core.spikes import (
     SpikeTrain,

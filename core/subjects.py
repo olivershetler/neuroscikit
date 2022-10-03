@@ -54,6 +54,14 @@ class SessionMetadata():
 
         self.dir_names = [x[1] for x in os.walk('library')][0]
 
+        self.file_paths = {}
+
+    def add_file_paths(self, cut_file, tet_file, pos_file, ppm):
+        self.file_paths['cut'] = cut_file
+        self.file_paths['tet'] = tet_file
+        self.file_paths['pos'] = pos_file
+        self.file_paths['ppm'] = ppm
+
     def _read_input_dict(self):
         core_metadata_instances = {} 
         session_object = None
