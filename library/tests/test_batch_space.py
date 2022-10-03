@@ -1,3 +1,5 @@
+
+
 import os, sys
 
 # from prototypes.wave_form_sorter.sort_cell_spike_times import sort_cell_spike_times
@@ -5,13 +7,10 @@ import os, sys
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
 
-from library.ensembles import CellEnsemble, CellPopulation, SpikeTrainBatch, SpikeClusterBatch, Cell
 from core.core_utils import *
-from core.subjects import SessionMetadata
-from core.spikes import Spike, SpikeCluster, SpikeTrain
-from library.ensembles import Cell
-from x_io.rw.axona.batch_read import make_session
-
+from library.batch_space import SpikeTrainBatch, SpikeClusterBatch
+from core.spikes import SpikeCluster, SpikeTrain, Spike
+from library.study_space import Session
 
 
 def test_spike_cluster_batch_class():
@@ -26,18 +25,19 @@ def test_spike_cluster_batch_class():
     T = 2
     dt = .02
 
+    ses = Session()
+
     input_dict1 = {}
     input_dict1['duration'] = int(T)
     input_dict1['sample_rate'] = float(1 / dt)
     input_dict1['event_times'] = event_times
     input_dict1['event_labels'] = event_labels
 
-
     for i in range(ch_count):
         key = 'channel_' + str(i+1)
         input_dict1[key] = waveforms[i]
 
-    spike_cluster_batch = SpikeClusterBatch(input_dict1)
+    spike_cluster_batch = ses.make_class(SpikeClusterBatch, input_dict1)
 
     all_channel_waveforms = spike_cluster_batch.get_all_channel_waveforms()
     rate = spike_cluster_batch.get_single_cluster_firing_rate(event_labels[0])
@@ -79,12 +79,14 @@ def test_spike_train_batch_class():
     T = 2
     dt = .02
 
+    ses = Session()
+    ses.time_index = make_seconds_index_from_rate(T, 1/dt)
     input_dict1 = {}
     input_dict1['duration'] = int(T)
     input_dict1['sample_rate'] = float(1 / dt)
     input_dict1['events_binary'] = []
     input_dict1['event_times'] = event_times
-
+    input_dict1['session_metadata'] = ses.session_metadata
     spike_train1 = SpikeTrainBatch(input_dict1)
     rate1 = spike_train1.get_average_event_rate()
     rate_list1 = spike_train1.get_indiv_event_rate()
@@ -107,7 +109,7 @@ def test_spike_train_batch_class():
     input_dict2['sample_rate'] = float(1 / dt)
     input_dict2['events_binary'] = events_binary2
     input_dict2['event_times'] = []
-
+    input_dict2['session_metadata'] = ses.session_metadata
     spike_train2 = SpikeTrainBatch(input_dict2)
 
     spike_train2.get_event_times()
@@ -115,7 +117,7 @@ def test_spike_train_batch_class():
     rate_list2 = spike_train2.get_indiv_event_rate()
     instances2 = spike_train2.get_spike_train_instances()
 
-    assert type(rate2) == np.float64
+    assert type(rate2) == np.float64 or type(rate2) == float
     assert type(rate_list2) == list
     assert type(spike_train2.events_binary) == list
     assert type(spike_train2.event_times) == list
@@ -123,42 +125,3 @@ def test_spike_train_batch_class():
     assert type(spike_train2.events_binary[0]) == list
     assert type(spike_train2.event_times[0]) == list
     assert isinstance(instances2[0], SpikeTrain) == True
-
-def test_cell_ensemble():
-    cells = {}
-    for i in range(5):
-        events = make_1D_timestamps()
-        waveforms = make_waveforms
-        session_metadata = SessionMetadata({'session_id': 'id0'})
-        cell = Cell({'events': events, 'signal': waveforms, 'session_metadata': session_metadata})
-        cells['cell_'+ str(i+1)] = cell
-
-    ensemble = CellEnsemble(cells)
-
-    assert isinstance(ensemble, CellEnsemble)
-    assert type(ensemble.cells) == list
-
-    events = make_1D_timestamps()
-    waveforms = make_waveforms
-    session_metadata = SessionMetadata({'session_id': 'id0'})
-    cell_new = Cell({'events': events, 'signal': waveforms, 'session_metadata': session_metadata})
-
-    ensemble.add_cell(cell_new)
-
-    assert ensemble.cells[-1] == cell_new
-
-def test_cell_population():
-    cells = {}
-    for i in range(5):
-        events = make_1D_timestamps()
-        waveforms = make_waveforms
-        session_metadata = SessionMetadata({'session_id': 'id0'})
-        cell = Cell({'events': events, 'signal': waveforms, 'session_metadata': session_metadata})
-        cells['cell_'+ str(i+1)] = cell
-
-    ensemble = CellEnsemble(cells)
-
-    population = CellPopulation()
-
-    assert type(population.ensembles) == list
-

@@ -5,86 +5,75 @@ import numpy as np
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
 
+from library.lib_test_utils import make_2D_arena, make_spatial_spike_train
+from library.hafting_spatial_maps import HaftingOccupancyMap, HaftingRateMap, HaftingSpikeMap, SpatialSpikeTrain2D
+from library.scores import border_score, grid_score, hd_score, rate_map_coherence, speed_score
+from library.lib_test_utils import make_2D_arena
 from core.core_utils import make_seconds_index_from_rate
-from library.maps import binary_map, rate_map, spike_pos, occupancy_map, spatial_tuning_curve
-from library.scores import border_score, grid_score, hd_score, shuffle_spikes
+from core.core_utils import make_1D_timestamps
+from library.scores.rate_map_stats import rate_map_stats
+from library.scores.shuffle_spikes import shuffle_spikes
 
-def make_1D_timestamps(T=2, dt=0.02):
-    time = np.arange(0,T,dt)
-
-    spk_count = np.random.choice(len(time), size=1)
-    while spk_count <= 10:
-        spk_count = np.random.choice(len(time), size=1)
-    spk_time = np.random.choice(time, size=spk_count, replace=False).tolist()
-
-    return spk_time
-
-def make_2D_arena(count=100):
-    return np.random.sample(count), np.random.sample(count)
 
 def test_border_score():
-    T = 2
-    dt = .02
-    pos_t = make_seconds_index_from_rate(T, 1/dt)
+    spatial_spike_train, session_metadata = make_spatial_spike_train()
 
-    smoothing_factor = 5
-    # Kernel size
-    kernlen = int(smoothing_factor*8)
-    # Standard deviation size
-    std = int(0.2*kernlen)
-    arena_size = (1,1)
-
-    spk_times = make_1D_timestamps()
-    pos_x, pos_y = make_2D_arena(len(pos_t))
-
-    spikex, spikey, spiket, _ = spike_pos(spk_times, pos_x, pos_y, pos_t, pos_t, False, False)
-
-    rate_map_smooth, rate_map_raw = rate_map(pos_x, pos_y, pos_t, arena_size, spikex, spikey, kernlen, std)    
-
-    binmap = binary_map(rate_map_smooth)
-
-    bscore = border_score(binmap, rate_map_smooth)
+    bscore = border_score(spatial_spike_train)
 
     assert type(bscore) == tuple
 
 def test_grid_score():
-    T = 2
-    dt = .02
-    pos_t = make_seconds_index_from_rate(T, 1/dt)
+    spatial_spike_train, session_metadata = make_spatial_spike_train()
 
-    smoothing_factor = 5
-    # Kernel size
-    kernlen = int(smoothing_factor*8)
-    # Standard deviation size
-    std = int(0.2*kernlen)
-    arena_size = (1,1)
-
-    spk_times = make_1D_timestamps()
-    pos_x, pos_y = make_2D_arena(len(pos_t))
-
-    spikex, spikey, spiket, _ = spike_pos(spk_times, pos_x, pos_y, pos_t, pos_t, False, False)
-
-    rate_map_smooth, rate_map_raw = rate_map(pos_x, pos_y, pos_t, arena_size, spikex, spikey, kernlen, std)    
-
-    occ_map_smoothed, occ_map_raw, coverage_map = occupancy_map(pos_x, pos_y, pos_t, arena_size, kernlen, std)
-
-    gscore = grid_score(occ_map_smoothed, spk_times, pos_x, pos_y, pos_t, arena_size, spikex, spikey, kernlen, std)
+    gscore = grid_score(spatial_spike_train)
 
     assert type(gscore) == np.float64
 
 def test_hd_score():
-    T = 2
-    dt = .02
-    pos_t = make_seconds_index_from_rate(T, 1/dt)
+    spatial_spike_train, session_metadata = make_spatial_spike_train()
 
-    smoothing = 5
-    spk_times = make_1D_timestamps()
-
-    pos_x, pos_y = make_2D_arena(len(pos_t))
-    tuned_data, spike_angles, angular_occupancy, bin_array = spatial_tuning_curve(pos_x, pos_y, np.array(pos_t), np.array(spk_times), smoothing)
-    smooth_hd =  hd_score(spike_angles, window_size=23)
+    smooth_hd = hd_score(spatial_spike_train)
 
     assert type(smooth_hd) == np.ndarray
+
+def test_rate_map_coherence():
+    spatial_spike_train, session_metadata = make_spatial_spike_train()
+    coherence = rate_map_coherence(spatial_spike_train)
+
+    assert type(coherence) == np.float64
+
+def test_rate_map_stats():
+    spatial_spike_train, session_metadata = make_spatial_spike_train()
+    ratemap = HaftingRateMap(spatial_spike_train)
+    occmap = HaftingOccupancyMap(spatial_spike_train)
+    spkmap = HaftingSpikeMap(spatial_spike_train)
+    spatial_spike_train.add_map_to_stats('rate', ratemap)
+    spatial_spike_train.add_map_to_stats('occupancy', occmap)
+    spatial_spike_train.add_map_to_stats('spike', spkmap)
+    map_stats = rate_map_stats(spatial_spike_train)
+
+    assert type(map_stats) == dict
+    assert 'spatial_information_rate' in map_stats
+
+def test_shuffle_spikes():
+    T = 100
+    dt = .1
+
+    event_times = make_1D_timestamps(T, dt)
+    t = make_seconds_index_from_rate(T, 1/dt)
+    x, y = make_2D_arena(count=len(t))
+
+    shuffled_spikes = shuffle_spikes(np.array(event_times), np.array(x), np.array(y), np.array(t))
+
+    assert type(shuffled_spikes) == list
+
+def test_speed_score():
+    spatial_spike_train, session_metadata = make_spatial_spike_train()
+
+    scores, bounds = speed_score(spatial_spike_train) 
+
+    assert type(scores) == dict
+    assert type(bounds) == tuple 
 
 # def test_shuffle_spikes():
 #     T = 10

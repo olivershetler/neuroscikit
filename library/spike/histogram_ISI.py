@@ -6,8 +6,9 @@ import matplotlib.pyplot as plt
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
 
-from library.spike import find_burst, avg_spike_burst
-from library.cluster import L_ratio, isolation_distance
+from core.spikes import SpikeCluster, SpikeTrain
+from library.ensemble_space import Cell
+from library.cluster import create_features
 
 def MatlabNumSeq(start, stop, step, exclude=True):
     """In Matlab you can type:
@@ -29,7 +30,7 @@ def MatlabNumSeq(start, stop, step, exclude=True):
 
 
 # Currentl;y 'unit' == cell id is passed in, when refactored to take in animal: Animal(), can use agg.sorted_events to get cell data, or agg labels, + add agg FD
-def histogram_ISI(ts, FD, cluster_mat, unit, maxisi=0.01, isi_histo=[0, 1000, 10], req_burst_spikes=2):
+def histogram_ISI(spike_class : Cell | SpikeCluster | SpikeTrain, maxisi=0.01, isi_histo=[0, 1000, 10], req_burst_spikes=2):
     """Performs analysis on the data for a tetrode and unit (cell)
     ts- spike times of the unit (cell)
     cluster_mat - cluster_labels
@@ -37,22 +38,18 @@ def histogram_ISI(ts, FD, cluster_mat, unit, maxisi=0.01, isi_histo=[0, 1000, 10
     FD = features used for cluster quality
     """
 
-    ts = ts.flatten()
+    ts = spike_class.event_times
 
-    output = {}
+    if type(ts) == list:
+        ts = np.array(ts)
+
+    ts = ts.flatten()
 
     n_spikes = len(ts)
 
     if n_spikes < 2:
         print('There are only %d spikes in this cell, skipping analysis!' % n_spikes)
-
-    # -------------- calculate the bursting ---------------------#
-    # calculating the percentage of bursting
-    bursts, singleSpikes = find_burst(ts, maxisi=maxisi, req_burst_spikes=req_burst_spikes)
-    bursting = 100 * len(bursts) / (len(bursts) + len(singleSpikes))
-
-    bursts_n_spikes_avg = avg_spike_burst(ts, bursts, singleSpikes)  # num of spikes on avg per burst
-
+        
     # --------- Interspike Interval Analysis ---------------------- #
 
     ISI = np.multiply(1000, np.diff(ts))  # ISI in milliseconds
@@ -81,19 +78,6 @@ def histogram_ISI(ts, FD, cluster_mat, unit, maxisi=0.01, isi_histo=[0, 1000, 10
     ISI_dict = {'min': ISI_min, 'max': ISI_max, 'median': ISI_median, 'mean': ISI_mean, 'std': ISI_std, 'cv':
         ISI_cv, 'n': n, 'bins': bins, 'fig': fig}
 
-    # # --------------- Cluster Quality Analysis ---------------------- #
-    # if type(cluster_mat) == list:
-    #     cluster_mat = np.asarray(cluster_mat)
-
-    # ClusterSpikes = np.where(cluster_mat == int(unit))[0]  # indices of the unit we are analyzing
-    # L, Lratio, df = L_ratio(FD, ClusterSpikes)
-    # IsoDist = isolation_distance(FD, ClusterSpikes)
-    # ClusterQualityDict = {'L': L, 'Lratio': Lratio, 'IsoDist': IsoDist}
-
-    # # ---------- defining the output -------------------#
-    # output['bursting'] = bursting
-    # output['bursts_n_spikes_avg'] = bursts_n_spikes_avg
-    # output['ISI'] = ISI_dict
-    # output['ClusterQuality'] = ClusterQualityDict
+    spike_class.stats_dict['spike']['ISI_dict'] = ISI_dict
 
     return ISI_dict

@@ -82,3 +82,4 @@ def make_clusters(timestamps, cluster_count):
         idx = np.random.choice(cluster_count, size=1)[0]
         event_labels.append(int(idx))
     return event_labels
+

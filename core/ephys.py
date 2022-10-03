@@ -11,7 +11,7 @@ class EphysSeries():
         Initialize the LFP object.
         """
         if 'ephys_series' in data_dict:
-            self.data = data_dict['ephys_series']
+            self.signal = data_dict['ephys_series']
         if 'units' in data_dict:
             self.units = data_dict['units']
         if 'sample_rate' in data_dict:
@@ -62,11 +62,11 @@ class EphysSeries():
         """
         Down sample the data to the target sample rate.
         """
-        # float_index = np.arange(0, len(self.data), self.sample_rate/target_sample_rate)
+        # float_index = np.arange(0, len(self.signal), self.sample_rate/target_sample_rate)
         dt = int(self.sample_rate[0]/target_sample_rate)
-        float_index = [i for i in range(0, len(self.data), dt)]
+        float_index = [i for i in range(0, len(self.signal), dt)]
         int_index = [round(x) for x in float_index]
-        self.data = self.data[int_index]
+        self.signal = self.signal[int_index]
         self.sample_rate = (target_sample_rate, 'Hz')
 
     def check_data_types(self, data_dict: dict):
@@ -93,7 +93,7 @@ class EphysCollection():
         Initialize the LFP object.
         """
         #check_data_types(channel_dict)
-        self.data = channel_dict
+        self.signal = channel_dict
         self.num_channels = len(channel_dict)
 
     @staticmethod
@@ -106,18 +106,18 @@ class EphysCollection():
 
     def get_filtered(self, method='default', type='default'):
         filtered = []
-        for chan in self.data.keys():
+        for chan in self.signal.keys():
             if method == 'default':
-                filtered.append(self.data[chan].filtered)
+                filtered.append(self.signal[chan].filtered)
             else: 
                 assert type != 'default', 'Choose filter type e.g. butter, cheby1, bessel'
-                filtered.append(self.data[chan].get_filtered_dict()[method][type])
+                filtered.append(self.signal[chan].get_filtered_dict()[method][type])
 
         return filtered
 
     def get_power_bands(self):
         bands = []
-        for chan in self.data.keys():
-            bands.append(self.data[chan].power_bands)
+        for chan in self.signal.keys():
+            bands.append(self.signal[chan].power_bands)
         return bands
         

@@ -1,5 +1,5 @@
 # neuroscikit
-This is the initial branch of the main pipeline for data analysis at the Husseini Lab. It will eventually be forked to Hussaini Lab's GitHub account when it's ready to be used. This repository is designed to be collaborateively developed according to the guidelines laid out below.
+This is the initial branch of the main pipeline for data analysis at the Hussaini Lab. It will eventually be forked to Hussaini Lab's GitHub account when it's ready to be used. This repository is designed to be collaborateively developed according to the guidelines laid out below.
 
 ## Architecture
 
@@ -42,7 +42,7 @@ In the io layer, there are submodules for reading and writing different data for
         - led_position_data: {`time`:float, `x`:float, `y`:float}
 
 #### Study class intake dictionary
--
+
 
 ### core
 The `core` module contains the canonical data types and functions for managing them. This module has no dependencies other than the version of python being used and numpy. Some of the data structures are inspired by the [Neurodata Without Borders](https://www.nwb.org/) project, though the code is not directly based on that project.

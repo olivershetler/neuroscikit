@@ -2,8 +2,15 @@
 """
 
 import numpy as np
+import os 
+import sys
 
-def down_sample_ephys(ephys_data, sampling_rate, new_sampling_rate):
+PROJECT_PATH = os.getcwd()
+sys.path.append(PROJECT_PATH)
+
+from core.ephys import EphysSeries
+
+def down_sample_ephys(ephys_series: EphysSeries, new_sampling_rate):
     """Downsample the electrophysiology data.
 
     Parameters:
@@ -13,6 +20,8 @@ def down_sample_ephys(ephys_data, sampling_rate, new_sampling_rate):
     Returns:
         The downsampled electrophysiology data.
     """
+    ephys_data, sampling_rate = ephys_series.signal, ephys_series.sample_rate[0]
+
     # compute the duration in seconds
     # (if given Hz sampling rate)
     duration = float(len(ephys_data) / sampling_rate)
@@ -24,13 +33,13 @@ def down_sample_ephys(ephys_data, sampling_rate, new_sampling_rate):
 
     # compute the idealized continous time index
     # for each sample in the original data
-    continuous_index = np.arange(0, duration, smooth_step_size)
+    continuous_index = np.arange(0, duration, continuous_step_size)
 
     # round the idealized index to get the discrete
     # index for each sample in the original data
-    discrete_index = [round(i) for i in smooth_index]
+    discrete_index = [round(i) for i in continuous_index]
 
     # take the data points at the discrete index
-    ephys_downsampled = ephys[discrete_index]
+    ephys_downsampled = ephys_data[discrete_index]
 
     return ephys_downsampled

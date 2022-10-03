@@ -8,10 +8,12 @@ sys.path.append(PROJECT_PATH)
 import numpy as np
 import cv2
 from library.maps.map_utils import _gkern
+from library.hafting_spatial_maps import HaftingRateMap, SpatialSpikeTrain2D
+# from library.spatial_spike_train import SpatialSpikeTrain2D
 
 # Taken from https://stackoverflow.com/questions/59144828/opencv-getting-all-blob-pixels
 #public
-def map_blobs(ratemap: np.ndarray) -> tuple:
+def map_blobs(spatial_map: SpatialSpikeTrain2D | HaftingRateMap, **kwargs):
 
     '''
         Segments and labels firing fields in ratemap.
@@ -36,6 +38,17 @@ def map_blobs(ratemap: np.ndarray) -> tuple:
             field_sizes (list):
                 List of size of each field as a percentage of map coverage
     '''
+
+    if 'smoothing_factor' in kwargs:
+        smoothing_factor = kwargs['smoothing_factor']
+    else:
+        smoothing_factor = spatial_map.session_metadata.session_object.smoothing_factor
+
+    if isinstance(spatial_map, HaftingRateMap):
+        ratemap, _ = spatial_map.get_rate_map(smoothing_factor)
+    elif isinstance(spatial_map, SpatialSpikeTrain2D):
+        ratemap, _ = spatial_map.get_map('rate').get_rate_map(smoothing_factor)
+
 
     # Create kernel for convolutional smoothing
     kernel = _gkern(26, 3)
@@ -76,6 +89,13 @@ def map_blobs(ratemap: np.ndarray) -> tuple:
     field_sizes = []
     for i in range(1, n_labels):
         field_sizes.append(( len(np.where(labels==i)[0]) / len(image_2.flatten()) ) * 100)
+
+    map_blobs_dict = {'image': image, 'n_labels': n_labels, 'centroids': centroids, 'field_sizes': field_sizes}
+
+    if isinstance(spatial_map, HaftingRateMap):
+        spatial_map.spatial_spike_train.add_map_to_stats('map_blobs', map_blobs_dict)
+    elif isinstance(spatial_map, SpatialSpikeTrain2D):
+        spatial_map.add_map_to_stats('map_blobs', map_blobs_dict)
 
     return image, n_labels, labels, centroids, field_sizes
 

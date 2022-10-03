@@ -3,9 +3,9 @@ Intan provides a module for loading .rhd data, which is included in the load_int
 This module is essentially just for calling that module and re-organizign the data into an EphysCollection object.
 """
 
-from x_io.intan.load_intan_rhd_format.load_intan_rhd_format import read_rhd_data
+from x_io.rw.intan.load_intan_rhd_format.load_intan_rhd_format import read_rhd_data
 
-from core.data_voltage import (
+from core.ephys import (
     EphysSeries
     ,EphysCollection
 )

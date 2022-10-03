@@ -22,10 +22,11 @@ from x_io.rw.axona.read_tetrode_and_cut import (
     ,load_spike_train_from_paths
 )
 
-from library.workspace import Session, SessionData, SessionMetadata, Study, StudyMetadata
+from library.study_space import Session, SessionData, SessionMetadata, Study, StudyMetadata
 from core.instruments import DevicesMetadata, ImplantMetadata, TrackerMetadata
 from core.subjects import AnimalMetadata
-from core.spikes import Spike, SpikeClusterBatch, SpikeTrain
+from core.spikes import SpikeTrain
+from library.batch_space import SpikeClusterBatch
 
 from x_io.rw.axona.read_pos import (
     grab_position_data,
@@ -60,7 +61,7 @@ implant = {'implant_id': 'id', 'implant_type': 'tetrode', 'implant_geometry': 's
 session_settings = {'channel_count': 4, 'animal': animal, 'devices': devices, 'implant': implant}
 
 
-settings_dict = {'ppm': 511, 'sessions': [session_settings,]}
+settings_dict = {'ppm': 511, 'sessions': [session_settings,], 'smoothing_factor': 3}
 
 
 def test__init_implant_data():
@@ -132,7 +133,7 @@ def test__fill_session_dict():
 
     session_dict = _fill_session_dict(session_dict, implant_data_dict, pos_dict, settings_dict['sessions'][0])
 
-    assert 'x' in session_dict['devices']['axona_led_tracker']
+    assert 'x' in session_dict['devices']['axona_led_tracker']['led_position_data']
     assert 'event_times' in session_dict['devices']['implant']['implant_data']
 
 def test_make_session():
@@ -171,10 +172,6 @@ def test__group_session_files():
     assert len(sorted_files) == len(cut_files)
     assert len(cut_files) == len(tetrode_files)
     assert len(tetrode_files) == len(pos_files)
-
-
-
-
 
 def test_batch_sessions():
 

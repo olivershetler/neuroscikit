@@ -1,16 +1,18 @@
 import os
 import sys
 
+
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
 
+from core.spatial import Position2D
 
 import cv2
 import numpy as np
 from scipy import signal
 # from library.maps.map_utils import _compute_resize_ratio, _interpolate_matrix, _gkern
 
-def occupancy_map(Arena, AnimalPosition) -> np.ndarray:
+def occupancy_map(position: Position2D, kernlen=None, std=None) -> np.ndarray:
 
     '''
         Computes the position, or occupancy map, which is a 2D numpy array
@@ -30,7 +32,7 @@ def occupancy_map(Arena, AnimalPosition) -> np.ndarray:
             Returns:
                 np.ndarray: occ_map_smoothed, occ_map_raw, coverage_map
     '''
-
+    pos_x, pos_y, pos_t, arena_size = position.x, position.y, position.t, (position.arena_height, position.arena_width)
 
     min_x = min(pos_x)
     max_x = max(pos_x)

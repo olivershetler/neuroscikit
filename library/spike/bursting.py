@@ -1,11 +1,21 @@
+import os
+import sys
 import numpy as np
 
-def find_burst(ts, maxisi=0.01, req_burst_spikes=2):
+PROJECT_PATH = os.getcwd()
+sys.path.append(PROJECT_PATH)
+
+from core.spikes import SpikeCluster, SpikeTrain
+from library.ensemble_space import Cell
+
+def find_burst(spike_class: Cell | SpikeTrain | SpikeCluster, maxisi=0.01, req_burst_spikes=2):
     """This function is used to calculate the percentage of bursting
 
     inputs:
     ts- the spike times
     maxisi- the maximum inter spike interval"""
+
+    ts = spike_class.event_times
 
     if type(ts) == list:
         ts = np.asarray(ts)
@@ -69,7 +79,17 @@ def find_burst(ts, maxisi=0.01, req_burst_spikes=2):
 
     # use the new burst spikes to calculate everything else as single spikes
 
-    return np.asarray(bursts), np.asarray(singlespikes)
+    # return np.asarray(bursts), np.asarray(singlespikes)
+    bursting = 100 * len(bursts) / (len(bursts) + len(singlespikes))
+
+    bursts_n_spikes_avg = _avg_spike_burst(ts, bursts, singlespikes)  # num of spikes on avg per burst
+
+    spike_class.stats_dict['spike']['bursting'] = bursting
+    spike_class.stats_dict['spike']['bursts_n_spikes_avg'] = bursts_n_spikes_avg
+
+    return bursting, bursts_n_spikes_avg
+
+
 
 def _find_consec(data):
     '''finds the consecutive numbers and outputs as a list'''
@@ -94,3 +114,17 @@ def _find_consec(data):
             if index == len(data) - 1:
                 consecutive_values.append(current_consecutive)
     return consecutive_values
+
+import numpy as np
+
+def _avg_spike_burst(ts, bursts, singleSpikes):
+    """calculates the average spikes per burst"""
+    total_n = np.arange(len(ts.flatten()))
+    burst_spikes = np.setdiff1d(total_n, singleSpikes)  # these are all indices belonging to the bursts
+
+    # divide by total number of burst events to return the output
+
+    if len(bursts) != 0:
+        return len(burst_spikes) / len(bursts)
+    else:
+        return np.NaN
