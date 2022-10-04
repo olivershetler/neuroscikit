@@ -62,6 +62,12 @@ class CellEnsemble(Workspace):
         assert isinstance(cell, Cell)
         self.cells.append(cell)
 
+    def get_label_ids(self):
+        ids = []
+        for cell in self.cells:
+            ids.append(cell.cluster.cluster_label)
+        return ids
+
 
 class Cell(Workspace):
     """

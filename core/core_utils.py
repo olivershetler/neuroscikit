@@ -72,7 +72,7 @@ def make_waveforms(channel_count, spike_count, samples_per_wave):
 
     for i in range(channel_count):
         for j in range(samples_per_wave):
-            waveforms[i,:,j] = np.random.randint(-20,20,size=spike_count).tolist()
+            waveforms[i,:,j] = np.random.randint(-20,20,size=spike_count).tolist() + sum(np.random.sample(size=3))
 
     return waveforms.tolist()
 

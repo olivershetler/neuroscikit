@@ -11,54 +11,6 @@ from core.core_utils import (
 )
 
 
-class Event():
-    def __init__(self, event_time, event_label, event_signal):
-        self.event_time = event_time
-        self.event_label = event_label
-        self.event_signal = event_signal
-
-        # check if signal is 2D or 1D (e.g. multiple channel waveforms or single channel signal)
-        if type(event_signal[0]) == list:
-            self.main_ind = 0
-            self.main_signal = 0
-        else:
-            self.main_ind = None
-            self.main_signal = None
-
-    def set_label(self, label):
-        self.event_label = label
-
-    def get_signal(self, ind):
-        # ind cannot be 0, must start at 1
-        assert ind != 0, 'channels are numbered starting at 1 not 0'
-        return self.waveforms[ind-1]
-
-    def get_peak_signal(self):
-        if self.main_ind == 0:
-            self.main_ind, self.main_signal = self._set_peak()
-            return self.main_ind, self.main_signal
-        else:
-            print('event signal is 1 dimensional')
-            return self.main_ind, self.main_signal
-
-    def _set_peak(self):
-        curr = 0
-        for i in range(len(self.event_signal)):
-            if max(self.event_signal[i]) > curr:
-                curr = i + 1
-        assert curr != 0, 'There is no 0 channel, make sure max(abs(channel waveform)) is not 0'
-        return curr, self.event_signal[curr-1]
-
-class Spike(Event):
-    def __init__(self, spike_time: float, cluster_label: int, waveforms: list):
-        super().__init__(spike_time, cluster_label, waveforms)
-        self.cluster = cluster_label
-        self.waveforms = waveforms
-        self.spike_time = spike_time
-
-        assert type(cluster_label) == int, 'Cluster label must be integer for index into waveforms'
-        assert type(spike_time) == float, 'Spike times is in format: ' + str(type(spike_time))
-
 class InputKeys():
     """
     Helper class with ordered channel keys and init dicts for class to class instantiation (e.g. SpikeTrainBatch() --> multiple SpikeTrain())
@@ -312,7 +264,7 @@ class SpikeCluster(): # collection of spike objects
                 input_dict[key] = self.waveforms[j][i]
                 spike_waveforms.append(self.waveforms[j][i])
             
-            instances.append(Spike(input_dict['spike_time'], input_dict['cluster_label'], spike_waveforms))
+            instances.append(Spike(input_dict['spike_time'], input_dict['cluster_label'], spike_waveforms, self))
 
         self.spike_objects = instances
 
@@ -365,6 +317,67 @@ class SpikeCluster(): # collection of spike objects
         return stats_dict
 
 
+
+class Event():
+    def __init__(self, event_time, event_label, event_signal):
+        self.event_time = event_time
+        self.event_label = event_label
+        self.event_signal = event_signal
+
+        # check if signal is 2D or 1D (e.g. multiple channel waveforms or single channel signal)
+        if type(event_signal[0]) == list:
+            self.main_ind = 0
+            self.main_signal = 0
+        else:
+            self.main_ind = None
+            self.main_signal = None
+
+    def set_label(self, label):
+        self.event_label = label
+
+    def get_signal(self, ind):
+        # ind cannot be 0, must start at 1
+        assert ind != 0, 'channels are numbered starting at 1 not 0'
+        return self.waveforms[ind-1]
+
+    def get_peak_signal(self):
+        if self.main_ind == 0:
+            self.main_ind, self.main_signal = self._set_peak()
+            return self.main_ind, self.main_signal
+        else:
+            print('event signal is 1 dimensional')
+            return self.main_ind, self.main_signal
+
+    def _set_peak(self):
+        curr = 0
+        for i in range(len(self.event_signal)):
+            if max(self.event_signal[i]) > curr:
+                curr = i + 1
+        assert curr != 0, 'There is no 0 channel, make sure max(abs(channel waveform)) is not 0'
+        return curr, self.event_signal[curr-1]
+
+class Spike(Event):
+    def __init__(self, spike_time: float, cluster_label: int, waveforms: list, cluster: SpikeCluster):
+        super().__init__(spike_time, cluster_label, waveforms)
+        self.cluster = cluster_label
+        self.waveforms = waveforms
+        self.spike_time = spike_time
+
+        assert type(cluster_label) == int, 'Cluster label must be integer for index into waveforms'
+        assert type(spike_time) == float, 'Spike times is in format: ' + str(type(spike_time))
+
+        self.dir_names =cluster.session_metadata.dir_names
+
+        self.stats_dict = self._init_stats_dict()
+
+    def _init_stats_dict(self):
+        stats_dict = {}
+
+        for dir in self.dir_names:
+            if dir != 'tests' and 'cache' not in dir:
+                stats_dict[dir] = {}
+
+        return stats_dict
 
 
 

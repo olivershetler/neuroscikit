@@ -59,4 +59,4 @@ def sort_spikes_by_cell(clusters: SpikeClusterBatch):
         good_clusters.append(indiv_clusters[j])
 
 
-    return good_cells, good_sorted_waveforms, good_clusters
+    return good_cells, good_sorted_waveforms, good_clusters, good_sorted_label_ids

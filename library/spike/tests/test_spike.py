@@ -18,12 +18,13 @@ from library.lib_test_utils import make_spike_cluster, make_spike_cluster_batch,
 def test_sort_cell_spike_times():
   
     cluster_batch = make_spike_cluster_batch()
-    good_sorted_cells, good_sorted_wavforms, good_clusters = sort_spikes_by_cell(cluster_batch)
+    good_sorted_cells, good_sorted_wavforms, good_clusters, good_label_ids = sort_spikes_by_cell(cluster_batch)
 
     assert type(good_sorted_cells) == list 
     assert type(good_sorted_wavforms) == list
     assert type(good_clusters) == list 
     assert isinstance(good_clusters[0], SpikeCluster) 
+    assert type(good_label_ids) == list
 
 def test_find_burst():
     cluster_batch = make_spike_cluster_batch()

@@ -29,6 +29,9 @@ from x_io.rw.axona.read_pos import (
 
 def make_study(directory, settings_dict: list):
 
+    if type(directory) != list:
+        directory = [directory]
+
     study_dict = _init_study_dict(settings_dict)
 
     cut_files, tetrode_files, pos_files = _grab_tetrode_cut_position_files(directory, pos_files=[], cut_files=[], tetrode_files=[])
@@ -194,6 +197,8 @@ def make_session(cut_file, tet_file, pos_file, settings_dict, ppm):
     session, session_classes = _create_session_classes(session_dict, settings_dict)
 
     # session.set_animal_id()
+
+    session.session_metadata.add_file_paths(cut_file, tet_file, pos_file, ppm)
 
     assert isinstance(session, Session)
 
