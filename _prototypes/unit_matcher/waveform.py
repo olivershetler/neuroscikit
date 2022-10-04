@@ -100,6 +100,9 @@ def waveform_features(waveform, delta):
     # skew / Fisher assymetry of the SD of the AP
     fd["f24"] = skew(d2_waveform)
 
+    for key, value in fd.items():
+        fd[key] = float(value)
+
     return fd
 
 def morphological_points(time_index, waveform, d_waveform, d2_waveform, delta):

@@ -135,3 +135,6 @@ delta = 10e3/sample_rate # in mliliseconds
 # ============================================================================ #
 
 # get stuff for spike module
+spike = {}
+for channel in range(1,5):
+    spike[f'ch{channel}'] = session_dict1[f'ch{channel}'][750]
