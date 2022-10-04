@@ -5,6 +5,7 @@ This module contains functions for extracting waveform features for each unit.
 - Functions for summarizing aggregated unit features.
 """
 
+import numpy as np
 
 # Utility functions for comparing distributions
 
