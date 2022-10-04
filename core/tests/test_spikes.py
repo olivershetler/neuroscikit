@@ -1,6 +1,7 @@
 import os
 import sys
 import numpy as np
+from library.batch_space import SpikeClusterBatch
 
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
@@ -104,6 +105,7 @@ def test_spike_object_class():
     ch_count = 8
     samples_per_wave = 50
     waveforms = make_waveforms(ch_count, len(event_times), samples_per_wave)
+    event_labels = make_clusters(event_times, 5)
 
     T = 2
     dt = .02
@@ -121,7 +123,10 @@ def test_spike_object_class():
         input_dict1[key] = waveforms[i][idx]
         wf.append(waveforms[i][idx])
 
-    spike_object = Spike(input_dict1['spike_time'], input_dict1['cluster_label'], wf)
+    ses = Session()
+    cluster = SpikeCluster({'duration': int(T), 'sample_rate': float(1/dt), 'event_times': event_times, 'cluster_label': int(idx+1), 'channel_1':waveforms[0]}, session_metadata=ses.session_metadata)
+
+    spike_object = Spike(input_dict1['spike_time'], input_dict1['cluster_label'], wf, cluster)
 
     # label = spike_object.get_cluster_label()
     chan, _ = spike_object.get_peak_signal()

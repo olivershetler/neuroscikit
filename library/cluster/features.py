@@ -5,11 +5,11 @@ PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
 
 from library.batch_space import SpikeClusterBatch
-from core.spikes import SpikeCluster
+from core.spikes import SpikeCluster, Spike
 
 import numpy as np
 
-def feature_energy(spike_cluster: SpikeCluster | SpikeClusterBatch):
+def feature_energy(spike_cluster: Spike | SpikeCluster | SpikeClusterBatch):
     """
     Normlized energy calculation discussed from:
     Quantitative measures of cluster quality for use in extracellular recordings by Redish et al.
@@ -25,8 +25,11 @@ def feature_energy(spike_cluster: SpikeCluster | SpikeClusterBatch):
     """
     if type(spike_cluster.waveforms) == list:
         data = np.array(spike_cluster.waveforms)
-    else: 
+    else:
         data = spike_cluster.waveforms
+
+    if isinstance(spike_cluster, Spike):
+        data = data.reshape((data.shape[0], 1, data.shape[1]))
 
     # energy sqrt of the sum of the squares of each point of the waveform, divided by number of samples in waveform
     # energy and first principal component coefficient
@@ -42,7 +45,7 @@ def feature_energy(spike_cluster: SpikeCluster | SpikeClusterBatch):
 
     return E.T
 
-def feature_wave_PCX(spike_cluster: SpikeCluster | SpikeClusterBatch, iPC=1, norm=True):
+def feature_wave_PCX(spike_cluster: Spike | SpikeCluster | SpikeClusterBatch, iPC=1, norm=True):
     """Creates the principal components for the waveforms
 
     Args:
@@ -56,8 +59,11 @@ def feature_wave_PCX(spike_cluster: SpikeCluster | SpikeClusterBatch, iPC=1, nor
     """
     if type(spike_cluster.waveforms) == list:
         data = np.array(spike_cluster.waveforms)
-    else: 
+    else:
         data = spike_cluster.waveforms
+
+    if isinstance(spike_cluster, Spike):
+        data = data.reshape((data.shape[0], 1, data.shape[1]))
 
     nCh, nSpikes, nSamp = data.shape
 
@@ -90,7 +96,7 @@ def feature_wave_PCX(spike_cluster: SpikeCluster | SpikeClusterBatch, iPC=1, nor
 
     return wavePCData
 
-def create_features(spike_cluster: SpikeCluster | SpikeClusterBatch, featuresToCalculate=['energy', 'wave_PCX!1']):
+def create_features(spike_cluster: Spike | SpikeCluster | SpikeClusterBatch, featuresToCalculate=['energy', 'wave_PCX!1']):
     """Creates the features to be analyzed
 
     Args:
@@ -149,6 +155,10 @@ def _wave_PCA(cv):
     # standardized covariance matrix
     cvn = np.divide(cv, np.multiply(sd, sd.T))
 
+    if len(np.where(cvn != cvn)[0]) > 0:
+        print('Nan in covariance matrix, replacing with 0 and proceeding')
+        cvn[cvn != cvn] = 0
+        print(cvn)
     u, ev, pc = np.linalg.svd(cvn)
 
     # the pc is transposed in the matlab version

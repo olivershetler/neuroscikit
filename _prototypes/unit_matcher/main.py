@@ -129,11 +129,11 @@ def match_session_units(session_1 : Session, session_2: Session):
 
     best_matches = {0:0, 1:2, 2:3, 3:4, 4:5, 5:6, 6:7, 7:0, 8:0, 9:0, 10:0, 11:0}
 
-    print(np.unique(session_1.session_data.data['cell_ensemble'].get_label_ids()))
-    print(np.unique(session_2.session_data.data['cell_ensemble'].get_label_ids()))
+    # print(np.unique(session_1.session_data.data['cell_ensemble'].get_label_ids()))
+    # print(np.unique(session_2.session_data.data['cell_ensemble'].get_label_ids()))
 
-    print(np.unique(session_1.session_data.data['spike_cluster'].cluster_labels))
-    print(np.unique(session_2.session_data.data['spike_cluster'].cluster_labels))
+    # print(np.unique(session_1.session_data.data['spike_cluster'].cluster_labels))
+    # print(np.unique(session_2.session_data.data['spike_cluster'].cluster_labels))
 
     cut_file_path = session_2.session_metadata.file_paths['cut']
 
