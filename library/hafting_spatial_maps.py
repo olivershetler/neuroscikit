@@ -26,7 +26,7 @@ class SpatialSpikeTrain2D():
         self.spike_obj, self.position = self._read_input_dict()
         self.spike_times = self.spike_obj.event_times
         self.t, self.x, self.y = self.position.t, self.position.x, self.position.y
-        
+
         assert len(self.t) == len(self.x) == len(self.y)
 
         if 'session_metadata' in kwargs:
@@ -42,7 +42,7 @@ class SpatialSpikeTrain2D():
             self.speed_bounds = kwargs['speed_bounds']
         else:
             self.speed_bounds = (0, 100)
-        
+
 
         self.spike_x, self.spike_y, self.new_spike_times = self.get_spike_positions()
 
@@ -51,11 +51,11 @@ class SpatialSpikeTrain2D():
         self.stats_dict = self._init_stats_dict()
 
     def _read_input_dict(self):
-        spike_obj = None 
-        position = None 
+        spike_obj = None
+        position = None
 
         assert ('spike_train' not in self._input_dict and 'cell' in self._input_dict) or ('spike_train' in self._input_dict and 'cell' not in self._input_dict)
-        
+
         if 'spike_train' in self._input_dict:
             spike_obj = self._input_dict['spike_train']
             assert isinstance(spike_obj, SpikeTrain)
@@ -110,17 +110,17 @@ class SpatialSpikeTrain2D():
         #     spike_array = np.array(self.spike_times)
         # else:
         #     spike_array = self.spike_times
-        # delta_t = self.t[1] - self.t[0]
+        # time_step_t = self.t[1] - self.t[0]
         # spike_index = []
         # for i in range(len(self.t)):
         #     id_set_1 = np.where(spike_array >= self.t[i])[0]
-        #     id_set_2 = np.where(spike_array < self.t[i] + delta_t)[0]
+        #     id_set_2 = np.where(spike_array < self.t[i] + time_step_t)[0]
         #     for id in id_set_1:
         #         if id in id_set_2 and id not in spike_index:
         #             spike_index.append(id)
 
         # # def _match(time, time_index, spike_time):
-        # #     if spike_time >= time and spike_time < time + delta_t:
+        # #     if spike_time >= time and spike_time < time + time_step_t:
         # #         return time_index
 
         # # spike_index = list(filter(_match(self.t, range(len(self.t)), self.spike_times)))
@@ -175,7 +175,7 @@ class HaftingOccupancyMap():
             self.session_metadata = kwargs['session_metadata']
         else:
             self.session_metadata = spatial_spike_train.session_metadata
-        
+
         self.smoothing_factor = self.session_metadata.session_object.smoothing_factor
 
         if 'smoothing_factor' in kwargs:
@@ -254,7 +254,7 @@ class HaftingSpikeMap():
             self.session_metadata = kwargs['session_metadata']
         else:
             self.session_metadata = spatial_spike_train.session_metadata
-        
+
         self.smoothing_factor = self.session_metadata.session_object.smoothing_factor
 
         if 'smoothing_factor' in kwargs:
@@ -321,7 +321,7 @@ class HaftingSpikeMap():
 
 class HaftingRateMap():
     def __init__(self, spatial_spike_train: SpatialSpikeTrain2D, **kwargs):
-        
+
         self.occ_map = spatial_spike_train.get_map('occupancy')
         if self.occ_map == None:
             self.occ_map = HaftingOccupancyMap(spatial_spike_train)
@@ -341,7 +341,7 @@ class HaftingRateMap():
             self.session_metadata = kwargs['session_metadata']
         else:
             self.session_metadata = spatial_spike_train.session_metadata
-        
+
         self.smoothing_factor = self.session_metadata.session_object.smoothing_factor
 
         if 'smoothing_factor' in kwargs:
@@ -382,9 +382,9 @@ class HaftingRateMap():
             print('No smoothing factor provided, proceeding with value of 3')
             occ_map_data, raw_occ, coverage = occupancy_map.get_occupancy_map(3)
             spike_map_data = spike_map.get_spike_map(3)
-            
-        
-        
+
+
+
         assert occ_map_data.shape == spike_map_data.shape
 
         rate_map_raw = _compute_unmasked_ratemap(occ_map_data, spike_map_data)

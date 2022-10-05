@@ -1097,7 +1097,7 @@ set_template = {
     "colactive_4": ['int'],
     "tracked_spots": ['int'],
     "colmap_algorithm": ['int'],
-    "cluster_delta": ['int'],
+    "cluster_time_step": ['int'],
     "tracker_pixels_per_metre": ['int'],
     "two_cameras": ['int'],
     "xcoordsrc": ['int'],

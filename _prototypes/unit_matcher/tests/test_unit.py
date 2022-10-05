@@ -11,8 +11,8 @@ from _prototypes.unit_matcher.unit import (
     ,jensen_shannon_distance
 )
 
-P = np.random.rand(150, 24)
-Q = np.random.rand(190, 24)
+P = np.random.rand(5000, 24)
+Q = np.random.rand(5000, 24) + 0.3
 
 def test_multivariate_kullback_leibler_divergence():
     print(multivariate_kullback_leibler_divergence(P, Q))

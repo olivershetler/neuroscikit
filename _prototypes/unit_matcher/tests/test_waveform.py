@@ -23,42 +23,42 @@ from matplotlib.pyplot import plot, legend, show, axvline, axhline
 import numpy as np
 
 waveform = read.waveform
-delta = read.delta
+time_step = read.time_step
 
 # Domain Conversion Functions
 
 def test_time_index():
-    assert len(waveform) == len(time_index(waveform, delta))
-    plot(time_index(waveform, delta), waveform)
+    assert len(waveform) == len(time_index(waveform, time_step))
+    plot(time_index(waveform, time_step), waveform)
 
 def test_derivative():
-    assert len(waveform) == len(derivative(waveform, delta))
-    plot(time_index(waveform, delta), derivative(waveform, delta), linestyle='--')
+    assert len(waveform) == len(derivative(waveform, time_step))
+    plot(time_index(waveform, time_step), derivative(waveform, time_step), linestyle='--')
 
 def test_derivative2():
-    assert len(waveform) == len(derivative2(waveform, delta))
-    #plot(time_index(waveform, delta), derivative2(waveform, delta), linestyle=':')
+    assert len(waveform) == len(derivative2(waveform, time_step))
+    #plot(time_index(waveform, time_step), derivative2(waveform, time_step), linestyle=':')
 
 
 # Feature Utility Functions
 
 @pytest.mark.skip(reason="Tested implicitly through morphological_points")
 def test_local_extrema():
-    d_waveform = derivative(waveform, delta)
-    extrema = local_extrema(waveform, delta)
-    d_extrema = local_extrema(d_waveform, delta)
+    d_waveform = derivative(waveform, time_step)
+    extrema = local_extrema(waveform, time_step)
+    d_extrema = local_extrema(d_waveform, time_step)
     for e in extrema:
-        plot(time_index(waveform, delta)[e], d_waveform[e], 'o')
+        plot(time_index(waveform, time_step)[e], d_waveform[e], 'o')
     for e in d_extrema:
-        axvline(time_index(waveform, delta)[e], linestyle=':')
+        axvline(time_index(waveform, time_step)[e], linestyle=':')
     show()
 
 # Key morphological point objects
 
 def test_point():
-    t = time_index(waveform, delta)
-    d_waveform = derivative(waveform, delta)
-    d2_waveform = derivative2(waveform, delta)
+    t = time_index(waveform, time_step)
+    d_waveform = derivative(waveform, time_step)
+    d2_waveform = derivative2(waveform, time_step)
     p = Point(10, t, waveform, d_waveform, d2_waveform)
     assert p.t == t[10]
     assert p.v == waveform[10]
@@ -73,11 +73,11 @@ def test_point():
 
 
 def test_morphological_points():
-    t = time_index(waveform, delta)
-    d_waveform = derivative(waveform, delta)
-    d2_waveform = derivative2(waveform, delta)
+    t = time_index(waveform, time_step)
+    d_waveform = derivative(waveform, time_step)
+    d2_waveform = derivative2(waveform, time_step)
 
-    p1, p2, p3, p4, p5, p6 = morphological_points(t, waveform, d_waveform, d2_waveform, delta)
+    p1, p2, p3, p4, p5, p6 = morphological_points(t, waveform, d_waveform, d2_waveform, time_step)
 
     # Plot the waveform and the morphological points
     plot(t, waveform)
@@ -94,5 +94,5 @@ def test_morphological_points():
 # Main Feature Extraction Function
 
 def test_waveform_features():
-    feature_vector = waveform_features(waveform, delta)
+    feature_vector = waveform_features(waveform, time_step)
     print(feature_vector)

@@ -6,6 +6,7 @@ Functions for extracting features for a single spike (n-dimensional waveforms).
 """
 
 from .waveform import waveform_features
+from core.spikes import Spike, SpikeCluster
 
 def spike_features(spike):
     """
@@ -67,7 +68,7 @@ def reduce_dimensionality(features):
 # the features for the channel with the largest peak amplitude.
 # This will eventually be updated to take the features for all channels
 # and then reduce the dimensionality of the using to-be-determined criteria.
-def waveform_level_features(spike:dict, delta):
+def waveform_level_features(spike:dict, time_step):
     """
     Extract waveform level features from a spike waveform.
 
@@ -81,9 +82,7 @@ def waveform_level_features(spike:dict, delta):
     dict
         A dictionary of the waveform level features of the form {feature_name: value,...}
     """
-    #wf = lambda item: (item[0], waveform_features(item[1]))
-    #return dict(map(wf, spike.items()))
-    spike_peaks = dict(map(lambda item: (item[0], max(item[1])), spike.items()))
+    spike_peaks = dict(map(lambda item: (item[0], max(item[1])), spike.waveforms.items()))
     channel_with_max_peak = max(spike_peaks, key=spike_peaks.get)
-    return waveform_features(spike[channel_with_max_peak], delta)
+    return waveform_features(spike[channel_with_max_peak], time_step)
 

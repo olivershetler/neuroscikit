@@ -1097,7 +1097,7 @@ set_example = {
     'colactive_4': '0',
     'tracked_spots': '1',
     'colmap_algorithm': '1',
-    'cluster_delta': '10',
+    'cluster_time_step': '10',
     'tracker_pixels_per_metre': '300',
     'two_cameras': '0',
     'xcoordsrc': '0',

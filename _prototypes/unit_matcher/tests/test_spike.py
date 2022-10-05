@@ -9,10 +9,10 @@ import _prototypes.unit_matcher.tests.read as read
 from _prototypes.unit_matcher.spike import waveform_level_features
 
 spike = read.spike
-delta = read.delta
+time_step = read.time_step
 
 def test_waveform_level_features():
-    features = waveform_level_features(spike, delta)
+    features = waveform_level_features(spike, time_step)
     assert features is not None
     assert type(features) == dict
     for key, value in features.items():

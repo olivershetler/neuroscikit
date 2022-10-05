@@ -5,7 +5,7 @@ Functions that take a single waveform as an input and return a feature.
 import numpy as np
 from operator import add
 
-def waveform_features(waveform, delta):
+def waveform_features(waveform, time_step):
     """
     Calculate the features of a waveform.
     Parameters
@@ -23,11 +23,11 @@ def waveform_features(waveform, delta):
     Caro-Martín, Carmen Rocío, José M. Delgado-García, Agnès Gruart, and R. Sánchez-Campusano. “Spike Sorting Based on Shape, Phase, and Distribution Features, and K-TOPS Clustering with Validity and Error Indices.” Scientific Reports 8, no. 1 (December 12, 2018): 17796. https://doi.org/10.1038/s41598-018-35491-4.
     """
     # get domains
-    t = time_index(waveform, delta)
-    d_waveform = derivative(waveform, delta)
-    d2_waveform = derivative2(waveform, delta)
+    t = time_index(waveform, time_step)
+    d_waveform = derivative(waveform, time_step)
+    d2_waveform = derivative2(waveform, time_step)
     # get morphological points
-    p1, p2, p3, p4, p5, p6 = morphological_points(t, waveform, d_waveform, d2_waveform, delta)
+    p1, p2, p3, p4, p5, p6 = morphological_points(t, waveform, d_waveform, d2_waveform, time_step)
 
     # FEATURE EXTRACTION
     fd = dict() # feature dictionary
@@ -46,7 +46,7 @@ def waveform_features(waveform, delta):
     # NOTE: This feature is NOT in the original paper
     # in the original paper, f4 is the correlation between
     # the waveform and a reference waveform (we don't use reference waveforms).
-    fd["f4"] = area_under_curve(waveform[p1.i:p5.i], delta)/(p5.t - p1.t)
+    fd["f4"] = area_under_curve(waveform[p1.i:p5.i], time_step)/(p5.t - p1.t)
     # logarithm of the positve deflection of the FD of the AP
     # NOTE: This feature is NOT in the original paper
     # in the original paper, f5 is the logarithm of the term below
@@ -105,7 +105,7 @@ def waveform_features(waveform, delta):
 
     return fd
 
-def morphological_points(time_index, waveform, d_waveform, d2_waveform, delta):
+def morphological_points(time_index, waveform, d_waveform, d2_waveform, time_step):
     """
     Find the key morphological points in a waveform.
 
@@ -131,7 +131,7 @@ def morphological_points(time_index, waveform, d_waveform, d2_waveform, delta):
     waveform_point = lambda i: Point(i, time_index, waveform, d_waveform, d2_waveform)
 
     # get morphological points in the voltage domain
-    voltage_extrema_indexes = local_extrema(waveform, delta)
+    voltage_extrema_indexes = local_extrema(waveform, time_step)
     voltage_extrema_values = [waveform[i] for i in voltage_extrema_indexes]
     x = int(np.argmax(voltage_extrema_values))
     # find principal voltage peak
@@ -145,7 +145,7 @@ def morphological_points(time_index, waveform, d_waveform, d2_waveform, delta):
 
     # get morphological points in the rate domain
     def steepest_point_in_region(start, end):
-        rate_extrema_indexes = local_extrema(d_waveform, delta)
+        rate_extrema_indexes = local_extrema(d_waveform, time_step)
         r = lambda start, end: list(filter(lambda i: i >= start.i and i <= end.i, rate_extrema_indexes))
         v = lambda indexes: [abs(d_waveform[i]) for i in indexes]
         indexes = r(start, end)
@@ -230,18 +230,18 @@ def kurtosis(data):
     n = len(data)
     return np.sum((data - mean)**4) / (n * std**4)
 
-def area_under_curve(waveform, delta):
-    return np.trapz(waveform, dx=delta)
+def area_under_curve(waveform, time_step):
+    return np.trapz(waveform, dx=time_step)
 
 def filter_indexes(extrema_indexes, start, end):
     # get the indexes of the extrema in the region
     return list(filter(lambda i: start <= i <= end, extrema_indexes))
 
-def local_extrema(timeseries, delta):
+def local_extrema(timeseries, time_step):
     is_extremum = lambda index: (timeseries[index] > timeseries[index - 1] and timeseries[index] >= timeseries[index + 1]) or (timeseries[index] < timeseries[index - 1] and timeseries[index] <= timeseries[index + 1])
     return [0] + list(filter(is_extremum, range(1, len(timeseries) - 1))) + [len(timeseries) - 1]
 
-def zero_crossings(timeseries, delta):
+def zero_crossings(timeseries, time_step):
     """
     Find the indexes of the points at or near zero crossings in a waveform.
 
@@ -256,7 +256,7 @@ def zero_crossings(timeseries, delta):
     ----------
     waveform : array_like
         The waveform to be analyzed.
-    delta : float
+    time_step : float
         The time between samples in the waveform.
 
     Returns
@@ -268,33 +268,33 @@ def zero_crossings(timeseries, delta):
 
 # functions for getting waveform domains.
 
-def derivative2(waveform, delta):
+def derivative2(waveform, time_step):
     """
     Calculate the second derivative of a waveform.
     """
-    return derivative(derivative(waveform, delta), delta)
+    return derivative(derivative(waveform, time_step), time_step)
 
-def derivative(waveform, delta):
+def derivative(waveform, time_step):
     """
     Calculate the derivative of a waveform.
     """
-    differential = lambda i: _differential(i, waveform, delta)
+    differential = lambda i: _differential(i, waveform, time_step)
     return list(map(differential, range(len(waveform))))
 
-def _differential(i, waveform, delta):
+def _differential(i, waveform, time_step):
     if i == 0:
-        return (waveform[i+1] - waveform[i]) / delta
+        return (waveform[i+1] - waveform[i]) / time_step
     elif i == len(waveform)-1:
-        return (waveform[i] - waveform[i-1]) / delta
+        return (waveform[i] - waveform[i-1]) / time_step
     else:
         try:
-            return float((waveform[i+1] - waveform[i-1]) / (2 * delta))
+            return float((waveform[i+1] - waveform[i-1]) / (2 * time_step))
         except IndexError:
             raise IndexError(f"Index {i} out of range (0,{len(waveform)})")
 
-def time_index(waveform, delta):
+def time_index(waveform, time_step):
     """
     Return the time index for a waveform.
     """
-    return list(map(lambda i: float(i * delta), range(len(waveform))))
+    return list(map(lambda i: float(i * time_step), range(len(waveform))))
     return duration / len(waveform)

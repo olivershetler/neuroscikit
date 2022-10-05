@@ -1097,7 +1097,7 @@ blank_set_dict = {
     'colactive_4': None,
     'tracked_spots': None,
     'colmap_algorithm': None,
-    'cluster_delta': None,
+    'cluster_time_step': None,
     'tracker_pixels_per_metre': None,
     'two_cameras': None,
     'xcoordsrc': None,

@@ -10,6 +10,7 @@ import numpy as np
 from _prototypes.unit_matcher.spike import (
     spike_features
 )
+from core.spikes import SpikeCluster
 
 # Utility functions for comparing distributions
 
@@ -36,11 +37,15 @@ def jensen_shannon_distance(P:np.array, Q:np.array):
     else:
         raise ValueError(f"Dimensionality of P ({P_dimensions}) and Q ({Q_dimensions}) must be greater than 0")
 
-    jensen_shannen_divergence = (_kldiv(P, M) + _kldiv(Q, M))/2
+    kl_pm = _kldiv(P, M)
+    print(f"kl_pm: {kl_pm}")
+    kl_qm = _kldiv(Q, M)
+    print(f"kl_qm: {kl_qm}")
+
+    jensen_shannen_divergence = (kl_pm+kl_qm)/2
     print("JSD", jensen_shannen_divergence)
 
     return np.sqrt(jensen_shannen_divergence)
-
 
 def compute_mixture(P:np.array, Q:np.array):
     """Compute the mixture distribution between two probability distributions.
@@ -57,7 +62,6 @@ def compute_mixture(P:np.array, Q:np.array):
     m = lambda P, Q: (P[randint(0, P_sample_size-1),:] + Q[randint(0, Q_sample_size-1),:])/2
     M = np.array([m(P, Q) for _ in range(max(P_sample_size, Q_sample_size))])
     return M
-
 
 #TODO test
 def kullback_leibler_divergence(P, Q):
@@ -113,16 +117,19 @@ def multivariate_kullback_leibler_divergence(x, y):
 
     # There is a mistake in the paper. In Eq. 14, the right side misses a negative sign
     # on the first term of the right hand side.
-    return np.log(s/r).sum() * d / n + np.log(m / (n - 1.))
+    return float(max(np.log(s/r).sum() * d / n + np.log(m / (n - 1.)), 0.1))
 
-def spike_level_features(unit, delta):
+
+def spike_level_feature_array(unit: SpikeCluster, time_step):
     """Compute features for each spike in a unit.
+
+    This function mutates a unit (SpikeCluster) by adding a spike-level feature dictionary to the unit.features attribute.
 
     Input
     -----
     unit : 2D array (spike_size, dimensions)
         Waveforms for each spike in a unit.
-    delta : float
+    time_step : float
         Time between samples in the waveform.
 
     Output
@@ -130,7 +137,11 @@ def spike_level_features(unit, delta):
     features : dict
         Dictionary of features for each spike in the unit.
     """
-    features = {}
-    for i, spike in enumerate(unit):
-        features[i] = spike_features(spike, delta)
-    return features
+    spikes = unit.get_spike_object_instances()
+    #features = {}
+    feature_array = []
+    for spike in spikes:
+        #spike.features = spike_features(spike, time_step)
+        feature_vector = list(spike.features.values())
+        feature_array.append(feature_vector)
+    return np.array(feature_array)

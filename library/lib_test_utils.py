@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timetime_step
 from random import sample
 import numpy as np
 import os, sys
@@ -67,7 +67,7 @@ def make_spike_cluster():
 
     ses = Session()
     input_dict1['session_metadata'] = ses.session_metadata
-    
+
     ses.make_class(SpikeTrain, input_dict1)
 
     spike_cluster = SpikeCluster(input_dict1)

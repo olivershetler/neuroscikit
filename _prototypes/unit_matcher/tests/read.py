@@ -131,7 +131,7 @@ animal_dict[1] = session_dict2
 # get stuff for waveform module
 waveform = session_dict1['ch4'][750]
 sample_rate = sample_rate1 # in Hz
-delta = 10e3/sample_rate # in mliliseconds
+time_step = 10e3/sample_rate # in mliliseconds
 
 # ============================================================================ #
 

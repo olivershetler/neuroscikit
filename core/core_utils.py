@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timetime_step
 from random import sample
 import numpy as np
 
@@ -13,7 +13,7 @@ def make_hms_index_from_rate(start_time, sample_length, sample_rate):
         start_time = datetime.strptime(start_time, '%H:%M:%S')
     time_index = [start_time]
     for i in range(1,sample_length):
-        time_index.append(time_index[-1] + timedelta(seconds=1/sample_rate))
+        time_index.append(time_index[-1] + timetime_step(seconds=1/sample_rate))
     str_time_index = [time.strftime('%H:%M:%S.%f') for time in time_index]
     return str_time_index
 
