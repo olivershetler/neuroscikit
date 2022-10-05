@@ -87,7 +87,7 @@ with open(session2_cut_path, 'r') as cut_file2, open(session2_tet_path, 'rb') as
 # Make dictionaries for core classes
 
 sample_length1 =  tetrode_data1[-1]['duration']
-sample_rate1 = tetrode_data1[-1]['timebase']
+sample_rate1 = tetrode_data1[-1]['sample_rate']
 
 session_dict1 = {
     'spike_times': tetrode_data1[0].squeeze().tolist(),
@@ -99,7 +99,7 @@ session_dict1 = {
 }
 
 sample_length2 =  tetrode_data2[-1]['duration']
-sample_rate2 = tetrode_data2[-1]['timebase']
+sample_rate2 = tetrode_data2[-1]['sample_rate']
 
 session_dict2 = {
     'spike_times': tetrode_data2[0].squeeze().tolist(),

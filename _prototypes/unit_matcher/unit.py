@@ -63,12 +63,10 @@ def compute_mixture(P:np.array, Q:np.array):
     M = np.array([m(P, Q) for _ in range(max(P_sample_size, Q_sample_size))])
     return M
 
-#TODO test
 def kullback_leibler_divergence(P, Q):
 
     return np.sum(list(filter(lambda x: not np.isnan(x), P * np.log(P/Q))))
 
-#TODO test
 def multivariate_kullback_leibler_divergence(x, y):
     """Compute the Kullback-Leibler divergence between two multivariate samples.
     Parameters
@@ -90,7 +88,8 @@ def multivariate_kullback_leibler_divergence(x, y):
     Theory, 2008.
     Adapted from https://gist.github.com/atabakd/ed0f7581f8510c8587bc2f41a094b518
     """
-    from scipy.spatial import cKDTree as KDTree
+    #from scipy.spatial import cKDTree as KDTree
+    from sklearn.neighbors import KDTree
 
     # Check the dimensions are consistent
     x = np.atleast_2d(x)
@@ -107,18 +106,21 @@ def multivariate_kullback_leibler_divergence(x, y):
 
     # Build a KD tree representation of the samples and find the nearest
     # neighbour of each point in x.
-    xtree = KDTree(x)
-    ytree = KDTree(y)
+    xtree = KDTree(x, metric='chebyshev')
+    ytree = KDTree(y, metric='chebyshev')
 
     # Get the first two nearest neighbours for x, since the closest one is the
     # sample itself.
-    r = xtree.query(x, k=2, eps=.01, p=2)[0][:,1]
-    s = ytree.query(x, k=1, eps=.01, p=2)[0]
+    #r = xtree.query(x, k=2, eps=.01, p=2)[0][:,1]
+    r = xtree.query(x, k=2)[0][:,1].flatten()
+    print(f"r.shape: {r.shape}")
+    #s = ytree.query(x, k=1, eps=.01, p=2)[0]
+    s = ytree.query(x, k=1)[0].flatten()
+    print(f"s.shape: {s.shape}")
 
     # There is a mistake in the paper. In Eq. 14, the right side misses a negative sign
     # on the first term of the right hand side.
-    return float(max(np.log(s/r).sum() * d / n + np.log(m / (n - 1.)), 0.1))
-
+    return float(max(sum(np.log(s/r)) * d / n + np.log(m / (n - 1.)), 0.1))
 
 def spike_level_feature_array(unit: SpikeCluster, time_step):
     """Compute features for each spike in a unit.
