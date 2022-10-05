@@ -28,5 +28,5 @@ def test_localize_source():
     pass
 
 @pytest.mark.skip(reason="Not implemented yet")
-def test_extract_spike_features():
+def test_spike_features():
     pass

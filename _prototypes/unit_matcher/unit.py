@@ -7,6 +7,10 @@ This module contains functions for extracting waveform features for each unit.
 
 import numpy as np
 
+from _prototypes.unit_matcher.spike import (
+    spike_features
+)
+
 # Utility functions for comparing distributions
 
 #TODO test
@@ -22,7 +26,8 @@ def jensen_shannon_distance(P:np.array, Q:np.array):
     Q_sample_size, Q_dimensions = Q.shape
     assert P_dimensions == Q_dimensions, f"Dimensionality of P ({P_dimensions}) and Q ({Q_dimensions}) must be equal"
     dimensions = P_dimensions
-    M = 0.5 * (P + Q)
+
+    M = compute_mixture(P, Q)
 
     if dimensions == 1:
         _kldiv = lambda A, B: np.sum([v for v in A * np.log(A/B) if not np.isnan(v)])
@@ -31,8 +36,28 @@ def jensen_shannon_distance(P:np.array, Q:np.array):
     else:
         raise ValueError(f"Dimensionality of P ({P_dimensions}) and Q ({Q_dimensions}) must be greater than 0")
 
-    result = np.sqrt(0.5 * (_kldiv(P, M) +_kldiv(Q, M)))
-    return np.sqrt(result)
+    jensen_shannen_divergence = (_kldiv(P, M) + _kldiv(Q, M))/2
+    print("JSD", jensen_shannen_divergence)
+
+    return np.sqrt(jensen_shannen_divergence)
+
+
+def compute_mixture(P:np.array, Q:np.array):
+    """Compute the mixture distribution between two probability distributions.
+
+    Input
+    -----
+    P, Q : 2D arrays (sample_size, dimensions)
+        Probability distributions of equal length that sum to 1
+    """
+    P_sample_size, P_dimensions = P.shape
+    Q_sample_size, Q_dimensions = Q.shape
+
+    from random import randint
+    m = lambda P, Q: (P[randint(0, P_sample_size-1),:] + Q[randint(0, Q_sample_size-1),:])/2
+    M = np.array([m(P, Q) for _ in range(max(P_sample_size, Q_sample_size))])
+    return M
+
 
 #TODO test
 def kullback_leibler_divergence(P, Q):
@@ -72,9 +97,12 @@ def multivariate_kullback_leibler_divergence(x, y):
 
     assert(x_dimensions == y_dimensions), f"Both samples must have the same number of dimensions. x has {x_dimensions} dimensions, while y has {y_dimensions} dimensions."
 
+    d = x_dimensions
+    n = x_sample_size
+    m = y_sample_size
 
-    # Build a KD tree representation of the samples and find the nearest neighbour
-    # of each point in x.
+    # Build a KD tree representation of the samples and find the nearest
+    # neighbour of each point in x.
     xtree = KDTree(x)
     ytree = KDTree(y)
 
@@ -85,4 +113,24 @@ def multivariate_kullback_leibler_divergence(x, y):
 
     # There is a mistake in the paper. In Eq. 14, the right side misses a negative sign
     # on the first term of the right hand side.
-    return -np.log(r/s).sum() * d / n + np.log(m / (n - 1.))
+    return np.log(s/r).sum() * d / n + np.log(m / (n - 1.))
+
+def spike_level_features(unit, delta):
+    """Compute features for each spike in a unit.
+
+    Input
+    -----
+    unit : 2D array (spike_size, dimensions)
+        Waveforms for each spike in a unit.
+    delta : float
+        Time between samples in the waveform.
+
+    Output
+    ------
+    features : dict
+        Dictionary of features for each spike in the unit.
+    """
+    features = {}
+    for i, spike in enumerate(unit):
+        features[i] = spike_features(spike, delta)
+    return features

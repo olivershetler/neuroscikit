@@ -7,7 +7,7 @@ Functions for extracting features for a single spike (n-dimensional waveforms).
 
 from .waveform import waveform_features
 
-def extract_spike_features(spike):
+def spike_features(spike):
     """
     Extract all the features for a single spike.
 

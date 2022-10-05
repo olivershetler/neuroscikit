@@ -1,5 +1,6 @@
 import os
 import sys
+import numpy as np
 
 # Set up paths
 # (assumes neuroscikit_test_data folder is next to neuroscikit folder)
@@ -138,3 +139,9 @@ delta = 10e3/sample_rate # in mliliseconds
 spike = {}
 for channel in range(1,5):
     spike[f'ch{channel}'] = session_dict1[f'ch{channel}'][750]
+
+# ============================================================================ #
+
+# get stuff for unit module
+
+
