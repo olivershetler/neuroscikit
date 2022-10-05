@@ -5,8 +5,7 @@ sys.path.append(PROJECT_PATH)
 
 
 
-from library.animal import Animal
-from library.workspace import Study
+from library.study_space import Animal, Study
 
 from _prototypes.wave_form_sorter.sort_cell_spike_times import sort_cell_spike_times
 from _prototypes.wave_form_sorter.neuron_waveform_template import waveform_mean

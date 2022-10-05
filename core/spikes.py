@@ -199,7 +199,6 @@ class SpikeCluster(): # collection of spike objects
 
         self.duration, self.sample_rate, self.cluster_label, self.event_times, self.waveforms, self.session_metadata = self._read_input_dict()
 
-
         if 'session_metadata' in kwargs:
             if self.session_metadata != None: 
                 print('Ses metadata is in the input dict and init fxn, init fnx will override')
@@ -207,7 +206,7 @@ class SpikeCluster(): # collection of spike objects
 
         # self._make_spike_object_instances()
 
-        assert type(self.cluster_label) == int, 'Cluster labels missing'
+        assert type(self.cluster_label) == int, 'Cluster label missing'
         assert len(self.event_times) > 0, 'Spike times missing'
         assert len(self.waveforms) <= 8 and len(self.waveforms) > 0, 'Cannot have fewer than 0 or more than 8 channels'
         # self.time_index = make_seconds_index_from_rate(self.duration, self.sample_rate)
@@ -254,15 +253,21 @@ class SpikeCluster(): # collection of spike objects
             input_dict['sample_rate'] = self.sample_rate
             input_dict['cluster_label'] = self.cluster_label
             if len(self.event_times) > 0:
-                input_dict['spike_time'] = self.event_times[i]
+                if type(self.event_times[i]) == list:
+                    if len(self.event_times[i]) == 1:
+                        input_dict['spike_time'] = self.event_times[i][0]
+                else:
+                    input_dict['spike_time'] = self.event_times[i]
+
             else:
                 input_dict['spike_time'] = []
             input_dict['label'] = self.cluster_label
-            spike_waveforms = []
+            spike_waveforms = {}
             for j in range(len(self.waveforms)):
                 key = 'channel_' + str(j+1)
-                input_dict[key] = self.waveforms[j][i]
-                spike_waveforms.append(self.waveforms[j][i])
+                # input_dict[key] = self.waveforms[j][i]
+                spike_waveforms[key] = self.waveforms[key][i]
+                # print(key + ' FILLED', len(spike_waveforms[key]))
             
             instances.append(Spike(input_dict['spike_time'], input_dict['cluster_label'], spike_waveforms, self))
 
@@ -301,10 +306,10 @@ class SpikeCluster(): # collection of spike objects
     def _extract_waveforms(self):
         input_keys = InputKeys()
         channel_keys = input_keys.get_channel_keys()
-        waveforms = []
+        waveforms = {}
         for i in range(len(channel_keys)):
             if channel_keys[i] in self._input_dict.keys():
-                waveforms.append(self._input_dict[channel_keys[i]])
+                waveforms[channel_keys[i]] = self._input_dict[channel_keys[i]]
         return waveforms
 
     def _init_stats_dict(self):
@@ -324,13 +329,13 @@ class Event():
         self.event_label = event_label
         self.event_signal = event_signal
 
-        # check if signal is 2D or 1D (e.g. multiple channel waveforms or single channel signal)
-        if type(event_signal[0]) == list:
-            self.main_ind = 0
-            self.main_signal = 0
-        else:
-            self.main_ind = None
-            self.main_signal = None
+        # # check if signal is 2D or 1D (e.g. multiple channel waveforms or single channel signal)
+        # if type(event_signal[0]) == list:
+        #     self.main_ind = 0
+        #     self.main_signal = 0
+        # else:
+        self.main_ind = None
+        self.main_signal = None
 
     def set_label(self, label):
         self.event_label = label
@@ -357,7 +362,7 @@ class Event():
         return curr, self.event_signal[curr-1]
 
 class Spike(Event):
-    def __init__(self, spike_time: float, cluster_label: int, waveforms: list, cluster: SpikeCluster):
+    def __init__(self, spike_time: float, cluster_label: int, waveforms: dict, cluster: SpikeCluster):
         super().__init__(spike_time, cluster_label, waveforms)
         self.cluster = cluster_label
         self.waveforms = waveforms

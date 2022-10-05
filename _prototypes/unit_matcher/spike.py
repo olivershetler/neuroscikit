@@ -8,7 +8,7 @@ Functions for extracting features for a single spike (n-dimensional waveforms).
 from .waveform import waveform_features
 from core.spikes import Spike, SpikeCluster
 
-def spike_features(spike):
+def spike_features(spike, time_step):
     """
     Extract all the features for a single spike.
 
@@ -22,7 +22,7 @@ def spike_features(spike):
     dict
         A dictionary of the waveform level features of the form {feature_name: value,...}
     """
-    return waveform_level_features(spike)
+    return waveform_level_features(spike, time_step)
 
 #TODO implement
 def localize_tetrode_source(peak_amplitude:dict, tetrode_positions:dict):
@@ -82,7 +82,8 @@ def waveform_level_features(spike:dict, time_step):
     dict
         A dictionary of the waveform level features of the form {feature_name: value,...}
     """
+    print(spike.waveforms.items())
     spike_peaks = dict(map(lambda item: (item[0], max(item[1])), spike.waveforms.items()))
     channel_with_max_peak = max(spike_peaks, key=spike_peaks.get)
-    return waveform_features(spike[channel_with_max_peak], time_step)
+    return waveform_features(spike.waveforms[channel_with_max_peak], time_step)
 
