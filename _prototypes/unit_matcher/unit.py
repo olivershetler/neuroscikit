@@ -58,10 +58,35 @@ def compute_mixture(P:np.array, Q:np.array):
     P_sample_size, P_dimensions = P.shape
     Q_sample_size, Q_dimensions = Q.shape
 
-    from random import randint
-    m = lambda P, Q: (P[randint(0, P_sample_size-1),:] + Q[randint(0, Q_sample_size-1),:])/2
-    M = np.array([m(P, Q) for _ in range(max(P_sample_size, Q_sample_size))])
+    from random import randint, sample
+
+    #M = np.array([_mixture_sample(P, Q) for _ in range(max(P_sample_size, Q_sample_size))])
+
+    ss = int(min(P_sample_size, Q_sample_size)/2)
+
+    M = np.concatenate((P[0:ss,:], Q[ss:,:]), axis=0)
+
+    print("M", M.shape)
+
     return M
+
+def _mixture_sample(P:np.array, Q:np.array):
+    """Sample a mixture distribution between two probability distributions.
+
+    Input
+    -----
+    P, Q : 2D arrays (sample_size, dimensions)
+        Probability distributions of equal length that sum to 1
+    """
+    P_sample_size, P_dimensions = P.shape
+    Q_sample_size, Q_dimensions = Q.shape
+
+    from random import randint
+    choice = randint(0, 1)
+    if choice == 0:
+        return P[randint(0, P_sample_size-1),:]
+    else:
+        return Q[randint(0, Q_sample_size-1),:]
 
 def kullback_leibler_divergence(P, Q):
     return np.sum(list(filter(lambda x: not np.isnan(x), P * np.log(P/Q))))
@@ -90,6 +115,8 @@ def multivariate_kullback_leibler_divergence(x, y):
     #from scipy.spatial import KDTree
     #from sklearn.neighbors import KDTree
     from sklearn.neighbors import BallTree
+    from scipy.spatial.distance import cosine, correlation
+    from sklearn.metrics.pairwise import cosine_distances
 
     # Check the dimensions are consistent
     x = np.atleast_2d(x)
@@ -106,15 +133,20 @@ def multivariate_kullback_leibler_divergence(x, y):
 
     # Build a KD tree representation of the samples and find the nearest
     # neighbour of each point in x.
-    xtree = BallTree(x, metric='minkowski')
-    ytree = BallTree(y, metric='minkowski')
+    xtree = BallTree(x, metric='l1')
+    ytree = BallTree(y, metric='l1')
 
     # Get the first two nearest neighbours for x, since the closest one is the
     # sample itself.
-    r = xtree.query(x, k=2)[0][:,1]
-    s = ytree.query(x, k=1)[0][:,0]
-
-    return sum(np.log2(s/r)) * d / n + np.log2(m / (n - 1.))
+    R = xtree.query(x, k=3)[0][:,0:]
+    r = np.array([min(list(filter(lambda x: x!=0, R))) for R in R])
+    S = ytree.query(x, k=3)[0][:,0:]
+    #for i in range(n):
+    #    if s[i] == 0:
+    #        s[i] = r[i]
+    s = np.array([min(list(filter(lambda x: x!=0, s))) for s in S])
+    kl_div = sum(np.log2(s/r)) * d / n + np.log2(m / (n - 1.))
+    return max(kl_div, 0)
 
 def spike_level_feature_array(unit: SpikeCluster, time_step):
     """Compute features for each spike in a unit.
@@ -141,3 +173,8 @@ def spike_level_feature_array(unit: SpikeCluster, time_step):
         feature_vector = list(spike.features.values())
         feature_array.append(feature_vector)
     return np.array(feature_array)
+
+
+"""
+['euclidean', 'l2', 'minkowski', 'p', 'manhattan', 'cityblock', 'l1', 'chebyshev', 'infinity', 'seuclidean', 'mahalanobis', 'wminkowski', 'hamming', 'canberra', 'braycurtis', 'matching', 'jaccard', 'dice', 'kulsinski', 'rogerstanimoto', 'russellrao', 'sokalmichener', 'sokalsneath', 'haversine', 'pyfunc']
+"""

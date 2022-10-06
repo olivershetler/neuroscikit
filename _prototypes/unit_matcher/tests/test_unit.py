@@ -12,17 +12,18 @@ from _prototypes.unit_matcher.unit import (
 )
 
 P = np.random.rand(5500, 24)
-Q = np.random.rand(5000, 24)+2
+Q = np.random.rand(5000, 24) + 100
 
 def test_multivariate_kullback_leibler_divergence():
-    print(multivariate_kullback_leibler_divergence(P, Q))
-    print(multivariate_kullback_leibler_divergence(Q, P))
-    #print(multivariate_kullback_leibler_divergence(P, P))
+    print("D(P||Q): ", multivariate_kullback_leibler_divergence(P, Q))
+    print("D(Q||P): ", multivariate_kullback_leibler_divergence(Q, P))
+    print("D(P||P): ", multivariate_kullback_leibler_divergence(P, P))
 
 
 def test_jensen_shannon_divergence():
-    print(jensen_shannon_distance(P, Q))
-    print(jensen_shannon_distance(Q, P))
+    print("JS(P,Q): ", jensen_shannon_distance(P, Q))
+    print("JS(Q,P): ", jensen_shannon_distance(Q, P))
+    print("JS(P,P): ", jensen_shannon_distance(P, P))
     #assert jensen_shannon_distance(P, Q) == jensen_shannon_distance(Q, P)
 
 @pytest.mark.skip(reason="Not implemented yet")
