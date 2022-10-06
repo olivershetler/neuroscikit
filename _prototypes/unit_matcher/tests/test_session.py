@@ -22,52 +22,51 @@ settings_dict = {'ppm': 511, 'sessions': [session_settings, session_settings], '
 
 session1, session2 = read_sequential_sessions(data_dir, settings_dict)
 
-# def test_map_unit_matches():
-#     matches = [[1,2], [2,3], [3,4]] 
+def test_map_unit_matches():
+    matches = [[1,2], [2,3], [3,4]] 
 
-#     map_dict = map_unit_matches(matches)
+    map_dict = map_unit_matches(matches)
 
-#     assert map_dict[2] == 1
-#     assert map_dict[3] == 2
-#     assert map_dict[4] == 3
+    assert map_dict[2] == 1
+    assert map_dict[3] == 2
+    assert map_dict[4] == 3
 
-# def test_compute_distances():
-#     distances, pairs = compute_distances(session1.get_spike_data()['spike_cluster'], session2.get_spike_data()['spike_cluster'])
+def test_compute_distances():
+    distances, pairs = compute_distances(session1.get_spike_data()['spike_cluster'], session2.get_spike_data()['spike_cluster'])
 
-#     assert type(distances) == np.ndarray
-#     assert type(pairs) == np.ndarray
-#     assert len(distances) == len(pairs)
-#     assert len(np.unique(session1.get_cell_data()['cell_ensemble'].get_label_ids())) == len(distances)
-#     assert len(np.unique(session2.get_cell_data()['cell_ensemble'].get_label_ids())) == len(distances.T)
+    assert type(distances) == np.ndarray
+    assert type(pairs) == np.ndarray
+    assert len(distances) == len(pairs)
+    assert len(np.unique(session1.get_cell_data()['cell_ensemble'].get_label_ids())) == len(distances)
+    assert len(np.unique(session2.get_cell_data()['cell_ensemble'].get_label_ids())) == len(distances.T)
 
-# def test_extract_full_matches():
-#     # distances, pairs = compute_distances(session1.get_spike_data()['spike_cluster'], session2.get_spike_data()['spike_cluster'])
+def test_extract_full_matches():
+    # distances, pairs = compute_distances(session1.get_spike_data()['spike_cluster'], session2.get_spike_data()['spike_cluster'])
 
-#     distances = np.array([[5,1,5], [5,1,5], [5,5,2]])
-#     pairs = np.array([[[0,0],[0,1],[0,2]], [[1,0],[1,1],[1,2]], [[2,0], [2,1], [2,2]]])
+    distances = np.array([[5,1,5], [5,1,5], [5,5,2]])
+    pairs = np.array([[[0,0],[0,1],[0,2]], [[1,0],[1,1],[1,2]], [[2,0], [2,1], [2,2]]])
 
-#     full_matches, remaining_distances, remaining_pairs = extract_full_matches(distances, pairs)
+    full_matches, remaining_distances, remaining_pairs = extract_full_matches(distances, pairs)
 
-#     assert type(full_matches) == list
-#     assert type(remaining_distances) == np.ndarray
-#     assert type(remaining_pairs) == np.ndarray
+    assert type(full_matches) == list
+    assert type(remaining_distances) == np.ndarray
+    assert type(remaining_pairs) == np.ndarray
 
-#     assert [0,1] == list(full_matches[0])
-#     assert [2,2] == list(full_matches[1])
+    assert [0,1] == list(full_matches[0])
+    assert [2,2] == list(full_matches[1])
 
-# def test_guess_remaining_matches():
-#     distances, pairs = compute_distances(session1.get_spike_data()['spike_cluster'], session2.get_spike_data()['spike_cluster'])
+def test_guess_remaining_matches():
+    distances, pairs = compute_distances(session1.get_spike_data()['spike_cluster'], session2.get_spike_data()['spike_cluster'])
 
-#     full_matches, remaining_distances, remaining_pairs = extract_full_matches(distances, pairs)
+    full_matches, remaining_distances, remaining_pairs = extract_full_matches(distances, pairs)
     
-#     remaining_matches, unmmatched = guess_remaining_matches(remaining_distances, remaining_pairs)
+    remaining_matches, unmmatched = guess_remaining_matches(remaining_distances, remaining_pairs)
 
-#     assert type(remaining_matches) == np.ndarray
-#     assert type(unmmatched) == list
-#     assert len(full_matches) *2 + len(remaining_matches) *2 + len(unmmatched) == len(distances)
+    assert type(remaining_matches) == np.ndarray
+    assert type(unmmatched) == list
+    assert len(full_matches) *2 + len(remaining_matches) *2 + len(unmmatched) == sum(distances.shape)
 
 def test_compare_sessions():
     map_dict = compare_sessions(session1, session2)
-
     assert type(map_dict) == dict 
-    assert len(np.unique(session2.get_cell_data()['cell_ensemble'].cluster_labels)) == len(map_dict)
+    assert len(np.unique(session2.get_cell_data()['cell_ensemble'].get_label_ids())) == len(map_dict)

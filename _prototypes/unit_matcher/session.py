@@ -51,7 +51,6 @@ def compute_distances(session1_cluster: SpikeClusterBatch, session2_cluster: Spi
 
 def extract_full_matches(distances, pairs):
     full_matches = []
-    # mask = np.ones(distances.shape, bool)
     row_mask = np.ones(distances.shape[0], bool)
     col_mask = np.ones(distances.shape[1], bool)
 
@@ -68,45 +67,36 @@ def extract_full_matches(distances, pairs):
                 col_mask[j] = False
                 assert sorted(unit1_pairs[unit1_min]) == sorted(unit2_pairs[unit2_min])
 
-    # for i in range(len(row_mask)):
-
-
     distances = distances[row_mask,:][:,col_mask]
-    # distances = distances[:, col_mask]
     pairs = pairs[row_mask,:][:,col_mask]
-    # pairs = pairs[:, col_mask]
-    # pairs = pairs[row_mask, col_mask]
-    # distances = distances[idx[0], idx[1]]
-    # pairs = pairs[idx]
 
     return full_matches, distances, pairs
 
 
-    # return matches
-
 def guess_remaining_matches(distances, pairs):
-    # smaller side of bipartite graph (pop everythign that is a match till only no matches left)
-    # hungarian algorithm (scipy)
-    # return additiona list of matches
-    # return any unmatched units/leftover units + sessions
-    # cchange return output of compare_sessions()
     row_ind, col_ind = linear_sum_assignment(distances)
-    remaining_matches = pairs[row_ind,col_ind]
+    assert len(row_ind) == len(col_ind)
+    remaining_matches = []
+    for i in range(len(row_ind)):
+        unit_pair = pairs[row_ind[i], col_ind[i]]
+        remaining_matches.append(unit_pair)
+
     # session1_unmatched = list(set(np.arange(len(distances))) - set(remaining_matches[0]))
     session2_unmatched = list(set(list(np.arange(len(distances[0])))) - set(list(col_ind)))
 
     leftover_units = []
-
-    # for i in range(len(session1_unmatched)):
-    #     unit_id = pairs[session1_unmatched[i],:][0]
-    #     leftover_units.append([unit_id, 0])
-
     # ONLY CARE ABOUT SESSION 2 UNMATCHED CELLS, SESSION 1 UNMATCHED DO NOT CHANGE LABEL
     for j in range(len(session2_unmatched)):
-        unit_id = pairs[:, session2_unmatched[j]][0]
+        # save the actual cell label of the unmatched cell
+        # get the column of that cell (list of pairings with actual cell labels of session 1 and session 2 cells)
+        # take any row from that column, the second number in the pair at (row,col) is the true cell label for the cell in session 2
+        # make sure any pair in that column has the same second number [session1 id, session2 id]
+        unit_id = pairs[0, session2_unmatched[j]][-1]
+        assert type(unit_id) == float or type(unit_id) == np.float64 or type(unit_id) == np.int64 or type(unit_id) == int or type(unit_id) == np.int32 or type(unit_id) == np.float32
+        assert unit_id == pairs[1, session2_unmatched[j]][-1]
         leftover_units.append([0, unit_id])
     
-    return np.array(remaining_matches).T, leftover_units
+    return np.array(remaining_matches), leftover_units
 
 def map_unit_matches(matches):
     map_dict = {}
@@ -125,13 +115,23 @@ def compare_sessions(session1: Session, session2: Session):
     # return mapping dict from session2 old label to new matched label based on session1 cell labels
 
     distances, pairs = compute_distances(session1.get_spike_data()['spike_cluster'], session2.get_spike_data()['spike_cluster'])
-
     full_matches, remaining_distances, remaining_pairs = extract_full_matches(distances, pairs)
+    remaining_matches, unmatched = guess_remaining_matches(remaining_distances, remaining_pairs)
+
+    to_stack = []
+    if np.asarray(full_matches).size > 0:
+        to_stack.append(full_matches)
+    if np.asarray(remaining_matches).size > 0:
+        to_stack.append(remaining_matches)
+    if np.asarray(unmatched).size > 0:
+        to_stack.append(unmatched)
     
-    remaining_matches, unmmatched = guess_remaining_matches(remaining_distances, remaining_pairs)
-    print(full_matches, remaining_matches, unmmatched)
-    matches = np.vstack((full_matches, remaining_matches))
-    matches = np.vstack((matches, unmmatched))
+    matches = to_stack[0]
+    for i in range(1,len(to_stack)):
+        matches = np.vstack((matches, to_stack[i]))
+
+    # matches = np.vstack((full_matches, remaining_matches))
+    # matches = np.vstack((matches, unmatched))
     
     map_dict = map_unit_matches(matches)
 
