@@ -22,13 +22,24 @@ def compute_distances(session1_cluster: SpikeClusterBatch, session2_cluster: Spi
     distances = np.zeros((len(session1_unit_clusters), len(session2_unit_clusters)))
     pairs = np.zeros((len(session1_unit_clusters), len(session2_unit_clusters), 2))
 
+    session1_feature_arrays = []
+    session2_feature_arrays = []
     for i in range(len(session1_unit_clusters)):
-        for j in range(len(session2_unit_clusters)):
-            
-            session1_feature_array = spike_level_feature_array(session1_unit_clusters[i], 1/session1_cluster.sample_rate)
-            session2_feature_array = spike_level_feature_array(session2_unit_clusters[j], 1/session2_cluster.sample_rate)
+        session1_feature_arrays.append(spike_level_feature_array(session1_unit_clusters[i], 1/session1_cluster.sample_rate))
+    for j in range(len(session2_unit_clusters)):
+        session2_feature_arrays.append(spike_level_feature_array(session2_unit_clusters[j], 1/session2_cluster.sample_rate))
 
-            distance = jensen_shannon_distance(session1_feature_array, session2_feature_array)
+    for i in range(len(session1_feature_arrays)):
+        for j in range(len(session2_feature_arrays)):
+            print('Session1 ' + str(i) + '; Session2 ' + str(j))
+
+            # idx1 = np.where(session1_feature_array != session1_feature_array)[0]
+            # idx2 = np.where(session2_feature_array != session2_feature_array)[0]
+            # print(idx1, idx2)
+            # assert len(idx1) == 0
+            # assert len(idx2) == 0
+
+            distance = jensen_shannon_distance(session1_feature_arrays[i], session2_feature_arrays[j])
 
             # distances.append(distance)
             # pairs.append[[unit1, unit2]]
@@ -40,7 +51,10 @@ def compute_distances(session1_cluster: SpikeClusterBatch, session2_cluster: Spi
 
 def extract_full_matches(distances, pairs):
     full_matches = []
-    mask = np.ones(distances.shape, bool)
+    # mask = np.ones(distances.shape, bool)
+    row_mask = np.ones(distances.shape[0], bool)
+    col_mask = np.ones(distances.shape[1], bool)
+
 
     for i in range(distances.shape[0]):
         unit1_pairs = pairs[i]
@@ -50,13 +64,20 @@ def extract_full_matches(distances, pairs):
             unit2_min = np.argmin(distances[:,j])
             if unit1_min == j and unit2_min == i:
                 full_matches.append(unit1_pairs[unit1_min])
-                mask[i, :] = False
-                mask[:, j] = False
+                row_mask[i] = False
+                col_mask[j] = False
                 assert sorted(unit1_pairs[unit1_min]) == sorted(unit2_pairs[unit2_min])
 
-    idx = np.nonzero(mask)
-    distances = distances[idx[0], idx[1]]
-    pairs = pairs[idx]
+    # for i in range(len(row_mask)):
+
+
+    distances = distances[row_mask,:][:,col_mask]
+    # distances = distances[:, col_mask]
+    pairs = pairs[row_mask,:][:,col_mask]
+    # pairs = pairs[:, col_mask]
+    # pairs = pairs[row_mask, col_mask]
+    # distances = distances[idx[0], idx[1]]
+    # pairs = pairs[idx]
 
     return full_matches, distances, pairs
 
@@ -69,10 +90,10 @@ def guess_remaining_matches(distances, pairs):
     # return additiona list of matches
     # return any unmatched units/leftover units + sessions
     # cchange return output of compare_sessions()
-    remaining_matches = linear_sum_assignment(distances)
-
-    session1_unmatched = list(set(np.arange(len(distances))) - set(remaining_matches[0]))
-    session2_unmatched = list(set(np.arange(len(distances[0]))) - set(remaining_matches[1]))
+    row_ind, col_ind = linear_sum_assignment(distances)
+    remaining_matches = pairs[row_ind,col_ind]
+    # session1_unmatched = list(set(np.arange(len(distances))) - set(remaining_matches[0]))
+    session2_unmatched = list(set(list(np.arange(len(distances[0])))) - set(list(col_ind)))
 
     leftover_units = []
 
@@ -85,7 +106,7 @@ def guess_remaining_matches(distances, pairs):
         unit_id = pairs[:, session2_unmatched[j]][0]
         leftover_units.append([0, unit_id])
     
-    return remaining_matches.T, leftover_units
+    return np.array(remaining_matches).T, leftover_units
 
 def map_unit_matches(matches):
     map_dict = {}
@@ -108,7 +129,7 @@ def compare_sessions(session1: Session, session2: Session):
     full_matches, remaining_distances, remaining_pairs = extract_full_matches(distances, pairs)
     
     remaining_matches, unmmatched = guess_remaining_matches(remaining_distances, remaining_pairs)
-
+    print(full_matches, remaining_matches, unmmatched)
     matches = np.vstack((full_matches, remaining_matches))
     matches = np.vstack((matches, unmmatched))
     

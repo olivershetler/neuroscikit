@@ -1,5 +1,6 @@
 import os
 import sys
+
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
 
@@ -7,11 +8,14 @@ import pytest
 import _prototypes.unit_matcher.tests.read as read
 
 from _prototypes.unit_matcher.spike import waveform_level_features
+from library.lib_test_utils import make_spike_cluster
 
-spike = read.spike
+# spike = read.spike
 time_step = read.time_step
 
 def test_waveform_level_features():
+    cluster = make_spike_cluster()
+    spike = cluster.get_spike_object_instances()[0]
     features = waveform_level_features(spike, time_step)
     assert features is not None
     assert type(features) == dict

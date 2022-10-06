@@ -4,6 +4,10 @@ Functions for extracting features for a single spike (n-dimensional waveforms).
 - A function for extracting all the features in the waveform module.
 - A function for estimating source locations for a spike from waveform features (amplitude).
 """
+import os
+import sys
+PROJECT_PATH = os.getcwd()
+sys.path.append(PROJECT_PATH)
 
 from .waveform import waveform_features
 from core.spikes import Spike, SpikeCluster
@@ -68,7 +72,7 @@ def reduce_dimensionality(features):
 # the features for the channel with the largest peak amplitude.
 # This will eventually be updated to take the features for all channels
 # and then reduce the dimensionality of the using to-be-determined criteria.
-def waveform_level_features(spike:dict, time_step):
+def waveform_level_features(spike: Spike, time_step):
     """
     Extract waveform level features from a spike waveform.
 
@@ -82,8 +86,13 @@ def waveform_level_features(spike:dict, time_step):
     dict
         A dictionary of the waveform level features of the form {feature_name: value,...}
     """
-    print(spike.waveforms.items())
-    spike_peaks = dict(map(lambda item: (item[0], max(item[1])), spike.waveforms.items()))
+    spike_peaks = {}
+    for channel, waveform in spike.waveforms.items():
+        if len(waveform) > 0:
+            spike_peaks[channel] = max(waveform)
+
+    # spike_peaks = dict(map(lambda item: (item[0], max(item[1])), spike.waveforms.items()))
     channel_with_max_peak = max(spike_peaks, key=spike_peaks.get)
+    assert len(spike.waveforms[channel_with_max_peak]) > 0
     return waveform_features(spike.waveforms[channel_with_max_peak], time_step)
 
