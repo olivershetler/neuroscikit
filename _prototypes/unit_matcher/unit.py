@@ -1,3 +1,5 @@
+import numpy as np
+
 """
 This module contains functions for extracting waveform features for each unit.
 
@@ -170,7 +172,7 @@ def spike_level_feature_array(unit: SpikeCluster, time_step):
     feature_array = []
     for spike in spikes:
         #spike.features = spike_features(spike, time_step)
-        feature_vector = list(spike.features.values())
+        feature_vector = list(spike_features(spike, time_step).values())
         feature_array.append(feature_vector)
     return np.array(feature_array)
 

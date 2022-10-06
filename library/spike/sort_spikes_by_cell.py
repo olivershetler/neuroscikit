@@ -23,13 +23,12 @@ def sort_spikes_by_cell(clusters: SpikeClusterBatch):
 
     spike_times = clusters.event_times
     cluster_labels = clusters.cluster_labels
-    waveforms = clusters.waveforms
+    waveforms = clusters.get_all_channel_waveforms()
 
     assert len(spike_times) == len(waveforms[0])
 
     cells = []
     sorted_waveforms = []
-    indiv_clusters = clusters.get_spike_cluster_instances()
     good_cells = []
     good_sorted_waveforms = []
     good_sorted_label_ids = []
@@ -52,11 +51,20 @@ def sort_spikes_by_cell(clusters: SpikeClusterBatch):
             break
         else:
             empty_cell = j + 1
-    for j in range(1,empty_cell,1):
-        good_cells.append(cells[j])
-        good_sorted_label_ids.append(j)
-        good_sorted_waveforms.append(sorted_waveforms[j])
-        good_clusters.append(indiv_clusters[j])
 
+    unique_labels = np.asarray(clusters.get_unique_cluster_labels())
+    idx = np.where((unique_labels >= 1) & (unique_labels < empty_cell))
+    good_sorted_label_ids = unique_labels[idx]
+    clusters.set_sorted_label_ids(good_sorted_label_ids)
+    indiv_clusters = clusters.get_spike_cluster_instances()
+
+    for j in good_sorted_label_ids:
+        good_cells.append(cells[j])
+        good_sorted_waveforms.append(sorted_waveforms[j])
+        # indiv_clusters will only be made for good_label_id cells so have to adjust to make 0 index when pulling out spike cluster
+        good_clusters.append(indiv_clusters[j-1])
+        assert indiv_clusters[j-1].cluster_label == j
+    
+    
 
     return good_cells, good_sorted_waveforms, good_clusters, good_sorted_label_ids
