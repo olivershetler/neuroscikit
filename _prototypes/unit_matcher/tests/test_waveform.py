@@ -94,5 +94,30 @@ def test_morphological_points():
 # Main Feature Extraction Function
 
 def test_waveform_features():
-    feature_vector = waveform_features(waveform, time_step)
-    print(feature_vector)
+    i=-1
+    for wf in read.session_dict1['ch4']:
+        i+=1
+        try:
+            feature_vector = waveform_features(wf, time_step)
+        except:
+            print('Error in waveform', i)
+            plot_waveform_points(wf, time_step)
+
+def plot_waveform_points(waveform, time_step):
+    t = time_index(waveform, time_step)
+    d_waveform = derivative(waveform, time_step)
+    d2_waveform = derivative2(waveform, time_step)
+
+    p1, p2, p3, p4, p5, p6 = morphological_points(t, waveform, d_waveform, d2_waveform, time_step)
+
+    # Plot the waveform and the morphological points
+    plot(t, waveform)
+    plot(t, d_waveform, linestyle='--')
+    plot(p1.t, p1.v, 'o', label='p1')
+    plot(p2.t, p2.dv, 'o', label='p2')
+    plot(p3.t, p3.v, 'o', label='p3')
+    plot(p4.t, p4.dv, 'o', label='p4')
+    plot(p5.t, p5.v, 'o', label='p5')
+    plot(p6.t, p6.dv, 'o', label='p6')
+    legend()
+    show()
