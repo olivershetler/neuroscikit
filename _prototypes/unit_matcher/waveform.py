@@ -4,6 +4,7 @@ Functions that take a single waveform as an input and return a feature.
 
 import numpy as np
 from operator import add
+from scipy.signal import savgol_filter
 
 def waveform_features(waveform, time_step):
     """
@@ -54,11 +55,11 @@ def waveform_features(waveform, time_step):
     # in the original paper, f5 is the logarithm of the term below
     # However, their definition did not generalize to excidatory
     # neurons, where the principal peak comes before the big trough.
-    # fd["f5"] = symmetric_logarithm((p4.dv - p2.dv) / (p4.t - p2.t))
+    fd["f5"] = symmetric_logarithm((p4.dv - p2.dv) / (p4.t - p2.t))
     # negative deflection of the FD of the AP
-    # fd["f6"] = (p6.dv - p4.dv) / (p6.t - p4.t)
+    fd["f6"] = (p6.dv - p4.dv) / (p6.t - p4.t)
     # logarithm of the slope among valleys of the FD of the AP
-    # fd["f7"] = symmetric_logarithm((p6.dv - p2.dv) / (p6.t - p2.t))
+    fd["f7"] = symmetric_logarithm((p6.dv - p2.dv) / (p6.t - p2.t))
     # root mean square of the pre-event amplitude of the FD of the AP
     # NOTE: This feature is MODIFIED from the original paper
     # in the original paper, f8 is the root mean square of the pre-event amplitude of the FD of the AP
@@ -67,16 +68,14 @@ def waveform_features(waveform, time_step):
     # be the boundary of the pre-event amplitude.
     # We use the first extremum of the first derivative as the cutoff
     # when the first voltage domain extremum is the boundary.
-    # fd["f8"] = np.sqrt(np.mean([x**2 for x in d_waveform[:p1.i]])) if p1.i > 0 else np.sqrt(np.mean([x**2 for x in d_waveform[p1.i:p2.i]]))
-
+    fd["f8"] = np.sqrt(np.mean([x**2 for x in d_waveform[:p1.i]])) if p1.i > 0 else np.sqrt(np.mean([x**2 for x in d_waveform[p1.i:p2.i]]))
     # # negative slope ratio of the FD of the AP
     # # print((p2.dv - p1.dv), (p2.t - p1.t), (p3.dv - p2.dv), (p3.t - p2.t))
-    # fd["f9"] = ((p2.dv - p1.dv)/(p2.t - p1.t))/((p3.dv - p2.dv)/(p3.t - p2.t))
+    fd["f9"] = ((p2.dv - p1.dv)/(p2.t - p1.t))/((p3.dv - p2.dv)/(p3.t - p2.t))
     # # postive slope ratio of the FD of the AP
-    # fd["f10"] = ((p4.dv - p3.dv)/(p4.t - p3.t))/((p5.dv - p4.dv)/(p5.t - p4.t))
-
+    fd["f10"] = ((p4.dv - p3.dv)/(p4.t - p3.t))/((p5.dv - p4.dv)/(p5.t - p4.t))
     # peak to valley ratio of the action potential
-    # fd["f11"] = p2.dv / p4.dv
+    fd["f11"] = p2.dv / p4.dv
     # PHASE FEATURES
     # amplitude of the FD of the AP relating to p1
     fd["f12"] = p1.dv
@@ -139,29 +138,30 @@ def morphological_points(time_index, waveform, d_waveform, d2_waveform, time_ste
     waveform_point = lambda i: Point(i, time_index, waveform, d_waveform, d2_waveform)
 
     # get morphological points in the voltage domain
-    voltage_extrema_indexes = local_extrema(waveform, time_step)
-    voltage_extrema_values = [waveform[i] for i in voltage_extrema_indexes]
-    x = int(np.argmax(voltage_extrema_values))
+    voltage_peaks = peaks(waveform, time_step)
+    voltage_troughs = [0] + troughs(waveform, time_step) + [len(waveform) - 1]
+    voltage_peak_values = [waveform[i] for i in voltage_peaks]
+    voltage_trough_values = [waveform[i] for i in voltage_troughs]
+    x = np.argmax(voltage_peak_values)
     # find principal voltage peak
-    p3 = waveform_point(voltage_extrema_indexes[x])
+    p3 = waveform_point(voltage_peaks[x])
     # get pre-spike trough
-    p1 = waveform_point(voltage_extrema_indexes[x - 1])
+    p1 = waveform_point(max(filter(lambda i: i <= p3.i, voltage_troughs)))
     # get refractory trough
-    p5 = waveform_point(voltage_extrema_indexes[x + 1])
+    p5 = waveform_point(min(filter(lambda i: i >= p3.i, voltage_troughs)))
     # get refractory peak index (discard after use)
-    rp = waveform_point(voltage_extrema_indexes[x + 2])
+    rp = waveform_point(min(filter(lambda i: i >= p5.i, [0] + voltage_peaks + [len(waveform) - 1])))
 
     # get morphological points in the rate domain
     def steepest_point_in_region(start, end):
         rate_extrema_indexes = local_extrema(d_waveform, time_step)
-        r = lambda start, end: list(filter(lambda i: i >= start.i and i <= end.i, rate_extrema_indexes))
+        r = lambda start, end: list(filter(lambda i: i > start.i and i < end.i, rate_extrema_indexes))
         v = lambda indexes: [abs(d_waveform[i]) for i in indexes]
         indexes = r(start, end)
         if len(indexes) > 0:
             x = np.argmax(v(indexes))
         else:
-            x = 0 
-            indexes = [end.i]
+            return waveform_point(int(np.median([start.i, end.i])))
         return waveform_point(indexes[x])
     # get steepest point between pre-spike trough and principal peak
     p2 = steepest_point_in_region(p1, p3)
@@ -249,9 +249,23 @@ def filter_indexes(extrema_indexes, start, end):
     # get the indexes of the extrema in the region
     return list(filter(lambda i: start <= i <= end, extrema_indexes))
 
-def local_extrema(timeseries, time_step):
-    is_extremum = lambda index: (timeseries[index] > timeseries[index - 1] and timeseries[index] >= timeseries[index + 1]) or (timeseries[index] < timeseries[index - 1] and timeseries[index] <= timeseries[index + 1])
-    return [0] + list(filter(is_extremum, range(1, len(timeseries) - 1))) + [len(timeseries) - 1]
+def local_extrema(t, time_step):
+    """
+    Find the local extrema in a time series.
+    """
+    # get the indexes of the extrema
+    _is_peak = lambda i: t[i] > t[i - 1] and t[i] >= t[i + 1] and t[i] > np.quantile(t, 0.6)
+    _is_trough = lambda i: t[i] < t[i - 1] and t[i] <= t[i + 1] and t[i] < np.quantile(t, 0.4)
+    _is_extrema = lambda i: _is_peak(i) or _is_trough(i)
+    return list(filter(_is_extrema, range(1, len(t) - 1)))
+
+def peaks(t, time_step):
+    _is_peak = lambda i: t[i] > t[i - 1] and t[i] >= t[i + 1] and t[i] > 0
+    return list(filter(_is_peak, range(1, len(t) - 1)))
+
+def troughs(t, time_step):
+    _is_trough = lambda i: t[i] < t[i - 1] and t[i] <= t[i + 1] and t[i] < 0
+    return list(filter(_is_trough, range(1, len(t) - 1)))
 
 def zero_crossings(timeseries, time_step):
     """
