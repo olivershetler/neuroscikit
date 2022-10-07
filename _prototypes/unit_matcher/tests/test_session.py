@@ -8,7 +8,7 @@ parent_dir = os.path.dirname(prototype_dir)
 
 from library.study_space import Session
 from _prototypes.unit_matcher.read_axona import read_sequential_sessions
-from _prototypes.unit_matcher.session import compare_sessions, compute_distances, guess_remaining_matches, extract_full_matches, map_unit_matches
+from _prototypes.unit_matcher.session import compare_sessions, compute_distances, guess_remaining_matches, extract_full_matches
 
 data_dir = parent_dir + r'\neuroscikit_test_data\single_sequential'
 
@@ -22,14 +22,14 @@ settings_dict = {'ppm': 511, 'sessions': [session_settings, session_settings], '
 
 session1, session2 = read_sequential_sessions(data_dir, settings_dict)
 
-def test_map_unit_matches():
-    matches = [[1,2], [2,3], [3,4]] 
+# def test_map_unit_matches():
+#     matches = [[1,2], [2,3], [3,4]] 
 
-    map_dict = map_unit_matches(matches)
+#     map_dict = map_unit_matches(matches)
 
-    assert map_dict[2] == 1
-    assert map_dict[3] == 2
-    assert map_dict[4] == 3
+#     assert map_dict[2] == 1
+#     assert map_dict[3] == 2
+#     assert map_dict[4] == 3
 
 def test_compute_distances():
     distances, pairs = compute_distances(session1.get_spike_data()['spike_cluster'], session2.get_spike_data()['spike_cluster'])
@@ -46,9 +46,10 @@ def test_extract_full_matches():
     distances = np.array([[5,1,5], [5,1,5], [5,5,2]])
     pairs = np.array([[[0,0],[0,1],[0,2]], [[1,0],[1,1],[1,2]], [[2,0], [2,1], [2,2]]])
 
-    full_matches, remaining_distances, remaining_pairs = extract_full_matches(distances, pairs)
+    full_matches, full_match_distances, remaining_distances, remaining_pairs = extract_full_matches(distances, pairs)
 
     assert type(full_matches) == list
+    assert type(full_match_distances) == list
     assert type(remaining_distances) == np.ndarray
     assert type(remaining_pairs) == np.ndarray
 
@@ -58,15 +59,20 @@ def test_extract_full_matches():
 def test_guess_remaining_matches():
     distances, pairs = compute_distances(session1.get_spike_data()['spike_cluster'], session2.get_spike_data()['spike_cluster'])
 
-    full_matches, remaining_distances, remaining_pairs = extract_full_matches(distances, pairs)
+    full_matches, full_match_distances, remaining_distances, remaining_pairs = extract_full_matches(distances, pairs)
     
-    remaining_matches, unmmatched = guess_remaining_matches(remaining_distances, remaining_pairs)
+    remaining_matches, remaining_match_distances, unmatched_2, unmatched_1 = guess_remaining_matches(remaining_distances, remaining_pairs)
 
-    assert type(remaining_matches) == np.ndarray
-    assert type(unmmatched) == list
-    assert len(full_matches) *2 + len(remaining_matches) *2 + len(unmmatched) == sum(distances.shape)
+    assert type(remaining_matches) == list
+    assert type(remaining_match_distances) == list
+    assert type(unmatched_1) == list
+    assert len(full_matches) *2 + len(remaining_matches) *2 + len(unmatched_2) == sum(distances.shape)
 
 def test_compare_sessions():
-    map_dict = compare_sessions(session1, session2)
-    assert type(map_dict) == dict 
-    assert len(np.unique(session2.get_cell_data()['cell_ensemble'].get_label_ids())) == len(map_dict)
+    matches, match_distances, unmatched_2, unmatched_1  = compare_sessions(session1, session2)
+    assert type(matches) == np.ndarray 
+    assert type(match_distances) == np.ndarray 
+    assert type(unmatched_1) == list
+    assert type(unmatched_2) == list
+
+    # assert len(np.unique(session2.get_cell_data()['cell_ensemble'].get_label_ids())) == len(map_dict)

@@ -51,6 +51,7 @@ def compute_distances(session1_cluster: SpikeClusterBatch, session2_cluster: Spi
 
 def extract_full_matches(distances, pairs):
     full_matches = []
+    full_match_distances = []
     row_mask = np.ones(distances.shape[0], bool)
     col_mask = np.ones(distances.shape[1], bool)
 
@@ -63,48 +64,50 @@ def extract_full_matches(distances, pairs):
             unit2_min = np.argmin(distances[:,j])
             if unit1_min == j and unit2_min == i:
                 full_matches.append(unit1_pairs[unit1_min])
+                full_match_distances.append(distances[i,j])
                 row_mask[i] = False
                 col_mask[j] = False
                 assert sorted(unit1_pairs[unit1_min]) == sorted(unit2_pairs[unit2_min])
 
-    distances = distances[row_mask,:][:,col_mask]
-    pairs = pairs[row_mask,:][:,col_mask]
+    remaining_distances = distances[row_mask,:][:,col_mask]
+    remaining_pairs = pairs[row_mask,:][:,col_mask]
 
-    return full_matches, distances, pairs
+    return full_matches, full_match_distances, remaining_distances, remaining_pairs
 
 
 def guess_remaining_matches(distances, pairs):
     row_ind, col_ind = linear_sum_assignment(distances)
     assert len(row_ind) == len(col_ind)
     remaining_matches = []
+    remaining_match_distances = []
     for i in range(len(row_ind)):
         unit_pair = pairs[row_ind[i], col_ind[i]]
         remaining_matches.append(unit_pair)
+        remaining_match_distances.append(distances[row_ind[i], col_ind[i]])
 
     # session1_unmatched = list(set(np.arange(len(distances))) - set(remaining_matches[0]))
     session2_unmatched = list(set(list(np.arange(len(distances[0])))) - set(list(col_ind)))
+    session1_unmatched = list(set(list(np.arange(len(distances)))) - set(list(row_ind)))
 
-    leftover_units = []
-    # ONLY CARE ABOUT SESSION 2 UNMATCHED CELLS, SESSION 1 UNMATCHED DO NOT CHANGE LABEL
-    for j in range(len(session2_unmatched)):
+    unmatched_2 = []
+    for i in range(len(session2_unmatched)):
         # save the actual cell label of the unmatched cell
         # get the column of that cell (list of pairings with actual cell labels of session 1 and session 2 cells)
         # take any row from that column, the second number in the pair at (row,col) is the true cell label for the cell in session 2
         # make sure any pair in that column has the same second number [session1 id, session2 id]
-        unit_id = pairs[0, session2_unmatched[j]][-1]
-        assert type(unit_id) == float or type(unit_id) == np.float64 or type(unit_id) == np.int64 or type(unit_id) == int or type(unit_id) == np.int32 or type(unit_id) == np.float32
-        assert unit_id == pairs[1, session2_unmatched[j]][-1]
-        leftover_units.append([0, unit_id])
-    
-    return np.array(remaining_matches), leftover_units
+        unit_id = pairs[0, session2_unmatched[i]][-1]
+        # assert type(unit_id) == float or type(unit_id) == np.float64 or type(unit_id) == np.int64 or type(unit_id) == int or type(unit_id) == np.int32 or type(unit_id) == np.float32
+        # assert unit_id == pairs[1, session2_unmatched[j]][-1]
+        # unmatched_2.append([0, unit_id])
+        unmatched_2.append(unit_id)
 
-def map_unit_matches(matches):
-    map_dict = {}
+    unmatched_1 = []
+    for i in range(len(session1_unmatched)):
+        unit_id = pairs[session1_unmatched[i], 0][0]
+        # unmatched_1.append([0, unit_id])
+        unmatched_1.append(unit_id)
     
-    for pair in matches:
-        map_dict[int(pair[1])] = int(pair[0])
-
-    return map_dict
+    return remaining_matches, remaining_match_distances, unmatched_2, unmatched_1
 
 def compare_sessions(session1: Session, session2: Session):
     """
@@ -115,27 +118,29 @@ def compare_sessions(session1: Session, session2: Session):
     # return mapping dict from session2 old label to new matched label based on session1 cell labels
 
     distances, pairs = compute_distances(session1.get_spike_data()['spike_cluster'], session2.get_spike_data()['spike_cluster'])
-    full_matches, remaining_distances, remaining_pairs = extract_full_matches(distances, pairs)
-    remaining_matches, unmatched = guess_remaining_matches(remaining_distances, remaining_pairs)
+    full_matches, full_match_distances, remaining_distances, remaining_pairs = extract_full_matches(distances, pairs)
+    remaining_matches, remaining_match_distances, unmatched_2, unmatched_1 = guess_remaining_matches(remaining_distances, remaining_pairs)
 
-    to_stack = []
-    if np.asarray(full_matches).size > 0:
-        to_stack.append(full_matches)
-    if np.asarray(remaining_matches).size > 0:
-        to_stack.append(remaining_matches)
-    if np.asarray(unmatched).size > 0:
-        to_stack.append(unmatched)
+    # to_stack = []
+    # if np.asarray(full_matches).size > 0:
+    #     to_stack.append(full_matches)
+    # if np.asarray(remaining_matches).size > 0:
+    #     to_stack.append(remaining_matches)
+    # if np.asarray(unmatched).size > 0:
+    #     to_stack.append(unmatched)
     
-    matches = to_stack[0]
-    for i in range(1,len(to_stack)):
-        matches = np.vstack((matches, to_stack[i]))
+    # matches = to_stack[0]
+    # for i in range(1,len(to_stack)):
+    #     matches = np.vstack((matches, to_stack[i]))
+
+    if np.asarray(full_matches).size > 0 and np.asarray(remaining_matches).size > 0:
+        matches = np.vstack((full_matches, remaining_matches))
+        match_distances = np.hstack((full_match_distances, remaining_match_distances))
 
     # matches = np.vstack((full_matches, remaining_matches))
     # matches = np.vstack((matches, unmatched))
-    
-    map_dict = map_unit_matches(matches)
 
-    return map_dict 
+    return matches, match_distances, unmatched_2, unmatched_1 
 
 
 

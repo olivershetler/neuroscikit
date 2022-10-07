@@ -205,14 +205,14 @@ class Study(Workspace):
         return animal_sessions
 
     def make_animals(self):
-        animal_sessions = self._sort_session_by_animal()
-        animals = []
-        for key in animal_sessions:
-            assert type(animal_sessions[key]) == dict
-            animal_instance = Animal(animal_sessions[key])
-            animals.append(animal_instance)
-
-        self.animals = animals
+        if self.animals is None:
+            animal_sessions = self._sort_session_by_animal()
+            animals = []
+            for key in animal_sessions:
+                assert type(animal_sessions[key]) == dict
+                animal_instance = Animal(animal_sessions[key])
+                animals.append(animal_instance)
+            self.animals = animals
 
     def get_animals(self):
         if self.animals == None:

@@ -9,7 +9,7 @@ from _prototypes.unit_matcher.read_axona import temp_read_cut
 def write_cut(cut_file, cut_data, header_data):
     """This function takes a cut file and updates the list of the neuron numbers in the file."""
     extract_cut = False
-    with open(cut_file, 'w+') as open_cut_file:
+    with open(cut_file, 'w') as open_cut_file:
         for line in header_data:
             open_cut_file.writelines(line)
             if 'Exact_cut' in line:  # finding the beginning of the cut values
@@ -48,7 +48,11 @@ def apply_remapping(cut_data, map_dict: dict):
 
 
     """
-
+    all_labels = np.unique(cut_data)
+    for label in all_labels:
+        if label not in map_dict:
+            map_dict[label] = 0
     new_cut_data = list(map(map_dict.get, cut_data))
-
+    # print(new_cut_data)
+    # idx = np.where(new_cut_data != new_cut_data)[0]
     return new_cut_data
