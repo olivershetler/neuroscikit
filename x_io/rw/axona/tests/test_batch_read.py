@@ -61,7 +61,7 @@ implant = {'implant_id': 'id', 'implant_type': 'tetrode', 'implant_geometry': 's
 session_settings = {'channel_count': 4, 'animal': animal, 'devices': devices, 'implant': implant}
 
 
-settings_dict = {'ppm': 511, 'sessions': [session_settings,], 'smoothing_factor': 3}
+settings_dict = {'ppm': 511, 'sessions': [session_settings,], 'smoothing_factor': 3, 'useMatchCut': False}
 
 
 def test__init_implant_data():
