@@ -18,12 +18,12 @@ implant = {'implant_id': 'id', 'implant_type': 'tetrode', 'implant_geometry': 's
 
 session_settings = {'channel_count': 4, 'animal': animal, 'devices': devices, 'implant': implant}
 
-settings_dict = {'ppm': 511, 'sessions': [session_settings, session_settings], 'smoothing_factor': 3, 'useMatchCut': False}
+settings_dict = {'ppm': 511, 'sessions': [session_settings, session_settings], 'smoothing_factor': 3, 'useMatchedCut': False}
 
 session1, session2 = read_sequential_sessions(data_dir, settings_dict)
 
 # def test_map_unit_matches():
-#     matches = [[1,2], [2,3], [3,4]] 
+#     matches = [[1,2], [2,3], [3,4]]
 
 #     map_dict = map_unit_matches(matches)
 
@@ -60,7 +60,7 @@ def test_guess_remaining_matches():
     distances, pairs = compute_distances(session1.get_spike_data()['spike_cluster'], session2.get_spike_data()['spike_cluster'])
 
     full_matches, full_match_distances, remaining_distances, remaining_pairs = extract_full_matches(distances, pairs)
-    
+
     remaining_matches, remaining_match_distances, unmatched_2, unmatched_1 = guess_remaining_matches(remaining_distances, remaining_pairs)
 
     assert type(remaining_matches) == list
@@ -70,8 +70,8 @@ def test_guess_remaining_matches():
 
 def test_compare_sessions():
     matches, match_distances, unmatched_2, unmatched_1  = compare_sessions(session1, session2)
-    assert type(matches) == np.ndarray 
-    assert type(match_distances) == np.ndarray 
+    assert type(matches) == np.ndarray
+    assert type(match_distances) == np.ndarray
     assert type(unmatched_1) == list
     assert type(unmatched_2) == list
 

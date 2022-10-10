@@ -16,7 +16,7 @@ implant = {'implant_id': 'id', 'implant_type': 'tetrode', 'implant_geometry': 's
 
 session_settings = {'channel_count': 4, 'animal': animal, 'devices': devices, 'implant': implant}
 
-settings_dict = {'ppm': 511, 'sessions': [session_settings,session_settings], 'smoothing_factor': 3, 'useMatchCut': False}
+settings_dict = {'ppm': 511, 'sessions': [session_settings,session_settings], 'smoothing_factor': 3, 'useMatchedCut': False}
 
 
 def test_read_sequential_sessions():
@@ -30,6 +30,6 @@ def test_temp_read_cut():
     with open(cut_file, 'r') as open_cut_file:
         cut_data, header_data =  temp_read_cut(open_cut_file)
 
-    assert type(cut_data) == list 
-    assert type(header_data) == list 
+    assert type(cut_data) == list
+    assert type(header_data) == list
     assert type(cut_data[0]) == int

@@ -68,10 +68,10 @@ def waveform_features(waveform, time_step):
     except:
         return None
     # logarithm of the slope among valleys of the FD of the AP
-    #try:
-    #    fd["f7"] = symmetric_logarithm((p6.dv - p2.dv) / (p6.t - p2.t))
-    #except:
-    #    return None
+    try:
+        fd["f7"] = symmetric_logarithm((p6.dv - p2.dv) / (p6.t - p2.t))
+    except:
+        return None
     # root mean square of the pre-event amplitude of the FD of the AP
     # NOTE: This feature is MODIFIED from the original paper
     # in the original paper, f8 is the root mean square of the pre-event amplitude of the FD of the AP
@@ -166,45 +166,42 @@ def morphological_points(time_index, waveform, d_waveform, d2_waveform, time_ste
     voltage_troughs = [0] + troughs(waveform, time_step) + [len(waveform) - 1]
     voltage_peak_values = [waveform[i] for i in voltage_peaks]
     voltage_trough_values = [waveform[i] for i in voltage_troughs]
-    x = np.argmax(voltage_peak_values)
-    # find principal voltage peak
-    p3 = waveform_point(voltage_peaks[x])
-    # get pre-spike trough
     try:
+        x = np.argmax(voltage_peak_values)
+        # find principal voltage peak
+        p3 = waveform_point(voltage_peaks[x])
+        # get pre-spike trough
+
         p1 = waveform_point(max(filter(lambda i: i < p3.i, voltage_troughs)))
-    except:
-        return None, None, None, None, None, None
     # get refractory trough
-    try:
+
         p5 = waveform_point(min(filter(lambda i: i > p3.i, voltage_troughs)))
-    except:
-        return None, None, None, None, None, None
+
     # get refractory peak index (discard after use)
-    try:
+
         rp = waveform_point(min(filter(lambda i: i > p5.i, [0] + voltage_peaks + [len(waveform) - 1])))
-    except:
-        return None, None, None, None, None, None
+
 
     # get morphological points in the rate domain
-    def steepest_point_in_region(start, end):
-        rate_extrema_indexes = local_extrema(d_waveform, time_step)
-        r = lambda start, end: list(filter(lambda i: i > start.i and i < end.i, rate_extrema_indexes))
-        v = lambda indexes: [abs(d_waveform[i]) for i in indexes]
-        indexes = r(start, end)
-        if len(indexes) > 0:
-            x = np.argmax(v(indexes))
-        else:
-            return waveform_point(int(np.median([start.i, end.i])))
-        return waveform_point(indexes[x])
-    # get steepest point between pre-spike trough and principal peak
-    p2 = steepest_point_in_region(p1, p3)
-    # get steepest point between principal peak and refractory trough
-    p4 = steepest_point_in_region(p3, p5)
-    # get steepest point between refractory trough and refractory peak
-    p6 = steepest_point_in_region(p5, rp)
+        def steepest_point_in_region(start, end):
+            rate_extrema_indexes = local_extrema(d_waveform, time_step)
+            r = lambda start, end: list(filter(lambda i: i > start.i and i < end.i, rate_extrema_indexes))
+            v = lambda indexes: [abs(d_waveform[i]) for i in indexes]
+            indexes = r(start, end)
+            if len(indexes) > 0:
+                x = np.argmax(v(indexes))
+            else:
+                return waveform_point(int(np.median([start.i, end.i])))
+            return waveform_point(indexes[x])
+        # get steepest point between pre-spike trough and principal peak
+        p2 = steepest_point_in_region(p1, p3)
+        # get steepest point between principal peak and refractory trough
+        p4 = steepest_point_in_region(p3, p5)
+        # get steepest point between refractory trough and refractory peak
+        p6 = steepest_point_in_region(p5, rp)
 
-    try:
         assert p1.i < p2.i < p3.i < p4.i < p5.i < p6.i
+
     except:
         return None, None, None, None, None, None
 
@@ -224,7 +221,7 @@ class Point(object):
 
 # utility functions for extracting features from a waveform signal
 def symmetric_logarithm(x):
-    return float(np.sign(x) * np.log(np.abs(x)))
+    return sign(x) * log(1 + abs(x))
 
 def inter_quartile_range(data):
     """
