@@ -29,9 +29,9 @@ def waveform_features(waveform, time_step):
     d2_waveform = derivative2(waveform, time_step)
     # get morphological points
     p1, p2, p3, p4, p5, p6 = morphological_points(t, waveform, d_waveform, d2_waveform, time_step)
-    # print(p1.v, p2.v, p3.v, p4.v, p5.v, p6.v)
-    # print(p1.dv, p2.dv, p3.dv, p4.dv, p5.dv, p6.dv)
-    # print(p1.t, p2.t, p3.t, p4.t, p5.t, p6.t)
+    if p1 is None:
+        return None
+
     # FEATURE EXTRACTION
     fd = dict() # feature dictionary
 
@@ -49,17 +49,29 @@ def waveform_features(waveform, time_step):
     # NOTE: This feature is NOT in the original paper
     # in the original paper, f4 is the correlation between
     # the waveform and a reference waveform (we don't use reference waveforms).
-    fd["f4"] = area_under_curve(waveform[p1.i:p5.i], time_step)/(p5.t - p1.t)
+    try:
+        fd["f4"] = area_under_curve(waveform[p1.i:p5.i], time_step)/(p5.t - p1.t)
+    except:
+        return None
     # logarithm of the positve deflection of the FD of the AP
     # NOTE: This feature is NOT in the original paper
     # in the original paper, f5 is the logarithm of the term below
     # However, their definition did not generalize to excidatory
     # neurons, where the principal peak comes before the big trough.
-    fd["f5"] = symmetric_logarithm((p4.dv - p2.dv) / (p4.t - p2.t))
+    try:
+        fd["f5"] = symmetric_logarithm((p4.dv - p2.dv) / (p4.t - p2.t))
+    except:
+        return None
     # negative deflection of the FD of the AP
-    fd["f6"] = (p6.dv - p4.dv) / (p6.t - p4.t)
+    try:
+        fd["f6"] = (p6.dv - p4.dv) / (p6.t - p4.t)
+    except:
+        return None
     # logarithm of the slope among valleys of the FD of the AP
-    fd["f7"] = symmetric_logarithm((p6.dv - p2.dv) / (p6.t - p2.t))
+    #try:
+    #    fd["f7"] = symmetric_logarithm((p6.dv - p2.dv) / (p6.t - p2.t))
+    #except:
+    #    return None
     # root mean square of the pre-event amplitude of the FD of the AP
     # NOTE: This feature is MODIFIED from the original paper
     # in the original paper, f8 is the root mean square of the pre-event amplitude of the FD of the AP
@@ -68,14 +80,26 @@ def waveform_features(waveform, time_step):
     # be the boundary of the pre-event amplitude.
     # We use the first extremum of the first derivative as the cutoff
     # when the first voltage domain extremum is the boundary.
-    fd["f8"] = np.sqrt(np.mean([x**2 for x in d_waveform[:p1.i]])) if p1.i > 0 else np.sqrt(np.mean([x**2 for x in d_waveform[p1.i:p2.i]]))
+    try:
+        fd["f8"] = np.sqrt(np.mean([x**2 for x in d_waveform[:p1.i]])) if p1.i > 0 else np.sqrt(np.mean([x**2 for x in d_waveform[p1.i:p2.i]]))
+    except:
+        return None
     # # negative slope ratio of the FD of the AP
     # # print((p2.dv - p1.dv), (p2.t - p1.t), (p3.dv - p2.dv), (p3.t - p2.t))
-    fd["f9"] = ((p2.dv - p1.dv)/(p2.t - p1.t))/((p3.dv - p2.dv)/(p3.t - p2.t))
+    try:
+        fd["f9"] = ((p2.dv - p1.dv)/(p2.t - p1.t))/((p3.dv - p2.dv)/(p3.t - p2.t))
+    except:
+        return None
     # # postive slope ratio of the FD of the AP
-    fd["f10"] = ((p4.dv - p3.dv)/(p4.t - p3.t))/((p5.dv - p4.dv)/(p5.t - p4.t))
+    try:
+        fd["f10"] = ((p4.dv - p3.dv)/(p4.t - p3.t))/((p5.dv - p4.dv)/(p5.t - p4.t))
+    except:
+        return None
     # peak to valley ratio of the action potential
-    fd["f11"] = p2.dv / p4.dv
+    try:
+        fd["f11"] = p2.dv / p4.dv
+    except:
+        return None
     # PHASE FEATURES
     # amplitude of the FD of the AP relating to p1
     fd["f12"] = p1.dv
@@ -146,11 +170,20 @@ def morphological_points(time_index, waveform, d_waveform, d2_waveform, time_ste
     # find principal voltage peak
     p3 = waveform_point(voltage_peaks[x])
     # get pre-spike trough
-    p1 = waveform_point(max(filter(lambda i: i <= p3.i, voltage_troughs)))
+    try:
+        p1 = waveform_point(max(filter(lambda i: i < p3.i, voltage_troughs)))
+    except:
+        return None, None, None, None, None, None
     # get refractory trough
-    p5 = waveform_point(min(filter(lambda i: i >= p3.i, voltage_troughs)))
+    try:
+        p5 = waveform_point(min(filter(lambda i: i > p3.i, voltage_troughs)))
+    except:
+        return None, None, None, None, None, None
     # get refractory peak index (discard after use)
-    rp = waveform_point(min(filter(lambda i: i >= p5.i, [0] + voltage_peaks + [len(waveform) - 1])))
+    try:
+        rp = waveform_point(min(filter(lambda i: i > p5.i, [0] + voltage_peaks + [len(waveform) - 1])))
+    except:
+        return None, None, None, None, None, None
 
     # get morphological points in the rate domain
     def steepest_point_in_region(start, end):
@@ -169,6 +202,11 @@ def morphological_points(time_index, waveform, d_waveform, d2_waveform, time_ste
     p4 = steepest_point_in_region(p3, p5)
     # get steepest point between refractory trough and refractory peak
     p6 = steepest_point_in_region(p5, rp)
+
+    try:
+        assert p1.i < p2.i < p3.i < p4.i < p5.i < p6.i
+    except:
+        return None, None, None, None, None, None
 
     return p1, p2, p3, p4, p5, p6
 
