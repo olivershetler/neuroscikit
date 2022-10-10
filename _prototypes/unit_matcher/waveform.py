@@ -58,20 +58,20 @@ def waveform_features(waveform, time_step):
     # in the original paper, f5 is the logarithm of the term below
     # However, their definition did not generalize to excidatory
     # neurons, where the principal peak comes before the big trough.
-    try:
-        fd["f5"] = symmetric_logarithm((p4.dv - p2.dv) / (p4.t - p2.t))
-    except:
-        return None
+    #try:
+    #    fd["f5"] = symmetric_logarithm((p4.dv - p2.dv) / (p4.t - p2.t))
+    #except:
+    #    return None
     # negative deflection of the FD of the AP
     try:
         fd["f6"] = (p6.dv - p4.dv) / (p6.t - p4.t)
     except:
         return None
     # logarithm of the slope among valleys of the FD of the AP
-    try:
-        fd["f7"] = symmetric_logarithm((p6.dv - p2.dv) / (p6.t - p2.t))
-    except:
-        return None
+    #try:
+    #    fd["f7"] = symmetric_logarithm((p6.dv - p2.dv) / (p6.t - p2.t))
+    #except:
+    #    return None
     # root mean square of the pre-event amplitude of the FD of the AP
     # NOTE: This feature is MODIFIED from the original paper
     # in the original paper, f8 is the root mean square of the pre-event amplitude of the FD of the AP
@@ -181,29 +181,25 @@ def morphological_points(time_index, waveform, d_waveform, d2_waveform, time_ste
 
         rp = waveform_point(min(filter(lambda i: i > p5.i, [0] + voltage_peaks + [len(waveform) - 1])))
 
-
-    # get morphological points in the rate domain
-        def steepest_point_in_region(start, end):
-            rate_extrema_indexes = local_extrema(d_waveform, time_step)
-            r = lambda start, end: list(filter(lambda i: i > start.i and i < end.i, rate_extrema_indexes))
-            v = lambda indexes: [abs(d_waveform[i]) for i in indexes]
-            indexes = r(start, end)
-            if len(indexes) > 0:
-                x = np.argmax(v(indexes))
-            else:
-                return waveform_point(int(np.median([start.i, end.i])))
-            return waveform_point(indexes[x])
-        # get steepest point between pre-spike trough and principal peak
-        p2 = steepest_point_in_region(p1, p3)
-        # get steepest point between principal peak and refractory trough
-        p4 = steepest_point_in_region(p3, p5)
-        # get steepest point between refractory trough and refractory peak
-        p6 = steepest_point_in_region(p5, rp)
-
-        assert p1.i < p2.i < p3.i < p4.i < p5.i < p6.i
-
     except:
         return None, None, None, None, None, None
+    # get morphological points in the rate domain
+    def steepest_point_in_region(start, end):
+        rate_extrema_indexes = local_extrema(d_waveform, time_step)
+        r = lambda start, end: list(filter(lambda i: i > start.i and i < end.i, rate_extrema_indexes))
+        v = lambda indexes: [abs(d_waveform[i]) for i in indexes]
+        indexes = r(start, end)
+        if len(indexes) > 0:
+            x = np.argmax(v(indexes))
+        else:
+            return waveform_point(int(np.median([start.i, end.i])))
+        return waveform_point(indexes[x])
+    # get steepest point between pre-spike trough and principal peak
+    p2 = steepest_point_in_region(p1, p3)
+    # get steepest point between principal peak and refractory trough
+    p4 = steepest_point_in_region(p3, p5)
+    # get steepest point between refractory trough and refractory peak
+    p6 = steepest_point_in_region(p5, rp)
 
     return p1, p2, p3, p4, p5, p6
 
