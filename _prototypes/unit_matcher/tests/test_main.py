@@ -13,6 +13,7 @@ from _prototypes.unit_matcher.session import compare_sessions
 from _prototypes.unit_matcher.write_axona import format_new_cut_file_name
 
 data_dir = parent_dir + r'\neuroscikit_test_data\single_sequential'
+print(">>>>>", data_dir)
 
 animal = {'animal_id': 'id', 'species': 'mouse', 'sex': 'F', 'age': 1, 'weight': 1, 'genotype': 'type', 'animal_notes': 'notes'}
 devices = {'axona_led_tracker': True, 'implant': True}
@@ -45,7 +46,7 @@ def test_format_cut():
     new_cut_file_path, new_cut_data, header_data = format_cut(session1, map_dict)
 
     assert 'matched' in new_cut_file_path
-    assert type(new_cut_data) == list 
+    assert type(new_cut_data) == list
     assert type(header_data) == list
 
 def test_run_unit_matcher():
@@ -76,7 +77,7 @@ def test_run_unit_matcher():
 #     with open(cut_file, 'r') as open_cut_file:
 #         cut_data, header_data = temp_read_cut(open_cut_file)
 
-#     assert type(cut_data) == list 
+#     assert type(cut_data) == list
 #     assert type(cut_data[0]) == int
 #     assert type(header_data) == list
 

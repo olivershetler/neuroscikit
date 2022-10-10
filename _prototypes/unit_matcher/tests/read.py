@@ -10,7 +10,7 @@ prototype_dir = os.getcwd()
 parent_dir = os.path.dirname(prototype_dir)
 sys.path.append(parent_dir)
 
-data_dir = parent_dir + r'\neuroscikit_test_data\sequential_axona_sessions'
+data_dir = parent_dir + r'\neuroscikit_test_data\single_sequential'
 
 # Import read modules
 
