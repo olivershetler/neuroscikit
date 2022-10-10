@@ -178,6 +178,7 @@ def spike_level_feature_array(unit: SpikeCluster, time_step):
             #spike.features = spike_features(spike, time_step)
             feature_vector = list(features.values())
             feature_array.append(feature_vector)
+    
     return np.array(feature_array)
 
 

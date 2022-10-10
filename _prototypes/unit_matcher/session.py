@@ -31,7 +31,7 @@ def compute_distances(session1_cluster: SpikeClusterBatch, session2_cluster: Spi
 
     for i in range(len(session1_feature_arrays)):
         for j in range(len(session2_feature_arrays)):
-            print('Session1 ' + str(i) + '; Session2 ' + str(j))
+            print('Session1 - Cell ' + str(i) + '; Session2 - Cell ' + str(j))
 
             # idx1 = np.where(session1_feature_array != session1_feature_array)[0]
             # idx2 = np.where(session2_feature_array != session2_feature_array)[0]
@@ -40,7 +40,8 @@ def compute_distances(session1_cluster: SpikeClusterBatch, session2_cluster: Spi
             # assert len(idx2) == 0
 
             distance = jensen_shannon_distance(session1_feature_arrays[i], session2_feature_arrays[j])
-
+            session1_unit_clusters[i].stats_dict['JSD'] = distance
+            session2_unit_clusters[i].stats_dict['JSD'] = distance
             # distances.append(distance)
             # pairs.append[[unit1, unit2]]
 

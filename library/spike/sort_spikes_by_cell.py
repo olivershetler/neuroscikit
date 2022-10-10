@@ -55,7 +55,11 @@ def sort_spikes_by_cell(clusters: SpikeClusterBatch):
     unique_labels = np.asarray(clusters.get_unique_cluster_labels())
     idx = np.where((unique_labels >= 1) & (unique_labels < empty_cell))
     good_sorted_label_ids = unique_labels[idx]
+
+    # VERY IMPORTANT LINE #
     clusters.set_sorted_label_ids(good_sorted_label_ids)
+    # IF GOOD LABEL IDS NOT SET, NOISE LABELS WILL BE USED TO MKAE CELL #
+    
     indiv_clusters = clusters.get_spike_cluster_instances()
 
     for j in good_sorted_label_ids:
