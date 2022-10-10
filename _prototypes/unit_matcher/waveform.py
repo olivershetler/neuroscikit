@@ -185,7 +185,7 @@ def morphological_points(time_index, waveform, d_waveform, d2_waveform, time_ste
         return None, None, None, None, None, None
     # get morphological points in the rate domain
     def steepest_point_in_region(start, end):
-        rate_extrema_indexes = local_extrema(d_waveform, time_step)
+        rate_extrema_indexes = local_extrema(d_waveform[start.i:end.i], time_step)
         r = lambda start, end: list(filter(lambda i: i > start.i and i < end.i, rate_extrema_indexes))
         v = lambda indexes: [abs(d_waveform[i]) for i in indexes]
         indexes = r(start, end)
