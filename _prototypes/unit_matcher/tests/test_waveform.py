@@ -20,6 +20,7 @@ from _prototypes.unit_matcher.waveform import (
 )
 
 from matplotlib.pyplot import plot, legend, show, axvline, axhline
+import matplotlib.pyplot as plt
 import numpy as np
 
 waveform = read.waveform
@@ -29,11 +30,11 @@ time_step = read.time_step
 
 def test_time_index():
     assert len(waveform) == len(time_index(waveform, time_step))
-    plot(time_index(waveform, time_step), waveform)
+    #plot(time_index(waveform, time_step), waveform)
 
 def test_derivative():
     assert len(waveform) == len(derivative(waveform, time_step))
-    plot(time_index(waveform, time_step), derivative(waveform, time_step), linestyle='--')
+    #plot(time_index(waveform, time_step), derivative(waveform, time_step), linestyle='--')
 
 def test_derivative2():
     assert len(waveform) == len(derivative2(waveform, time_step))
@@ -47,11 +48,11 @@ def test_local_extrema():
     d_waveform = derivative(waveform, time_step)
     extrema = local_extrema(waveform, time_step)
     d_extrema = local_extrema(d_waveform, time_step)
-    for e in extrema:
-        plot(time_index(waveform, time_step)[e], d_waveform[e], 'o')
-    for e in d_extrema:
-        axvline(time_index(waveform, time_step)[e], linestyle=':')
-    show()
+    #for e in extrema:
+    #    plot(time_index(waveform, time_step)[e], d_waveform[e], 'o')
+    #for e in d_extrema:
+    #    axvline(time_index(waveform, time_step)[e], linestyle=':')
+    #show()
 
 # Key morphological point objects
 
@@ -73,23 +74,7 @@ def test_point():
 
 
 def test_morphological_points():
-    t = time_index(waveform, time_step)
-    d_waveform = derivative(waveform, time_step)
-    d2_waveform = derivative2(waveform, time_step)
-
-    p1, p2, p3, p4, p5, p6 = morphological_points(t, waveform, d_waveform, d2_waveform, time_step)
-
-    # Plot the waveform and the morphological points
-    plot(t, waveform)
-    plot(t, d_waveform, linestyle='--')
-    plot(p1.t, p1.v, 'o', label='p1')
-    plot(p2.t, p2.dv, 'o', label='p2')
-    plot(p3.t, p3.v, 'o', label='p3')
-    plot(p4.t, p4.dv, 'o', label='p4')
-    plot(p5.t, p5.v, 'o', label='p5')
-    plot(p6.t, p6.dv, 'o', label='p6')
-    legend()
-    show()
+    plot_waveform_points(waveform, time_step)
 
 # Main Feature Extraction Function
 
@@ -101,7 +86,9 @@ def test_waveform_features():
             feature_vector = waveform_features(wf, time_step)
         except:
             print('Error in waveform', i)
-            plot_waveform_points(wf, time_step)
+            #plot_waveform_points(wf, time_step)
+
+
 
 def plot_waveform_points(waveform, time_step):
     t = time_index(waveform, time_step)
@@ -110,14 +97,27 @@ def plot_waveform_points(waveform, time_step):
 
     p1, p2, p3, p4, p5, p6 = morphological_points(t, waveform, d_waveform, d2_waveform, time_step)
 
-    # Plot the waveform and the morphological points
-    plot(t, waveform)
-    plot(t, d_waveform, linestyle='--')
-    plot(p1.t, p1.v, 'o', label='p1')
-    plot(p2.t, p2.dv, 'o', label='p2')
-    plot(p3.t, p3.v, 'o', label='p3')
-    plot(p4.t, p4.dv, 'o', label='p4')
-    plot(p5.t, p5.v, 'o', label='p5')
-    plot(p6.t, p6.dv, 'o', label='p6')
-    legend()
-    show()
+    fig, ax1 = plt.subplots()
+
+    color = 'tab:red'
+    ax1.set_xlabel('time (mS)')
+    ax1.set_ylabel('mV', color=color)
+    ax1.plot(t, waveform, color=color)
+    ax1.plot(p1.t, p1.v, 'o', color=color, label='p1')
+    ax1.plot(p3.t, p3.v, 'o', color=color, label='p3')
+    ax1.plot(p5.t, p5.v, 'o', color=color, label='p5')
+    ax1.tick_params(axis='y', labelcolor=color)
+
+    ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
+
+    color = 'tab:orange'
+    ax2.set_ylabel('mV/mS', color=color)  # we already handled the x-label with ax1
+    ax2.plot(t, d_waveform, color=color, linestyle='--')
+    ax2.plot(p2.t, p2.dv, 'o', color=color, label='p2')
+    ax2.plot(p4.t, p4.dv, 'o', color=color, label='p4')
+    ax2.plot(p6.t, p6.dv, 'o', color=color, label='p6')
+    ax2.tick_params(axis='y', labelcolor=color)
+
+    fig.tight_layout()  # otherwise the right y-label is slightly clipped
+    plt.legend()
+    plt.show()
