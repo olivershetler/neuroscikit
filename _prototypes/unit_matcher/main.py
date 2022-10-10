@@ -45,7 +45,7 @@ def run_unit_matcher(paths=[], settings={}, study=None):
             prev = curr
             curr = animal.sessions[session]
 
-            print(prev, curr, isFirstSession)
+            # print(prev, curr, isFirstSession)
 
 
             # if first session of sequence there is no prev session
@@ -57,16 +57,16 @@ def run_unit_matcher(paths=[], settings={}, study=None):
                     new_cut_file_path, new_cut_data, header_data = format_cut(prev, map_dict_first)
                     write_cut(new_cut_file_path, new_cut_data, header_data)
                     isFirstSession = False
-                    print('NEW')
-                    print(map_dict_first.values())
-                    print(map_dict_first.keys())
+                    # print('NEW')
+                    # print(map_dict_first.values())
+                    # print(map_dict_first.keys())
 
                 map_dict = map_unit_matches_sequential_session(matches, unmatched_2)
                 new_cut_file_path, new_cut_data, header_data = format_cut(curr, map_dict)
                 write_cut(new_cut_file_path, new_cut_data, header_data)
-                print('NEW')
-                print(map_dict.values())
-                print(map_dict.keys())
+                # print('NEW')
+                # print(map_dict.values())
+                # print(map_dict.keys())
             else:
                 isFirstSession = True
             # update refernece of first session in pair

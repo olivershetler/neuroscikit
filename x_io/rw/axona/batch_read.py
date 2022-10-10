@@ -34,9 +34,9 @@ def make_study(directory, settings_dict: list):
 
     study_dict = _init_study_dict(settings_dict)
 
-    cut_files, tetrode_files, pos_files = _grab_tetrode_cut_position_files(directory, pos_files=[], cut_files=[], tetrode_files=[])
+    cut_files, tetrode_files, pos_files, matched_cut_files = _grab_tetrode_cut_position_files(directory, pos_files=[], cut_files=[], tetrode_files=[])
 
-    sorted_files = _group_session_files(cut_files, tetrode_files, pos_files)
+    sorted_files = _group_session_files(cut_files, tetrode_files, pos_files, matched_cut_files)
 
     sessions = batch_sessions(sorted_files, settings_dict)
 
@@ -52,7 +52,7 @@ def make_study(directory, settings_dict: list):
 def _get_study_metadata():
     return StudyMetadata({'test': 'test'})
 
-def _grab_tetrode_cut_position_files(paths: list, pos_files=[], cut_files=[], tetrode_files=[], parent_path=None) -> tuple:
+def _grab_tetrode_cut_position_files(paths: list, pos_files=[], cut_files=[], tetrode_files=[], matched_cut_files=[], parent_path=None) -> tuple:
 
     '''
         Extract tetrode, cut, and position file data /+ a set file
@@ -79,11 +79,14 @@ def _grab_tetrode_cut_position_files(paths: list, pos_files=[], cut_files=[], te
         for file in files:
             fpath = paths[0] + '/' + file
             if os.path.isdir(fpath) and 'git' not in fpath:
-                tetrode_files, cut_files, pos_files = _grab_tetrode_cut_position_files(os.listdir(fpath), pos_files=pos_files, cut_files=cut_files, tetrode_files=tetrode_files, parent_path=fpath)
+                tetrode_files, cut_files, pos_files, matched_cut_files = _grab_tetrode_cut_position_files(os.listdir(fpath), pos_files=pos_files, cut_files=cut_files, tetrode_files=tetrode_files, matched_cut_files=matched_cut_files, parent_path=fpath)
             if file[-3:] == 'pos':
                 pos_files.append(paths[0] + "/" + file)
             elif file[-3:] == 'cut':
-                cut_files.append(paths[0] + "/" + file)
+                if 'matched' not in file:
+                    cut_files.append(paths[0] + "/" + file)
+                else:
+                    matched_cut_files.append(paths[0] + '/' + file)
             elif file[-1:].isdigit() and 'clu' not in file:
                 tetrode_files.append(paths[0] + "/" + file)
     else:
@@ -92,17 +95,20 @@ def _grab_tetrode_cut_position_files(paths: list, pos_files=[], cut_files=[], te
                 fpath = parent_path + '/' + file
                 file = fpath
             if os.path.isdir(file) and 'git' not in file:
-                tetrode_files, cut_files, pos_files = _grab_tetrode_cut_position_files(os.listdir(file), pos_files=pos_files, cut_files=cut_files, tetrode_files=tetrode_files, parent_path=file)
+                tetrode_files, cut_files, pos_files, matched_cut_files = _grab_tetrode_cut_position_files(os.listdir(file), pos_files=pos_files, cut_files=cut_files, tetrode_files=tetrode_files, matched_cut_files=matched_cut_files, parent_path=file)
             if file[-3:] == 'pos':
                 pos_files.append(file)
             elif file[-3:] == 'cut':
-                cut_files.append(file)
+                if 'matched' not in file:
+                    cut_files.append( file)
+                else:
+                    matched_cut_files.append(file)
             elif file[-1:].isdigit() and 'clu' not in file:
                 tetrode_files.append(file)
 
-    return cut_files, tetrode_files, pos_files
+    return cut_files, tetrode_files, pos_files, matched_cut_files
 
-def _group_session_files(cut_files, tetrode_files, pos_files):
+def _group_session_files(cut_files, tetrode_files, pos_files, matched_cut_files):
 
     '''
         Group position, cut and tetrode files that belong to the same session.
@@ -131,6 +137,7 @@ def _group_session_files(cut_files, tetrode_files, pos_files):
         # Grab the tetrode and cut files belonging to this session only
         select_tetrodes = [tetrode for tetrode in tetrode_files if session in tetrode]
         select_cuts = [cut for cut in cut_files if session in cut]
+        select_cuts_matched = [cut for cut in matched_cut_files if session in cut]
 
         # Ensures that only collections containing all three: pos, cut and tetrode files are added
         if len(select_tetrodes) == 0 or len(select_cuts) == 0:
@@ -138,7 +145,7 @@ def _group_session_files(cut_files, tetrode_files, pos_files):
 
         # Add these files into a single data strucutre
         collection.append(pos_file)
-        collection += (select_tetrodes + select_cuts)
+        collection += (select_tetrodes + select_cuts + select_cuts_matched)
 
         # Accumulate these collections to a separate data structure as 'groups' of files.
         grouped_sessions.append(collection)
@@ -176,7 +183,14 @@ def batch_sessions(sorted_files, settings_dict):
 
     for i in range(len(settings_dict['sessions'])):
 
-        session = make_session(sorted_files[i][2], sorted_files[i][1], sorted_files[i][0], settings_dict['sessions'][i], settings_dict['ppm'])
+        if settings_dict['useMatchedCut'] == True: 
+            assert len(sorted_files[i]) > 3, print('Matched cut file not present, make sure to run unit matcher')
+            cut_file = sorted_files[i][-1]
+            assert 'matched.cut' in cut_file
+        else:
+            cut_file = sorted_files[i][2]
+
+        session = make_session(cut_file, sorted_files[i][1], sorted_files[i][0], settings_dict['sessions'][i], settings_dict['ppm'])
 
         session.set_smoothing_factor(settings_dict['smoothing_factor'])
 

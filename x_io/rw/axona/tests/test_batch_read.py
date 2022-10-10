@@ -147,15 +147,17 @@ def test_make_session():
 
 def test__grab_tetrode_cut_position_files():
 
-    cut_files, tetrode_files, pos_files = _grab_tetrode_cut_position_files([data_dir], pos_files=[], cut_files=[], tetrode_files=[])
+    cut_files, tetrode_files, pos_files, matched_cut_files = _grab_tetrode_cut_position_files([data_dir], pos_files=[], cut_files=[], tetrode_files=[])
 
     assert type(cut_files) == list
     assert type(pos_files) == list
     assert type(tetrode_files) == list
+    assert type(matched_cut_files) == list
  
     assert len(cut_files) == 1
     assert len(pos_files) == 1
     assert len(tetrode_files) == 1
+    assert len(matched_cut_files) == 1
 
 def test__init_study_dict():
     study_dict = _init_study_dict(settings_dict)
@@ -165,18 +167,19 @@ def test__init_study_dict():
 
 def test__group_session_files():  
 
-    cut_files, tetrode_files, pos_files = _grab_tetrode_cut_position_files([data_dir], pos_files=[], cut_files=[], tetrode_files=[])
+    cut_files, tetrode_files, pos_files, matched_cut_files = _grab_tetrode_cut_position_files([data_dir], pos_files=[], cut_files=[], tetrode_files=[])
 
-    sorted_files = _group_session_files(cut_files, tetrode_files, pos_files)
+    sorted_files = _group_session_files(cut_files, tetrode_files, pos_files, matched_cut_files)
 
     assert len(sorted_files) == len(cut_files)
     assert len(cut_files) == len(tetrode_files)
     assert len(tetrode_files) == len(pos_files)
+    assert len(pos_files) == len(matched_cut_files)
 
 def test_batch_sessions():
 
-    cut_files, tetrode_files, pos_files = _grab_tetrode_cut_position_files([data_dir], pos_files=[], cut_files=[], tetrode_files=[])
-    sorted_files = _group_session_files(cut_files, tetrode_files, pos_files)
+    cut_files, tetrode_files, pos_files, matched_cut_files = _grab_tetrode_cut_position_files([data_dir], pos_files=[], cut_files=[], tetrode_files=[])
+    sorted_files = _group_session_files(cut_files, tetrode_files, pos_files, matched_cut_files)
 
     sessions = batch_sessions(sorted_files, settings_dict)
 
