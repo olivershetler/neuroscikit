@@ -89,7 +89,8 @@ def map_unit_matches_sequential_session(matches, unmatched):
     for pair in matches:
         map_dict[int(pair[1])] = int(pair[0])
 
-    highest_matched_id = max(map_dict, key=map_dict.get)
+    # highest_matched_id = max(map_dict, key=map_dict.get)
+    highest_matched_id = max(map_dict.values())
     # unmatched = sorted(unmatched)
     empty_cell_id = highest_matched_id + 1
     unmatched_cell_start_id = empty_cell_id + 1
