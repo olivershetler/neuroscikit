@@ -59,7 +59,7 @@ There are three domains from which features can be extracted.
 3. The phase domain (derivative vs second derivative).
 There are two functions associated with the above three domains. One to convert a waveform to the derivative domain (`convert_to_derivative`). The second is to convert a waveform to the phase domain (`convert_to_phase`).
 
-Thera are then helper functions for extracting features from each domain.
+Thera are then functions for extracting features from each domain.
 
 - local and global extrema / peaks and valleys
 - `quartiles` and `interquartile_range` are for extracting quartiles and the interquartile range from a waveform.
@@ -67,48 +67,7 @@ Thera are then helper functions for extracting features from each domain.
 - `skewness` and `kurtosis` are for extracting the skewness and kurtosis from a waveform.
 - `area_under_curve` is for extracting the area under the curve from a waveform.
 
-There is a function called `morphological_points` that extracts special points from each waveform. These special points include the following:
-- p1 the trough preceeding the principal peak
-- p2 the point of steepest ascent between p1 and p3
-- p3 the principal peak of the waveform
-- p4 the point of steepest descent between p3 and p5
-- p5 the trough following the principal peak
-- p6 the point of steepest ascent between p5 and p7
-
-Each point is created using a class called `Point` that contains the following attributes:
-- `i` the index of the point
-- `t` the time of the point
-- `v` the value of the point
-- `dv` the derivative of the point
-- `d2v` the second derivative of the point
-
-Finally, there is a function for extracting the features called `extract_waveform_features`. This function is a wrapper function that will be called in the `spike` module to extract features from each channel in a spike. The function extracts the following features (formulas are given when they pertain to the morphological points):
-- F1 waveform duration of the FD                                p5.t - p1.t
-- F2 waveform peak-to-valley amplitude of the FD                p4.dv - p2.dv
-- F3 waveform peak-to-peak amplitude of the FD                  p6.dv - p2.dv
-- F4 area under the curve from P1 to P5
-- F5 logarithm of the positive deflection of the FD             log( (p4.dv - p2.dv) / (p4.t - p2.t) )
-- F6 negative deflection of the FD                              (p6.dv - p4.dv) / (p4.t - p4.t)
-- F7 logarithm of the slope extrema peaks of the FD             log( (p6.dv - p2.dv) / (p6.t - p2.t) )
-- F8 root mean squared of pre-event amplitudes of the FD
-- F9 Negative slope ratio of the FD                             ( (p2.dv - p1.dv) / (p2.t - p1.t) ) / ( (p3.dv - p2.dv) / (p3.t - p2.t) )
-- F10 Positive slope ratio of the FD                            ( (p4.dv - p3.dv) / (p4.t - p3.t) ) / ( (p5.dv - p4.dv) / (p5.t - p4.t) )
-- F11 Extrema ratio of the FD                                   p2.dv / p4.dv
-- F12 Amplitude of the FD of P1                                 p1.dv
-- F13 Amplitude of the FD of P3                                 p3.dv
-- F14 Amplitude of the FD of P4                                 p4.dv
-- F15 Amplitude of the FD of P5                                 p5.dv
-- F16 Amplitude of the FD of P6                                 p6.dv
-- F17 Amplitude of the SD of P1                                 p1.d2v
-- F18 Amplitude of the SD of P3                                 p3.d2v
-- F19 Amplitude of the SD of P5                                 p5.d2v
-- F20 Interquartile range of the FD
-- F21 Interquartile range of the SD
-- F22 Kurtosis of the FD
-- F23 Skewness of the FD
-- F24 Skewness of the SD
-
-
+There is a function for organizing all the waveform features into a single data structure. This function will be called in the `spike` module to extract features from each waveform in a spike.
 
 ## Sources
 
