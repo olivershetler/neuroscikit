@@ -1,6 +1,7 @@
 
 import os
 import sys
+import numpy as np
 
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
@@ -45,11 +46,9 @@ class SpikeTrain():
     """
     Class to hold 1D spike train, spike train is a sorted set of spikes belonging to one cluster
     """
-    events_binary: list[int]
-    event_times: list[float]
-
     def __init__(self,  input_dict, **kwargs):
         self._input_dict = input_dict
+
 
         self.duration, self.sample_rate, self.events_binary, self.event_times, self.event_labels, self.session_metadata = self._read_input_dict()
 
@@ -68,6 +67,7 @@ class SpikeTrain():
         self.dir_names = self.session_metadata.dir_names
 
         self.stats_dict = self._init_stats_dict()
+        
 
     def __len__(self):
         if len(self.event_labels) == 0:
@@ -211,12 +211,13 @@ class SpikeCluster(): # collection of spike objects
         assert len(self.waveforms) <= 8 and len(self.waveforms) > 0, 'Cannot have fewer than 0 or more than 8 channels'
         # self.time_index = make_seconds_index_from_rate(self.duration, self.sample_rate)
         self.time_index = self.session_metadata.session_object.time_index
+        if self.time_index is None:
+            self.time_index = make_seconds_index_from_rate(self.duration, self.sample_rate)
         self.spike_objects = []
         self.dir_names = self.session_metadata.dir_names
         self.stats_dict = self._init_stats_dict()
-        self.cluster_labels = [self.cluster_label for i in range(len(self.event_times))]
+        self.cluster_labels = np.ones(len(self.event_times), dtype=np.int32) * int(self.cluster_label)
 
-    
 
     def get_cluster_firing_rate(self):
         T = self.time_index[1] - self.time_index[0]
@@ -233,7 +234,7 @@ class SpikeCluster(): # collection of spike objects
     # all waveforms for a channel (multiple per spike)
     def get_single_channel_waveforms(self, id):
         assert id in [1,2,3,4,5,6,7,8], 'Channel number must be from 1 to 8'
-        return self.waveforms[id-1]
+        return self.waveforms['channel_' + str(id)]
 
     def get_spike_object_instances(self):
         if len(self.spike_objects) == 0:
@@ -294,8 +295,12 @@ class SpikeCluster(): # collection of spike objects
             # spike_data_present = True
         event_times = self._input_dict['event_times']
         assert type(event_times) == list, 'Spike times are not a list, check inputs'
+
         if len(event_times) > 0:
             spike_data_present = True
+        else:
+            spike_data_present = False
+            print(event_times)
         assert spike_data_present == True, 'No spike times or binary spikes provided'
         waveforms = self._extract_waveforms()
         session_metadata = None
@@ -343,10 +348,10 @@ class Event():
     def get_signal(self, ind):
         # ind cannot be 0, must start at 1
         assert ind != 0, 'channels are numbered starting at 1 not 0'
-        return self.waveforms[ind-1]
+        return self.event_signal[ind-1]
 
     def get_peak_signal(self):
-        if self.main_ind == 0:
+        if self.main_ind is None:
             self.main_ind, self.main_signal = self._set_peak()
             return self.main_ind, self.main_signal
         else:

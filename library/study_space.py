@@ -2,18 +2,21 @@ from msilib.schema import Class
 import os
 import sys
 
+from numpy import core
+
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
 
 from core.subjects import AnimalMetadata, StudyMetadata, SessionMetadata
 from library.ensemble_space import Cell, CellEnsemble, CellPopulation
 from library.batch_space import SpikeClusterBatch, SpikeTrainBatch
-from core.spikes import * 
+from core.spikes import SpikeCluster, SpikeTrain, Spike, Event
 from core.spatial import Position2D
 from library.spike import sort_spikes_by_cell
 from library.workspace import Workspace
 from core.instruments import DevicesMetadata, ImplantMetadata, TrackerMetadata
 from library.hafting_spatial_maps import SpatialSpikeTrain2D
+from core.core_utils import make_seconds_index_from_rate
 
 
 class Session(Workspace):
@@ -43,9 +46,7 @@ class Session(Workspace):
         self.smoothing_factor = smoothing_factor
     
     def update_time_index(self, class_object):
-        sample_rate = class_object.sample_rate
-        duration = class_object.duration
-        time_index = make_seconds_index_from_rate(duration, sample_rate)
+        time_index = make_seconds_index_from_rate(class_object.duration, class_object.sample_rate)
         self.time_index = time_index
 
     def get_animal_id(self):
@@ -193,7 +194,6 @@ class Study(Workspace):
 
         for i in range(len(self.sessions)):
             animal_id = self.sessions[i].animal_id
-            assert animal_id in self.animal_ids
             ct = len(animal_sessions[animal_id])
             animal_sessions[animal_id]['session_'+str(ct+1)] = self.sessions[i]
 
@@ -299,8 +299,11 @@ class Animal(Workspace):
         core_data = self._extract_core_classes(session)
         assert 'spike_cluster' in core_data, 'Need cluster label data to sort valid cells'
         spike_cluster = core_data['spike_cluster']
+        # spike_train = core_data['spike_train']
         assert isinstance(spike_cluster, SpikeClusterBatch)
+        # assert isinstance(spike_cluster, SpikeTrainBatch)
         good_sorted_cells, good_sorted_waveforms, good_clusters, good_label_ids = sort_spikes_by_cell(spike_cluster)
+        # spike_train.set_sorted_label_ids(good_label_ids)
         print('Session data added, spikes sorted by cell')
         ensemble = session.make_class(CellEnsemble, None)
         for i in range(len(good_sorted_cells)):

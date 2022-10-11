@@ -34,11 +34,11 @@ def sort_spikes_by_cell(clusters: SpikeClusterBatch):
     good_sorted_label_ids = []
     good_clusters = []
 
-    labels = np.unique(cluster_labels)
+    unique_labels = np.unique(cluster_labels)
     # comes in shape (channel count, spike time, nmb samples) but is nested list not numpy
     # want to rearrannge to be (spike time, channel count, nmb sample)
     waves = np.array(waveforms).reshape((len(waveforms[0]), len(waveforms),  len(waveforms[0][0])))
-    for lbl in labels:
+    for lbl in unique_labels:
         idx = np.where(cluster_labels == lbl)
         cells.append(np.array(spike_times)[idx])
         sorted_waveforms.append(waves[idx,:,:].squeeze())
@@ -52,14 +52,13 @@ def sort_spikes_by_cell(clusters: SpikeClusterBatch):
         else:
             empty_cell = j + 1
 
-    unique_labels = np.asarray(clusters.get_unique_cluster_labels())
     idx = np.where((unique_labels >= 1) & (unique_labels < empty_cell))
     good_sorted_label_ids = unique_labels[idx]
 
     # VERY IMPORTANT LINE #
     clusters.set_sorted_label_ids(good_sorted_label_ids)
     # IF GOOD LABEL IDS NOT SET, NOISE LABELS WILL BE USED TO MKAE CELL #
-    
+
     indiv_clusters = clusters.get_spike_cluster_instances()
 
     for j in good_sorted_label_ids:
