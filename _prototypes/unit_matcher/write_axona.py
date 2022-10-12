@@ -17,6 +17,7 @@ def write_cut(cut_file, cut_data, header_data):
             if extract_cut: # start write to cut file
                 open_cut_file.write(" ".join(map(str, cut_data)))
     open_cut_file.close()
+    print('Wrote matched cut file ' + str(cut_file))
 
 def format_new_cut_file_name(old_path):
     fp_split = old_path.split('.cut')

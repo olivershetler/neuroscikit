@@ -1,3 +1,5 @@
+
+from __future__ import division, print_function
 """
 This module contains methods for reading and writing to the .X (tetrode) and .cut file formats, which store extracted spikes and spike cluster data.
 
@@ -37,7 +39,7 @@ The spike data are stored as bytes in the following format:
     For the data we use at Hussaini Lab, the timestamps are identical.
     ...
 """
-from __future__ import division, print_function
+from datetime import datetime
 
 # Internal Dependencies
 #from core.data_spikes import SpikeTrain
@@ -135,6 +137,15 @@ def _read_tetrode(tetrode_file):
             samp_rate = int(line.decode(encoding='UTF-8').split(" ")[1])
         elif 'num_chans' in str(line):
             num_chans = int(line.decode(encoding='UTF-8').split(" ")[1])
+        elif 'trial_date' in str(line):
+            trial_date = line.decode(encoding='UTF-8').split(" ")[2:]
+        elif 'trial_time' in str(line):
+            trial_time = line.decode(encoding='UTF-8').split(" ")[1]
+
+    day, month, year = trial_date
+    month = datetime.strptime(str(month), '%b').month
+    hour, minute, second = trial_time.split(':')
+    date_time = datetime(int(year), int(month), int(day), int(hour), int(minute), int(second))
 
     # calculating the big-endian and little endian matrices so we can convert from bytes -> decimal
     big_endian_vector = 256 ** np.arange(bytes_per_timestamp - 1, -1, -1)
@@ -194,7 +205,7 @@ def _read_tetrode(tetrode_file):
 
     spikeparam = {'timebase': timebase, 'bytes_per_sample': bytes_per_sample, 'samples_per_spike': samples_per_spike,
                   'bytes_per_timestamp': bytes_per_timestamp, 'duration': duration, 'num_spikes': num_spikes,
-                  'sample_rate': samp_rate}
+                  'sample_rate': samp_rate, 'datetime': date_time}
     ephys_data = {'t': t.reshape(num_spikes, 1)}
     for chan in range(number_channels):
         ephys_data['ch%d' % (chan + 1)] = np.asarray(waveform_data[chan][:][:])
@@ -260,6 +271,7 @@ def _read_tetrode_header(tetrode_file):
                 header[field] = value.split(',')
             else:
                 header[field] = value
+
     return header
 
 

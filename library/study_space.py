@@ -1,8 +1,7 @@
 from msilib.schema import Class
 import os
 import sys
-
-from numpy import core
+import numpy as np
 
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
@@ -35,6 +34,7 @@ class Session(Workspace):
             self.animal_id = animal_metadata.animal_id
 
         self.time_index = None
+        self.datetime = None
 
         if 'smoothing_factor' in kwargs:
             self.smoothing_factor = kwargs['smoothing_factor']
@@ -153,6 +153,7 @@ class Session(Workspace):
             if self.time_index is None and not isinstance(class_object, Position2D):
                 self.update_time_index(class_object)
                 class_object.time_index = self.time_index
+                self.datetime = input_dict['datetime']
 
         return class_object
 
@@ -187,22 +188,27 @@ class Study(Workspace):
         self.sessions.append(session)
 
     def _sort_session_by_animal(self):
-        animal_sessions = {}
+        sorted_animal_sessions = {}
+        unsorted_animal_session = {}
+        animal_session_datetime = {}
 
         for id in self.animal_ids:
-            animal_sessions[id] = {}
+            sorted_animal_sessions[id] = {}
+            unsorted_animal_session[id] = []
+            animal_session_datetime[id] = []
 
         for i in range(len(self.sessions)):
             animal_id = self.sessions[i].animal_id
-            ct = len(animal_sessions[animal_id])
-            animal_sessions[animal_id]['session_'+str(ct+1)] = self.sessions[i]
+            unsorted_animal_session[animal_id].append(self.sessions[i])
+            animal_session_datetime[animal_id].append(self.sessions[i].datetime)
 
-            ### ....
-            ### NEED TO EXTEND THIS TO MAKE animal_sessions[animal_id] a dictionary and not list of dictionaries
-            ### Keys will be ordered/sequential sessions. Have to save start date/time from read_tetrode_cut and use to order
-            ### ...
+        for animal_id in list(unsorted_animal_session.keys()):
+            sort_order = np.argsort(animal_session_datetime[animal_id])
+            animal_sesions = np.asarray(unsorted_animal_session[animal_id])[sort_order] 
+            for j in range(len(animal_sesions)):
+                sorted_animal_sessions[animal_id]['session_'+str(j+1)] = animal_sesions[j]
 
-        return animal_sessions
+        return sorted_animal_sessions
 
     def make_animals(self):
         if self.animals is None:

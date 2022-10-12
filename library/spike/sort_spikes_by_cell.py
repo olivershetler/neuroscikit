@@ -44,13 +44,21 @@ def sort_spikes_by_cell(clusters: SpikeClusterBatch):
         sorted_waveforms.append(waves[idx,:,:].squeeze())
         # sorted_clusters.append(indiv_clusters[idx])
 
-    empty_cell = 1
-    for j in range(len(sorted_waveforms)):
-        if len(sorted_waveforms[j]) == 0 and j != 0:
-            empty_cell = j
-            break
-        else:
-            empty_cell = j + 1
+    # empty_cell = 0
+    # for j in range(len(sorted_waveforms)):
+    #     print(j, len(sorted_waveforms[j]), empty_cell)
+    #     if len(sorted_waveforms[j]) == 0 and j != 0:
+    #         empty_cell = j
+    #         break
+    #     else:
+    #         empty_cell = j + 1
+
+    empty_cell = sorted(set(range(unique_labels[0], unique_labels[-1] + 1)).difference(unique_labels))
+
+    if len(empty_cell) >= 1:
+        empty_cell = empty_cell[0]
+    else:
+        empty_cell = unique_labels[-1] + 1
 
     idx = np.where((unique_labels >= 1) & (unique_labels < empty_cell))
     good_sorted_label_ids = unique_labels[idx]
@@ -60,7 +68,7 @@ def sort_spikes_by_cell(clusters: SpikeClusterBatch):
     # IF GOOD LABEL IDS NOT SET, NOISE LABELS WILL BE USED TO MKAE CELL #
 
     indiv_clusters = clusters.get_spike_cluster_instances()
-
+    # print(len(indiv_clusters), len(good_sorted_label_ids), good_sorted_label_ids, empty_cell)
     for j in good_sorted_label_ids:
         good_cells.append(cells[j])
         good_sorted_waveforms.append(sorted_waveforms[j])
