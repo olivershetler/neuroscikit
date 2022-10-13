@@ -49,7 +49,7 @@ implant = {'implant_id': '001', 'implant_type': 'tetrode', 'implant_geometry': '
 session_settings = {'channel_count': 4, 'animal': animal, 'devices': devices, 'implant': implant}
 
 
-settings_dict = {'ppm': 511, 'sessions': [session_settings,], 'smoothing_factor': 3, }
+settings_dict = {'ppm': 511, 'session':  session_settings, 'smoothing_factor': 3, }
 
 study = make_study([data_dir], settings_dict)
 

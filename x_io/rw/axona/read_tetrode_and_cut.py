@@ -302,13 +302,15 @@ def _format_spikes(tetrode_file):
     ts = spikes['t']
     nspk = spikeparam['num_spikes']
     spikelen = spikeparam['samples_per_spike']
+    
+    channels = {}
+    for i in range(1,9,1):
+        key = 'ch' + str(i)
+        if key in spikes:
+            channels[key] = spikes[key]
 
-    ch1 = spikes['ch1']
-    ch2 = spikes['ch2']
-    ch3 = spikes['ch3']
-    ch4 = spikes['ch4']
 
-    return ts, ch1, ch2, ch3, ch4, spikeparam
+    return ts, channels, spikeparam
 
 #called in batch_processing, compute_all_map_data, npy_converter and shuffle_processing
 def get_spike_trains_from_channel(open_cut_file, open_tetrode_file, channel_no: int) -> tuple:

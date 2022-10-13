@@ -96,7 +96,7 @@ def _grab_tetrode_cut_position_files(paths: list, pos_files=[], cut_files=[], te
                     cut_files.append(fpath)
                 else:
                     matched_cut_files.append(paths[0] + '/' + file)
-            elif file[-1:].isdigit() and 'clu' not in file:
+            elif file[-1:].isdigit() and 'clu' not in file and 'cut' not in file and 'eeg' not in file and 'egf' not in file:
                 tetrode_files.append(fpath)
     else:
         for file in paths:
@@ -113,7 +113,7 @@ def _grab_tetrode_cut_position_files(paths: list, pos_files=[], cut_files=[], te
                     cut_files.append( file)
                 else:
                     matched_cut_files.append(file)
-            elif file[-1:].isdigit() and 'clu' not in file:
+            elif file[-1:].isdigit() and 'clu' not in file and 'cut' not in file and 'eeg' not in file and 'egf' not in file:
                 tetrode_files.append(file)
 
     return cut_files, tetrode_files, pos_files, matched_cut_files, animal_dir_names
@@ -143,7 +143,7 @@ def _group_session_files(cut_files, tetrode_files, pos_files, matched_cut_files,
     # Iterate over each position file
     for pos_file in pos_files:
         # Will group common files
-        collection = []
+        collection = {}
 
         # Grab session handle from .pos file
         session = pos_file[:-4]
@@ -158,8 +158,12 @@ def _group_session_files(cut_files, tetrode_files, pos_files, matched_cut_files,
             break
 
         # Add these files into a single data strucutre
-        collection.append(pos_file)
-        collection += (select_tetrodes + select_cuts + select_cuts_matched)
+        # collection.append(pos_file)
+        # collection += (select_tetrodes + select_cuts + select_cuts_matched)
+        collection['pos'] = pos_file
+        collection['tet'] = sorted(select_tetrodes)
+        collection['cut'] = sorted(select_cuts)
+        collection['matched_cut'] = sorted(select_cuts_matched)
 
         # Accumulate these collections to a separate data structure as 'groups' of files.
         grouped_sessions.append(collection)
@@ -199,41 +203,65 @@ def batch_sessions(sorted_files, settings_dict, indiv_session_settings):
 
     sessions = {}
 
+    c = 1
+
     for i in range(len(sorted_files)):
 
-        session_settings_dict = settings_dict['session']
-        session_settings_dict['channel_count'] = indiv_session_settings['tetrode_counts'][i]
-        session_settings_dict['animal'] = {'animal_id': indiv_session_settings['animal_ids'][i]}
-        
 
-        if settings_dict['useMatchedCut'] == True: 
-            assert len(sorted_files[i]) > 3, print('Matched cut file not present, make sure to run unit matcher')
-            cut_file = sorted_files[i][-1]
-            assert 'matched.cut' in cut_file
-        else:
-            cut_file = sorted_files[i][2]
+        pos_file = sorted_files[i]['pos']
+        cut_files = sorted_files[i]['cut']
+        tet_files = sorted_files[i]['tet']
+        matched_cut_files = sorted_files[i]['matched_cut']
 
-        session = make_session(cut_file, sorted_files[i][1], sorted_files[i][0], session_settings_dict, settings_dict['ppm'])
+        assert len(cut_files) == len(tet_files), "Number of tetrode and cut files doesn't match"
 
-        session.set_smoothing_factor(settings_dict['smoothing_factor'])
+        for j in range(len(cut_files)):
 
-        sessions['session_'+str(i+1)] = session
+            session_settings_dict = settings_dict['session']
+            # session_settings_dict['channel_count'] = indiv_session_settings['tetrode_counts'][i]
+            animal_id = str(indiv_session_settings['animal_ids'][i] + '_tet' + str(j+1))
+
+            session_settings_dict['animal'] = {'animal_id': animal_id}
+            
+
+            if settings_dict['useMatchedCut'] == True: 
+                assert len(sorted_files[i]) > 3, print('Matched cut file not present, make sure to run unit matcher')
+                cut_file = matched_cut_files[j]
+                assert 'matched.cut' in cut_file
+            else:
+                cut_file = cut_files[j]
+
+            tet_file = tet_files[j]
+
+            session = make_session(cut_file, tet_file, pos_file, settings_dict, session_settings_dict)
+            # session = make_session(sorted_files[i], session_settings_dict, settings_dict['ppm'])
+
+            session.set_smoothing_factor(settings_dict['smoothing_factor'])
+
+            sessions['session_'+str(c)] = session
+
+            c += 1
 
     return sessions
-     
-def make_session(cut_file, tet_file, pos_file, settings_dict, ppm):
 
-    session_dict = _init_session_dict(settings_dict)
 
-    implant_data_dict = _get_session_data(cut_file, tet_file, ch_count=settings_dict['channel_count'])
+def make_session(cut_file, tet_file, pos_file, settings_dict, session_settings_dict):
 
-    if settings_dict['devices']['axona_led_tracker'] == True:
+    ppm = settings_dict['ppm']
+
+    session_dict = _init_session_dict(session_settings_dict)
+
+    implant_data_dict, ch_count = _get_session_data(cut_file, tet_file, ch_count=session_settings_dict['channel_count'])
+
+    session_settings_dict['channel_count'] = ch_count
+
+    if session_settings_dict['devices']['axona_led_tracker'] == True:
         pos_dict = grab_position_data(pos_file, ppm)
         implant_data_dict['sample_rate'] = pos_dict['sample_rate']
 
-    session_dict = _fill_session_dict(session_dict, implant_data_dict, pos_dict, settings_dict)
+    session_dict = _fill_session_dict(session_dict, implant_data_dict, pos_dict, session_settings_dict)
 
-    session, session_classes = _create_session_classes(session_dict, settings_dict)
+    session, session_classes = _create_session_classes(session_dict, session_settings_dict)
 
     # session.set_animal_id()
 
@@ -358,11 +386,14 @@ def _get_session_data(cut_file, tet_file, ch_count=4):
         cut_data = _read_cut(open_cut_file)
         tetrode_data = _format_spikes(open_tet_file)
 
+    if ch_count != len(tetrode_data[1]):
+        ch_count = len(tetrode_data[1])
+
     implant_data_dict = _init_implant_data(ch_count)
 
     implant_data_dict = _fill_implant_data(implant_data_dict, tetrode_data, cut_data, ch_count)
 
-    return implant_data_dict
+    return implant_data_dict, ch_count
 
 def _fill_implant_data(implant_data_dict, tetrode_data, cut_data, ch_count):
     implant_data_dict['duration'] = tetrode_data[-1]['duration']
@@ -371,7 +402,7 @@ def _fill_implant_data(implant_data_dict, tetrode_data, cut_data, ch_count):
     implant_data_dict['datetime'] = tetrode_data[-1]['datetime']
 
     for ch in range(ch_count):
-        implant_data_dict['channel_'+str(ch+1)] = tetrode_data[ch+1].tolist()
+        implant_data_dict['channel_'+str(ch+1)] = tetrode_data[1]['ch'+str(ch+1)].tolist()
 
     implant_data_dict['event_times'] = tetrode_data[0].tolist()
     implant_data_dict['event_labels'] = cut_data

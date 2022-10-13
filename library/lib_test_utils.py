@@ -1,6 +1,7 @@
 from random import sample
 import numpy as np
 import os, sys
+from datetime import datetime
 
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
@@ -32,6 +33,7 @@ def make_spike_cluster_batch():
     input_dict1['sample_rate'] = float(1 / dt)
     input_dict1['event_times'] = event_times
     input_dict1['event_labels'] = event_labels
+    input_dict1['datetime'] = datetime(1,1,1)
 
 
     for i in range(ch_count):
@@ -58,7 +60,7 @@ def make_spike_cluster():
     input_dict1['sample_rate'] = float(1 / dt)
     input_dict1['event_times'] = event_times
     input_dict1['cluster_label'] = int(idx + 1)
-
+    input_dict1['datetime'] = datetime(1,1,1)
 
     for i in range(ch_count):
         key = 'channel_' + str(i+1)
@@ -81,13 +83,13 @@ def make_cell():
     samples_per_wave = 50
     waveforms = make_waveforms(ch_count, len(event_times), samples_per_wave)
     ses = Session()
-    input_dict = {'event_times': event_times, 'sample_rate': 1/dt, 'duration': T, 'cluster_label': 2, 'session_metadata':ses.session_metadata}
+    input_dict = {'event_times': event_times, 'sample_rate': 1/dt, 'duration': T, 'cluster_label': 2, 'session_metadata':ses.session_metadata, 'datetime': datetime(1,1,1)}
     for i in range(ch_count):
         key = 'channel_' + str(i+1)
         input_dict[key] = waveforms[i]
     ses.make_class(SpikeTrain, input_dict)
     cluster = SpikeCluster(input_dict)
-    cell = Cell({'event_times': event_times, 'signal': waveforms, 'session_metadata': ses.session_metadata, 'cluster': cluster})
+    cell = Cell({'event_times': event_times, 'signal': waveforms, 'session_metadata': ses.session_metadata, 'cluster': cluster, 'datetime': datetime(1,1,1)})
 
     cell_ensemble = ses.make_class(CellEnsemble, {})
     cell_ensemble.add_cell(cell)
@@ -115,6 +117,7 @@ def make_spatial_spike_train():
     spike_dict['sample_rate'] = float(1 / dt)
     spike_dict['events_binary'] = []
     spike_dict['event_times'] = event_times
+    spike_dict['datetime'] = datetime(1,1,1)
 
     session = Session()
     session.set_smoothing_factor(3)

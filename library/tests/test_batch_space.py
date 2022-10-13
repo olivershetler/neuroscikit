@@ -1,6 +1,7 @@
 
 
 import os, sys
+from datetime import datetime
 
 # from prototypes.wave_form_sorter.sort_cell_spike_times import sort_cell_spike_times
 
@@ -32,6 +33,7 @@ def test_spike_cluster_batch_class():
     input_dict1['sample_rate'] = float(1 / dt)
     input_dict1['event_times'] = event_times
     input_dict1['event_labels'] = event_labels
+    input_dict1['datetime'] = datetime(1,1,1)
 
     for i in range(ch_count):
         key = 'channel_' + str(i+1)

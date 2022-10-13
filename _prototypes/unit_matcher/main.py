@@ -36,6 +36,8 @@ def run_unit_matcher(paths=[], settings={}, study=None):
     elif isinstance(study, Study):
         study.make_animals()
 
+    print('Starting Unit Matching')
+
     for animal in study.animals:
         # SESSIONS INSIDE OF ANIMAL WILL BE SORTED SEQUENTIALLY AS PART OF ANIMAL(WORKSPACE) CLASS IN STUDY_SPACE.PY
         prev = None 
@@ -94,10 +96,9 @@ def map_unit_matches_sequential_session(matches, unmatched):
     # unmatched = sorted(unmatched)
     empty_cell_id = highest_matched_id + 1
     unmatched_cell_start_id = empty_cell_id + 1
-
     for i in range(len(unmatched)):
         map_dict[unmatched[i]] = unmatched_cell_start_id + i
-
+    print('Mappings :' + str(map_dict))
     return map_dict
 
 def map_unit_matches_first_session(matches, match_distances, unmatched):
@@ -113,10 +114,13 @@ def map_unit_matches_first_session(matches, match_distances, unmatched):
     # unmatched = sorted(unmatched)
     empty_cell_id = highest_matched_id + 1
     unmatched_cell_start_id = empty_cell_id + 1
-
+    print('NEW')
+    print('highest matched id: ' + str(highest_matched_id))
+    print('highest matched id: ' + str(empty_cell_id))
+    print('highest matched id: ' + str(unmatched_cell_start_id))
     for i in range(len(unmatched)):
         map_dict[unmatched[i]] = unmatched_cell_start_id + i
-
+    print(map_dict)
     return map_dict
 
 # def map_unit_matches(matches, match_distances, unmatched):
