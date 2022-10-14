@@ -42,9 +42,9 @@ def run_unit_matcher(paths=[], settings={}, study=None):
         # SESSIONS INSIDE OF ANIMAL WILL BE SORTED SEQUENTIALLY AS PART OF ANIMAL(WORKSPACE) CLASS IN STUDY_SPACE.PY
         prev = None 
         curr = None 
+        prev_map_dict = None
         isFirstSession = False
         for session in animal.sessions:
-            prev = curr
             curr = animal.sessions[session]
 
             # print(prev, curr, isFirstSession)
@@ -56,16 +56,38 @@ def run_unit_matcher(paths=[], settings={}, study=None):
 
                 if isFirstSession:
                     map_dict_first = map_unit_matches_first_session(matches, match_distances, unmatched_1)
-                    new_cut_file_path, new_cut_data, header_data = format_cut(prev, map_dict_first)
-                    write_cut(new_cut_file_path, new_cut_data, header_data)
+                    first_ses_cut_file_path, new_cut_data, header_data = format_cut(prev, map_dict_first)
+                    # first_ses_cut_file_path = prev.session_metadata.file_paths['cut']
+                    # cut_data, header_data = get_current_cut_data(first_ses_cut_file_path)
+                    # new_cut_data = apply_remapping(cut_data, map_dict)
+                    # new_cut_file_path = format_new_cut_file_name(first_ses_cut_file_path)
+                    print('Writing mapping: ' + str(map_dict_first))
+                    write_cut(first_ses_cut_file_path, new_cut_data, header_data)
                     isFirstSession = False
                     # print('NEW')
                     # print(map_dict_first.values())
                     # print(map_dict_first.keys())
+                    prev_map_dict = map_dict_first
+
+                # prev_cut_file_path = prev.session_metadata.file_paths['cut']
+                # prev_matched_cut_file = format_new_cut_file_name(prev_cut_file_path)
+                # updated_cut_data, _ = get_current_cut_data(prev_matched_cut_file)
+                # updated_labels = np.unique(updated_cut_data)
 
                 map_dict = map_unit_matches_sequential_session(matches, unmatched_2)
+
+                # map dict is built on non matched cut labels, remap dict based on previous mapped dictionary
+                values = list(map_dict.values())
+                keys = list(map_dict.keys())
+                for i in range(len(values)):
+                    print(keys[i], values[i])
+                    # if values[i] in prev_map_dict:
+                    map_dict[keys[i]] = prev_map_dict[values[i]]
+
                 new_cut_file_path, new_cut_data, header_data = format_cut(curr, map_dict)
+                print('Writing mapping: ' + str(map_dict))
                 write_cut(new_cut_file_path, new_cut_data, header_data)
+                prev_map_dict = map_dict
                 # print('NEW')
                 # print(map_dict.values())
                 # print(map_dict.keys())
@@ -74,6 +96,8 @@ def run_unit_matcher(paths=[], settings={}, study=None):
             # update refernece of first session in pair
             # prev = curr
             # curr = session
+
+            prev = curr
 
     return study
 
@@ -98,7 +122,7 @@ def map_unit_matches_sequential_session(matches, unmatched):
     unmatched_cell_start_id = empty_cell_id + 1
     for i in range(len(unmatched)):
         map_dict[unmatched[i]] = unmatched_cell_start_id + i
-    print('Mappings :' + str(map_dict))
+    # print('Mappings :' + str(map_dict))
     return map_dict
 
 def map_unit_matches_first_session(matches, match_distances, unmatched):
@@ -107,20 +131,20 @@ def map_unit_matches_first_session(matches, match_distances, unmatched):
 
     map_dict = {}
 
-    for i in range(len(matches)):
+    for i in range(len(matches.squeeze())):
         map_dict[int(matches[i][0])] = i + 1
 
-    highest_matched_id = max(map_dict, key=map_dict.get)
+    highest_matched_id = map_dict[max(map_dict, key=map_dict.get)]
     # unmatched = sorted(unmatched)
     empty_cell_id = highest_matched_id + 1
     unmatched_cell_start_id = empty_cell_id + 1
-    print('NEW')
-    print('highest matched id: ' + str(highest_matched_id))
-    print('highest matched id: ' + str(empty_cell_id))
-    print('highest matched id: ' + str(unmatched_cell_start_id))
+    # print('NEW')
+    # print('highest matched id: ' + str(highest_matched_id))
+    # print('empty cell id: ' + str(empty_cell_id))
+    # print('unmatched cell start id: ' + str(unmatched_cell_start_id))
     for i in range(len(unmatched)):
         map_dict[unmatched[i]] = unmatched_cell_start_id + i
-    print(map_dict)
+    # print('Mappings :' + str(map_dict))
     return map_dict
 
 # def map_unit_matches(matches, match_distances, unmatched):

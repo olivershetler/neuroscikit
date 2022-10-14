@@ -38,8 +38,10 @@ def sort_spikes_by_cell(clusters: SpikeClusterBatch):
     waves = np.array(waveforms).reshape((len(waveforms[0]), len(waveforms),  len(waveforms[0][0])))
     for lbl in unique_labels:
         idx = np.where(cluster_labels == lbl)[0]
-        spks = np.array(spike_times)[idx].squeeze()
-        if len(spks) < 50000 and len(spks) > 100:
+        spks = np.array(spike_times)[idx]
+        if type(spks) == float or type(spks) == np.float64:
+            spks = [spks]
+        if len(spks) < 50000:
             cells.append(spks)
             sorted_waveforms.append(waves[idx,:,:].squeeze())
             sorted_label_ids.append(lbl)
@@ -76,14 +78,12 @@ def sort_spikes_by_cell(clusters: SpikeClusterBatch):
     for j in range(len(good_sorted_label_ids)):
         label_id = good_sorted_label_ids[j]
         # print(len(cells[j]))
-        if len(cells[j]) < 50000 and len(cells[j]) > 10:
-            good_cells.append(cells[j])
-            good_sorted_waveforms.append(sorted_waveforms[j])
-            # indiv_clusters will only be made for good_label_id cells so have to adjust to make 0 index when pulling out spike cluster
-            good_clusters.append(indiv_clusters[j])
-            assert indiv_clusters[j].cluster_label == label_id
-    
-        else:
-            print('rejected')
+        good_cells.append(cells[j])
+        good_sorted_waveforms.append(sorted_waveforms[j])
+        # indiv_clusters will only be made for good_label_id cells so have to adjust to make 0 index when pulling out spike cluster
+        good_clusters.append(indiv_clusters[j])
+        assert indiv_clusters[j].cluster_label == label_id
+
+
 
     return good_cells, good_sorted_waveforms, good_clusters, good_sorted_label_ids

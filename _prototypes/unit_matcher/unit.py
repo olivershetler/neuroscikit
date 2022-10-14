@@ -70,7 +70,7 @@ def compute_mixture(P:np.array, Q:np.array):
 
     M = np.concatenate((P[0:ss,:], Q[ss:,:]), axis=0)
 
-    print("M", M.shape)
+    # print("M", M.shape)
 
     return M
 
