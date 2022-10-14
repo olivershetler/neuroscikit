@@ -103,7 +103,7 @@ def test__fill_implant_data():
 def test__get_session_data():
     ch_count = 4
 
-    implant_data_dict = _get_session_data(cut_file, tet_file, ch_count)
+    implant_data_dict, ch_count = _get_session_data(cut_file, tet_file, ch_count)
 
     assert type(implant_data_dict) == dict
 
@@ -116,29 +116,29 @@ def test__get_session_data():
             assert type(implant_data_dict[key]) == float
 
 def test__init_session_dict():
-    session_dict = _init_session_dict(settings_dict['sessions'][0])
+    session_dict = _init_session_dict(settings_dict['session'])
 
     assert type(session_dict) == dict
     assert len(session_dict['devices']['implant']) == 7
     assert 'animal' in session_dict
 
 def test__fill_session_dict():
-    session_dict = _init_session_dict(settings_dict['sessions'][0])
+    session_dict = _init_session_dict(settings_dict['session'])
 
     pos_dict = grab_position_data(pos_file, settings_dict['ppm'])
 
     ch_count = 4
 
-    implant_data_dict = _get_session_data(cut_file, tet_file, ch_count)
+    implant_data_dict, ch_count = _get_session_data(cut_file, tet_file, ch_count)
 
-    session_dict = _fill_session_dict(session_dict, implant_data_dict, pos_dict, settings_dict['sessions'][0])
+    session_dict = _fill_session_dict(session_dict, implant_data_dict, pos_dict, settings_dict['session'])
 
     assert 'x' in session_dict['devices']['axona_led_tracker']['led_position_data']
     assert 'event_times' in session_dict['devices']['implant']['implant_data']
 
 def test_make_session():
 
-    session = make_session(cut_file, tet_file, pos_file, settings_dict['sessions'][0], settings_dict['ppm'])
+    session = make_session(cut_file, tet_file, pos_file, settings_dict, settings_dict['session'])
 
     assert isinstance(session, Session)
     assert isinstance(session.get_devices_metadata()['axona_led_tracker'], TrackerMetadata)
@@ -147,41 +147,45 @@ def test_make_session():
 
 def test__grab_tetrode_cut_position_files():
 
-    cut_files, tetrode_files, pos_files, matched_cut_files = _grab_tetrode_cut_position_files([data_dir], pos_files=[], cut_files=[], tetrode_files=[])
+    cut_files, tetrode_files, pos_files, matched_cut_files, animal_dir_names = _grab_tetrode_cut_position_files([data_dir], pos_files=[], cut_files=[], tetrode_files=[])
 
     assert type(cut_files) == list
     assert type(pos_files) == list
     assert type(tetrode_files) == list
     assert type(matched_cut_files) == list
+    assert type(animal_dir_names) == list
  
     assert len(cut_files) == 1
     assert len(pos_files) == 1
     assert len(tetrode_files) == 1
     assert len(matched_cut_files) == 0
+    assert len(animal_dir_names) == 1
 
-def test__init_study_dict():
-    study_dict = _init_study_dict(settings_dict)
+# def test__init_study_dict():
+#     study_dict = _init_study_dict(settings_dict)
 
-    assert type(study_dict) == dict 
-    assert len(study_dict) == len(settings_dict['sessions'])
+#     assert type(study_dict) == dict 
 
 def test__group_session_files():  
 
-    cut_files, tetrode_files, pos_files, matched_cut_files = _grab_tetrode_cut_position_files([data_dir], pos_files=[], cut_files=[], tetrode_files=[])
+    cut_files, tetrode_files, pos_files, matched_cut_files, animal_dir_names = _grab_tetrode_cut_position_files([data_dir], pos_files=[], cut_files=[], tetrode_files=[])
 
-    sorted_files = _group_session_files(cut_files, tetrode_files, pos_files, matched_cut_files)
+    sorted_files, tetrode_counts, animal_ids = _group_session_files(cut_files, tetrode_files, pos_files, matched_cut_files, animal_dir_names)
 
-    assert len(sorted_files) == len(cut_files)
+    assert len(sorted_files[0]['cut']) == len(cut_files)
     assert len(cut_files) == len(tetrode_files)
     assert len(tetrode_files) == len(pos_files)
+
     # assert len(pos_files) == len(matched_cut_files)
 
 def test_batch_sessions():
 
-    cut_files, tetrode_files, pos_files, matched_cut_files = _grab_tetrode_cut_position_files([data_dir], pos_files=[], cut_files=[], tetrode_files=[])
-    sorted_files = _group_session_files(cut_files, tetrode_files, pos_files, matched_cut_files)
-
-    sessions = batch_sessions(sorted_files, settings_dict)
+    cut_files, tetrode_files, pos_files, matched_cut_files, animal_dir_names = _grab_tetrode_cut_position_files([data_dir], pos_files=[], cut_files=[], tetrode_files=[])
+    sorted_files, tetrode_counts, animal_ids = _group_session_files(cut_files, tetrode_files, pos_files, matched_cut_files, animal_dir_names)
+    indiv_session_settings = {}
+    indiv_session_settings['tetrode_counts'] = 1
+    indiv_session_settings['animal_ids'] = '1'
+    sessions = batch_sessions(sorted_files, settings_dict, indiv_session_settings)
 
     assert type(sessions) == dict 
     assert len(sessions) == 1
