@@ -45,11 +45,18 @@ def waveform_features(waveform, time_step, channel):
     fd[f"{channel}f2"] = p4.dv - p2.dv
     # valley to valley amplitude of the FD of the AP
     fd[f"{channel}f3"] = p6.dv - p2.dv
+
+
+    #------#
+    fd[f"{channel}f5"] = symmetric_logarithm((p4.dv - p2.dv))
+    fd[f"{channel}f6"] = (p6.dv - p4.dv)
+    fd[f"{channel}f7"] = symmetric_logarithm((p6.dv - p2.dv))
+    #------#
+    """
     # integral of the spike slice in the waveform, normalized for time
     # NOTE: This feature is NOT in the original paper
     # in the original paper, f4 is the correlation between
     # the waveform and a reference waveform (we don't use reference waveforms).
-    """
     try:
         fd[f"{channel}f4"] = area_under_curve(waveform[p1.i:p5.i], time_step)/(p5.t - p1.t)
     except:
