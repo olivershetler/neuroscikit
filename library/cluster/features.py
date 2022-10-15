@@ -23,13 +23,15 @@ def feature_energy(spike_cluster: Spike | SpikeCluster | SpikeClusterBatch):
         E:
 
     """
-    if type(spike_cluster.waveforms) == list:
-        data = np.array(spike_cluster.waveforms)
-    else:
-        data = spike_cluster.waveforms
+
+    data = spike_cluster.waveforms
 
     if isinstance(spike_cluster, Spike):
+        data = np.asarray(data)
         data = data.reshape((data.shape[0], 1, data.shape[1]))
+    else:
+        data = np.array(list(data.values()))
+
 
     # energy sqrt of the sum of the squares of each point of the waveform, divided by number of samples in waveform
     # energy and first principal component coefficient
@@ -57,13 +59,14 @@ def feature_wave_PCX(spike_cluster: Spike | SpikeCluster | SpikeClusterBatch, iP
         FD:
 
     """
-    if type(spike_cluster.waveforms) == list:
-        data = np.array(spike_cluster.waveforms)
-    else:
-        data = spike_cluster.waveforms
+    
+    data = spike_cluster.waveforms
 
     if isinstance(spike_cluster, Spike):
+        data = np.asarray(data)
         data = data.reshape((data.shape[0], 1, data.shape[1]))
+    else:
+        data = np.array(list(data.values()))
 
     nCh, nSpikes, nSamp = data.shape
 

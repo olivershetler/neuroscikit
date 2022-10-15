@@ -1,6 +1,7 @@
 import os
 import sys
 import numpy as np
+from datetime import datetime
 
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
@@ -28,6 +29,7 @@ def make_spike_cluster_batch():
     input_dict1['sample_rate'] = float(1 / dt)
     input_dict1['event_times'] = event_times
     input_dict1['event_labels'] = event_labels
+    input_dict1['datetime'] = datetime(1,1,1)
 
 
     for i in range(ch_count):
@@ -54,6 +56,7 @@ def make_spike_cluster():
     input_dict1['sample_rate'] = float(1 / dt)
     input_dict1['event_times'] = event_times
     input_dict1['cluster_label'] = int(idx + 1)
+    input_dict1['datetime'] = datetime(1,1,1)
 
 
     for i in range(ch_count):

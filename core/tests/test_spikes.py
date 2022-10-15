@@ -2,6 +2,7 @@ import os
 import sys
 import numpy as np
 from library.batch_space import SpikeClusterBatch
+from datetime import datetime
 
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
@@ -69,6 +70,7 @@ def test_spike_train_class():
     input_dict1['sample_rate'] = float(1 / dt)
     input_dict1['events_binary'] = []
     input_dict1['event_times'] = event_times
+    input_dict1['datetime'] = datetime(1,1,1)
 
     ses = Session()
     spike_train1 = ses.make_class(SpikeTrain, input_dict1)
@@ -88,6 +90,7 @@ def test_spike_train_class():
     input_dict2['sample_rate'] = float(1 / dt)
     input_dict2['events_binary'] = events_binary2
     input_dict2['event_times'] = []
+    input_dict2['datetime'] = datetime(1,1,1)
 
     ses = Session()
     spike_train2 = ses.make_class(SpikeTrain, input_dict2)
@@ -116,6 +119,7 @@ def test_spike_object_class():
     input_dict1['sample_rate'] = float(1 / dt)
     input_dict1['spike_time'] = event_times[idx]
     input_dict1['cluster_label'] = int(idx + 1)
+    input_dict1['datetime'] = datetime(1,1,1)
 
     wf = []
     for i in range(ch_count):
@@ -157,6 +161,7 @@ def test_spike_cluster_class():
     input_dict1['sample_rate'] = float(1 / dt)
     input_dict1['event_times'] = event_times
     input_dict1['cluster_label'] = int(idx + 1)
+    input_dict1['datetime'] = datetime(1,1,1)
 
 
     for i in range(ch_count):

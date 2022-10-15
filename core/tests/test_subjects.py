@@ -42,7 +42,7 @@ implant = {'implant_id': 'id', 'implant_type': 'tetrode', 'implant_geometry': 's
 session_settings = {'channel_count': 4, 'animal': animal, 'devices': devices, 'implant': implant}
 
 
-settings_dict = {'ppm': 511, 'sessions': [session_settings,]}
+settings_dict = {'ppm': 511, 'session':  session_settings}
 
 def test_animal_metadata():
     animal_metadata = AnimalMetadata(animal)

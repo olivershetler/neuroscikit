@@ -1,5 +1,6 @@
 import os
 import sys
+from datetime import datetime
 import numpy as np
 
 PROJECT_PATH = os.getcwd()
@@ -18,7 +19,7 @@ from core.subjects import SessionMetadata
 def test_spatial_spike_train():
     spike_times = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
     ses = Session()
-    spike_train = ses.make_class(SpikeTrain, {'event_times': spike_times, 'duration': 1, 'sample_rate': 50, 'session_metadata': ses.session_metadata})
+    spike_train = ses.make_class(SpikeTrain, {'event_times': spike_times, 'duration': 1, 'sample_rate': 50, 'session_metadata': ses.session_metadata,  'datetime': datetime(1,1,1)})
     x = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
     y = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
     t = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
@@ -47,6 +48,7 @@ def test_hafting_occupancy_map():
     spike_dict['sample_rate'] = float(1 / dt)
     spike_dict['events_binary'] = []
     spike_dict['event_times'] = event_times
+    spike_dict['datetime'] = datetime(1,1,1)
 
     session = Session()
     session_metadata = session.session_metadata
@@ -87,6 +89,7 @@ def test_hafting_spike_map():
     spike_dict['sample_rate'] = float(1 / dt)
     spike_dict['events_binary'] = []
     spike_dict['event_times'] = event_times
+    spike_dict['datetime'] = datetime(1,1,1)
 
     session = Session()
     session_metadata = session.session_metadata
@@ -126,6 +129,7 @@ def test_hafting_rate_map():
     spike_dict['sample_rate'] = float(1 / dt)
     spike_dict['events_binary'] = []
     spike_dict['event_times'] = event_times
+    spike_dict['datetime'] = datetime(1,1,1)
 
     session = Session()
     session_metadata = session.session_metadata

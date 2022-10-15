@@ -171,14 +171,10 @@ def morphological_points(time_index, waveform, d_waveform, d2_waveform, time_ste
         # find principal voltage peak
         p3 = waveform_point(voltage_peaks[x])
         # get pre-spike trough
-
         p1 = waveform_point(max(filter(lambda i: i < p3.i, voltage_troughs)))
-    # get refractory trough
-
+        # get refractory trough
         p5 = waveform_point(min(filter(lambda i: i > p3.i, voltage_troughs)))
-
-    # get refractory peak index (discard after use)
-
+        # get refractory peak index (discard after use)
         rp = waveform_point(min(filter(lambda i: i > p5.i, [0] + voltage_peaks + [len(waveform) - 1])))
 
     except:

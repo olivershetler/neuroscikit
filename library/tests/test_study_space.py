@@ -44,20 +44,18 @@ implant = {'implant_id': 'id', 'implant_type': 'tetrode', 'implant_geometry': 's
 session_settings = {'channel_count': 4, 'animal': animal, 'devices': devices, 'implant': implant}
 
 
-settings_dict = {'ppm': 511, 'sessions': [session_settings,], 'smoothing_factor': 3}
-
+settings_dict = {'ppm': 511, 'session':  session_settings, 'smoothing_factor': 3, 'useMatchedCut': False}
 study = make_study([data_dir], settings_dict)
+
 session = study.sessions[0]
 # session = make_session(cut_file, tet_file, pos_file, session_settings, settings_dict['ppm'])
 
 def test_animal():
-
     animal_instance = Animal({'session_1': session, 'session_2': session})
     
     assert type(animal_instance.ensembles) == dict
     assert type(animal_instance.sessions) == dict
     assert isinstance(animal_instance.population, CellPopulation)
-
     animal_instance.add_session(session)
 
     assert len(animal_instance.ensembles) == 3

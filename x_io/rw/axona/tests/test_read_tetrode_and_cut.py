@@ -13,7 +13,7 @@ PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
  
 
-from x_io.axona.read_tetrode_and_cut import (
+from x_io.rw.axona.read_tetrode_and_cut import (
     _read_cut
     ,_read_tetrode_header
     ,_read_tetrode
@@ -60,16 +60,16 @@ def test__format_spikes():
     assert type(tetrode_values) == tuple
 
 
-def test_get_spike_trains_from_channel():
-    with open(test_cut_file_path, 'r') as cut_file, open(test_tetrode_file_path, 'rb') as tetrode_file:
-        channel, empty_cell = get_spike_trains_from_channel(cut_file, tetrode_file, 1)
-    assert type(channel) == list
-    assert type(empty_cell) == int
-    assert len(channel) == empty_cell
+# def test_get_spike_trains_from_channel():
+#     with open(test_cut_file_path, 'r') as cut_file, open(test_tetrode_file_path, 'rb') as tetrode_file:
+#         channel, empty_cell = get_spike_trains_from_channel(cut_file, tetrode_file, 1)
+#     assert type(channel) == list
+#     assert type(empty_cell) == int
+#     assert len(channel) == empty_cell
 
 
-def test_load_spike_train_from_paths():
-    channel, empty_cell = load_spike_train_from_paths(test_cut_file_path, test_tetrode_file_path, 1)
+# def test_load_spike_train_from_paths():
+#     channel, empty_cell = load_spike_train_from_paths(test_cut_file_path, test_tetrode_file_path, 1)
 
 
 

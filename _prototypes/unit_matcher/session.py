@@ -31,7 +31,7 @@ def compute_distances(session1_cluster: SpikeClusterBatch, session2_cluster: Spi
 
     for i in range(len(session1_feature_arrays)):
         for j in range(len(session2_feature_arrays)):
-            print('Session1 - Cell ' + str(i) + '; Session2 - Cell ' + str(j))
+            # print('Session1 - Cell ' + str(i) + '; Session2 - Cell ' + str(j))
 
             # idx1 = np.where(session1_feature_array != session1_feature_array)[0]
             # idx2 = np.where(session2_feature_array != session2_feature_array)[0]
@@ -40,8 +40,15 @@ def compute_distances(session1_cluster: SpikeClusterBatch, session2_cluster: Spi
             # assert len(idx2) == 0
 
             distance = jensen_shannon_distance(session1_feature_arrays[i], session2_feature_arrays[j])
+
+            if 'JSD' not in session1_unit_clusters[i].stats_dict:
+                session1_unit_clusters[i].stats_dict['JSD'] = []
             session1_unit_clusters[i].stats_dict['JSD'] = distance
-            session2_unit_clusters[i].stats_dict['JSD'] = distance
+
+            if 'JSD' not in session2_unit_clusters[j].stats_dict:
+                session2_unit_clusters[j].stats_dict['JSD'] = []
+            session2_unit_clusters[j].stats_dict['JSD'] = distance
+
             # distances.append(distance)
             # pairs.append[[unit1, unit2]]
 
@@ -120,6 +127,7 @@ def compare_sessions(session1: Session, session2: Session):
 
     distances, pairs = compute_distances(session1.get_spike_data()['spike_cluster'], session2.get_spike_data()['spike_cluster'])
     full_matches, full_match_distances, remaining_distances, remaining_pairs = extract_full_matches(distances, pairs)
+
     remaining_matches, remaining_match_distances, unmatched_2, unmatched_1 = guess_remaining_matches(remaining_distances, remaining_pairs)
 
     # to_stack = []

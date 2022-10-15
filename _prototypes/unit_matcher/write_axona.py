@@ -17,10 +17,10 @@ def write_cut(cut_file, cut_data, header_data):
             if extract_cut: # start write to cut file
                 open_cut_file.write(" ".join(map(str, cut_data)))
     open_cut_file.close()
+    print('Wrote matched cut file ' + str(cut_file))
 
 def format_new_cut_file_name(old_path):
     fp_split = old_path.split('.cut')
-    assert len(fp_split) == 2
     new_fp = fp_split[0] + r'_matched.cut' 
     assert new_fp != old_path
 

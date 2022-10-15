@@ -1,6 +1,7 @@
 from msilib.schema import Class
 import os
 import sys
+import numpy as np
 
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
@@ -8,12 +9,13 @@ sys.path.append(PROJECT_PATH)
 from core.subjects import AnimalMetadata, StudyMetadata, SessionMetadata
 from library.ensemble_space import Cell, CellEnsemble, CellPopulation
 from library.batch_space import SpikeClusterBatch, SpikeTrainBatch
-from core.spikes import * 
+from core.spikes import SpikeCluster, SpikeTrain, Spike, Event
 from core.spatial import Position2D
 from library.spike import sort_spikes_by_cell
 from library.workspace import Workspace
 from core.instruments import DevicesMetadata, ImplantMetadata, TrackerMetadata
 from library.hafting_spatial_maps import SpatialSpikeTrain2D
+from core.core_utils import make_seconds_index_from_rate
 
 
 class Session(Workspace):
@@ -32,6 +34,7 @@ class Session(Workspace):
             self.animal_id = animal_metadata.animal_id
 
         self.time_index = None
+        self.datetime = None
 
         if 'smoothing_factor' in kwargs:
             self.smoothing_factor = kwargs['smoothing_factor']
@@ -43,9 +46,7 @@ class Session(Workspace):
         self.smoothing_factor = smoothing_factor
     
     def update_time_index(self, class_object):
-        sample_rate = class_object.sample_rate
-        duration = class_object.duration
-        time_index = make_seconds_index_from_rate(duration, sample_rate)
+        time_index = make_seconds_index_from_rate(class_object.duration, class_object.sample_rate)
         self.time_index = time_index
 
     def get_animal_id(self):
@@ -152,6 +153,7 @@ class Session(Workspace):
             if self.time_index is None and not isinstance(class_object, Position2D):
                 self.update_time_index(class_object)
                 class_object.time_index = self.time_index
+                self.datetime = input_dict['datetime']
 
         return class_object
 
@@ -186,23 +188,27 @@ class Study(Workspace):
         self.sessions.append(session)
 
     def _sort_session_by_animal(self):
-        animal_sessions = {}
+        sorted_animal_sessions = {}
+        unsorted_animal_session = {}
+        animal_session_datetime = {}
 
         for id in self.animal_ids:
-            animal_sessions[id] = {}
+            sorted_animal_sessions[id] = {}
+            unsorted_animal_session[id] = []
+            animal_session_datetime[id] = []
 
         for i in range(len(self.sessions)):
             animal_id = self.sessions[i].animal_id
-            assert animal_id in self.animal_ids
-            ct = len(animal_sessions[animal_id])
-            animal_sessions[animal_id]['session_'+str(ct+1)] = self.sessions[i]
+            unsorted_animal_session[animal_id].append(self.sessions[i])
+            animal_session_datetime[animal_id].append(self.sessions[i].datetime)
 
-            ### ....
-            ### NEED TO EXTEND THIS TO MAKE animal_sessions[animal_id] a dictionary and not list of dictionaries
-            ### Keys will be ordered/sequential sessions. Have to save start date/time from read_tetrode_cut and use to order
-            ### ...
+        for animal_id in list(unsorted_animal_session.keys()):
+            sort_order = np.argsort(animal_session_datetime[animal_id])
+            animal_sesions = np.asarray(unsorted_animal_session[animal_id])[sort_order] 
+            for j in range(len(animal_sesions)):
+                sorted_animal_sessions[animal_id]['session_'+str(j+1)] = animal_sesions[j]
 
-        return animal_sessions
+        return sorted_animal_sessions
 
     def make_animals(self):
         if self.animals is None:
@@ -299,8 +305,11 @@ class Animal(Workspace):
         core_data = self._extract_core_classes(session)
         assert 'spike_cluster' in core_data, 'Need cluster label data to sort valid cells'
         spike_cluster = core_data['spike_cluster']
+        # spike_train = core_data['spike_train']
         assert isinstance(spike_cluster, SpikeClusterBatch)
+        # assert isinstance(spike_cluster, SpikeTrainBatch)
         good_sorted_cells, good_sorted_waveforms, good_clusters, good_label_ids = sort_spikes_by_cell(spike_cluster)
+        # spike_train.set_sorted_label_ids(good_label_ids)
         print('Session data added, spikes sorted by cell')
         ensemble = session.make_class(CellEnsemble, None)
         for i in range(len(good_sorted_cells)):

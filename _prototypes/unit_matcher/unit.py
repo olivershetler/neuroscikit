@@ -25,8 +25,8 @@ def jensen_shannon_distance(P:np.array, Q:np.array):
     P, Q : 2D arrays (sample_size, dimensions)
         Probability distributions of equal length that sum to 1
     """
-    print('(sample size, dimensions)')
-    print(P.shape, Q.shape)
+    # print('(sample size, dimensions)')
+    # print(P.shape, Q.shape)
     P_sample_size, P_dimensions = P.shape
     Q_sample_size, Q_dimensions = Q.shape
     assert P_dimensions == Q_dimensions, f"Dimensionality of P ({P_dimensions}) and Q ({Q_dimensions}) must be equal"
@@ -42,12 +42,12 @@ def jensen_shannon_distance(P:np.array, Q:np.array):
         raise ValueError(f"Dimensionality of P ({P_dimensions}) and Q ({Q_dimensions}) must be greater than 0")
 
     kl_pm = _kldiv(P, M)
-    print(f"kl_pm: {kl_pm}")
+    # print(f"kl_pm: {kl_pm}")
     kl_qm = _kldiv(Q, M)
-    print(f"kl_qm: {kl_qm}")
+    # print(f"kl_qm: {kl_qm}")
 
     jensen_shannen_divergence = (kl_pm + kl_qm)/2
-    print("JSD", jensen_shannen_divergence)
+    # print("JSD", jensen_shannen_divergence)
 
     return np.sqrt(jensen_shannen_divergence)
 
@@ -70,7 +70,7 @@ def compute_mixture(P:np.array, Q:np.array):
 
     M = np.concatenate((P[0:ss,:], Q[ss:,:]), axis=0)
 
-    print("M", M.shape)
+    # print("M", M.shape)
 
     return M
 
@@ -149,7 +149,10 @@ def multivariate_kullback_leibler_divergence(x, y):
     #    if s[i] == 0:
     #        s[i] = r[i]
     s = np.array([min(list(filter(lambda x: x!=0, s))) for s in S])
+
+    # FORMULA ESTIMATES KL DIV #
     kl_div = sum(np.log2(s/r)) * d / n + np.log2(m / (n - 1.))
+
     return max(kl_div, 0)
 
 def spike_level_feature_array(unit: SpikeCluster, time_step):
