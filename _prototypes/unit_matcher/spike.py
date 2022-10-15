@@ -9,7 +9,7 @@ import sys
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
 
-from .waveform import waveform_features
+from _prototypes.unit_matcher.waveform import waveform_features
 from core.spikes import Spike, SpikeCluster
 
 def spike_features(spike, time_step):
@@ -86,13 +86,12 @@ def waveform_level_features(spike: Spike, time_step):
     dict
         A dictionary of the waveform level features of the form {feature_name: value,...}
     """
-    spike_peaks = {}
+    spike_features = dict()
     for channel, waveform in spike.waveforms.items():
-        if len(waveform) > 0:
-            spike_peaks[channel] = max(waveform)
-
-    # spike_peaks = dict(map(lambda item: (item[0], max(item[1])), spike.waveforms.items()))
-    channel_with_max_peak = max(spike_peaks, key=spike_peaks.get)
-    assert len(spike.waveforms[channel_with_max_peak]) > 0
-    return waveform_features(spike.waveforms[channel_with_max_peak], time_step)
+        wave_features = waveform_features(waveform, time_step, channel)
+        if wave_features is not None:
+            spike_features.update(wave_features)
+        else:
+            return None
+    return spike_features
 

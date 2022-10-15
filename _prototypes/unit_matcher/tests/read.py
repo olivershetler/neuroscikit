@@ -76,39 +76,33 @@ session2_tet_path = os.path.join(data_dir, session2_tets[0])
 
 with open(session1_cut_path, 'r') as cut_file1, open(session1_tet_path, 'rb') as tetrode_file1:
     cut_data1 = _read_cut(cut_file1)
-    tetrode_data1 = _format_spikes(tetrode_file1)
-    # ts, ch1, ch2, ch3, ch4, spikeparam
+    ts1, channel_dict1, spikeparam1 = _format_spikes(tetrode_file1)
+    # ts, channel_dict spikeparam
 
 with open(session2_cut_path, 'r') as cut_file2, open(session2_tet_path, 'rb') as tetrode_file2:
     cut_data2 = _read_cut(cut_file2)
-    tetrode_data2 = _format_spikes(tetrode_file2)
-    # ts, ch1, ch2, ch3, ch4, spikeparam
+    ts2, channel_dict2, spikeparam2 = _format_spikes(tetrode_file2)
+    # ts, channel_dict spikeparam
 
 # Make dictionaries for core classes
 
-sample_length1 =  tetrode_data1[-1]['duration']
-sample_rate1 = tetrode_data1[-1]['sample_rate']
+sample_length1 =  spikeparam1['duration']
+sample_rate1 = spikeparam1['sample_rate']
 
 session_dict1 = {
-    'spike_times': tetrode_data1[0].squeeze().tolist(),
-    'cluster_labels': cut_data1,
-    'ch1': tetrode_data1[1],
-    'ch2': tetrode_data1[2],
-    'ch3': tetrode_data1[3],
-    'ch4': tetrode_data1[4],
+    'spike_times': ts1.squeeze().tolist(),
+    'cluster_labels': cut_data1
 }
+session_dict1.update(channel_dict1)
 
-sample_length2 =  tetrode_data2[-1]['duration']
-sample_rate2 = tetrode_data2[-1]['sample_rate']
+sample_length2 =  spikeparam2['duration']
+sample_rate2 = spikeparam2['sample_rate']
 
 session_dict2 = {
-    'spike_times': tetrode_data2[0].squeeze().tolist(),
+    'spike_times': ts2.squeeze().tolist(),
     'cluster_labels': cut_data2,
-    'ch1': tetrode_data2[1],
-    'ch2': tetrode_data2[2],
-    'ch3': tetrode_data2[3],
-    'ch4': tetrode_data2[4],
 }
+session_dict2.update(channel_dict2)
 
 assert sample_length1 == sample_length2
 assert sample_rate1 == sample_rate2

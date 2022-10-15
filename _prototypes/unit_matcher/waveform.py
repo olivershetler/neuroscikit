@@ -6,7 +6,7 @@ import numpy as np
 from operator import add
 from scipy.signal import savgol_filter
 
-def waveform_features(waveform, time_step):
+def waveform_features(waveform, time_step, channel):
     """
     Calculate the features of a waveform.
     Parameters
@@ -40,17 +40,18 @@ def waveform_features(waveform, time_step):
 
     # SHAPE FEATURES
     # waveform duration of the first derivative (FD) of the action potential (AP)
-    fd["f1"] = p5.t - p1.t
+    fd[f"{channel}f1"] = p5.t - p1.t
     # peak to valley amplitude of the FD of the AP
-    fd["f2"] = p4.dv - p2.dv
+    fd[f"{channel}f2"] = p4.dv - p2.dv
     # valley to valley amplitude of the FD of the AP
-    fd["f3"] = p6.dv - p2.dv
+    fd[f"{channel}f3"] = p6.dv - p2.dv
     # integral of the spike slice in the waveform, normalized for time
     # NOTE: This feature is NOT in the original paper
     # in the original paper, f4 is the correlation between
     # the waveform and a reference waveform (we don't use reference waveforms).
+    """
     try:
-        fd["f4"] = area_under_curve(waveform[p1.i:p5.i], time_step)/(p5.t - p1.t)
+        fd[f"{channel}f4"] = area_under_curve(waveform[p1.i:p5.i], time_step)/(p5.t - p1.t)
     except:
         return None
     # logarithm of the positve deflection of the FD of the AP
@@ -64,7 +65,7 @@ def waveform_features(waveform, time_step):
     #    return None
     # negative deflection of the FD of the AP
     try:
-        fd["f6"] = (p6.dv - p4.dv) / (p6.t - p4.t)
+        fd[f"{channel}f6"] = (p6.dv - p4.dv) / (p6.t - p4.t)
     except:
         return None
     # logarithm of the slope among valleys of the FD of the AP
@@ -81,52 +82,53 @@ def waveform_features(waveform, time_step):
     # We use the first extremum of the first derivative as the cutoff
     # when the first voltage domain extremum is the boundary.
     try:
-        fd["f8"] = np.sqrt(np.mean([x**2 for x in d_waveform[:p1.i]])) if p1.i > 0 else np.sqrt(np.mean([x**2 for x in d_waveform[p1.i:p2.i]]))
+        fd[f"{channel}f8"] = np.sqrt(np.mean([x**2 for x in d_waveform[:p1.i]])) if p1.i > 0 else np.sqrt(np.mean([x**2 for x in d_waveform[p1.i:p2.i]]))
     except:
         return None
     # # negative slope ratio of the FD of the AP
     # # print((p2.dv - p1.dv), (p2.t - p1.t), (p3.dv - p2.dv), (p3.t - p2.t))
     try:
-        fd["f9"] = ((p2.dv - p1.dv)/(p2.t - p1.t))/((p3.dv - p2.dv)/(p3.t - p2.t))
+        fd[f"{channel}f9"] = ((p2.dv - p1.dv)/(p2.t - p1.t))/((p3.dv - p2.dv)/(p3.t - p2.t))
     except:
         return None
     # # postive slope ratio of the FD of the AP
     try:
-        fd["f10"] = ((p4.dv - p3.dv)/(p4.t - p3.t))/((p5.dv - p4.dv)/(p5.t - p4.t))
+        fd[f"{channel}f10"] = ((p4.dv - p3.dv)/(p4.t - p3.t))/((p5.dv - p4.dv)/(p5.t - p4.t))
     except:
         return None
     # peak to valley ratio of the action potential
     try:
-        fd["f11"] = p2.dv / p4.dv
+        fd[f"{channel}f11"] = p2.dv / p4.dv
     except:
         return None
+    """
     # PHASE FEATURES
     # amplitude of the FD of the AP relating to p1
-    fd["f12"] = p1.dv
+    fd[f"{channel}f12"] = p1.dv
     # amplitude of the FD of the AP relating to p3
-    fd["f13"] = p3.dv
+    fd[f"{channel}f13"] = p3.dv
     # amplitude of the FD of the AP relating to p4
-    fd["f14"] = p4.dv
+    fd[f"{channel}f14"] = p4.dv
     # amplitude of the FD of the AP relating to p6
-    fd["f15"] = p5.dv
+    fd[f"{channel}f15"] = p5.dv
     # amplitude of the FD of the AP relating to p6
-    fd["f16"] = p6.dv
+    fd[f"{channel}f16"] = p6.dv
     # amplitude of the second derivative (SD) of the AP relating to p1
-    fd["f17"] = p1.d2v
+    fd[f"{channel}f17"] = p1.d2v
     # amplitude of the SD of the AP relating to p3
-    fd["f18"] = p3.d2v
+    fd[f"{channel}f18"] = p3.d2v
     # amplitude of the SD of the AP relating to p5
-    fd["f19"] = p5.d2v
+    fd[f"{channel}f19"] = p5.d2v
     # inter-quartile range of the FD of the AP
-    fd["f20"] = inter_quartile_range(d_waveform)
+    fd[f"{channel}f20"] = inter_quartile_range(d_waveform)
     # inter-quartile range of the SD of the AP
-    fd["f21"] = inter_quartile_range(d2_waveform)
+    fd[f"{channel}f21"] = inter_quartile_range(d2_waveform)
     # kurtosis coefficient of the FD of the AP
-    fd["f22"] = kurtosis(d_waveform)
+    fd[f"{channel}f22"] = kurtosis(d_waveform)
     # skew / Fisher assymetry of the FD of the AP
-    fd["f23"] = skew(d_waveform)
+    fd[f"{channel}f23"] = skew(d_waveform)
     # skew / Fisher assymetry of the SD of the AP
-    fd["f24"] = skew(d2_waveform)
+    fd[f"{channel}f24"] = skew(d2_waveform)
 
     for key, value in fd.items():
         if value == value:
