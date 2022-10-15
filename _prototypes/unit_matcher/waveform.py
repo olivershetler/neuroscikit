@@ -36,7 +36,7 @@ def waveform_features(waveform, time_step, channel):
     fd = dict() # feature dictionary
 
     # get peak amplitude for source attribution
-    fd["peak_amplitude"] = p3.v
+    fd[f"{channel}peak_amplitude"] = p3.v
 
     # SHAPE FEATURES
     # waveform duration of the first derivative (FD) of the action potential (AP)
