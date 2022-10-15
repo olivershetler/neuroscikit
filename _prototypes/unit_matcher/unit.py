@@ -85,12 +85,12 @@ def _mixture_sample(P:np.array, Q:np.array):
     P_sample_size, P_dimensions = P.shape
     Q_sample_size, Q_dimensions = Q.shape
 
-    from random import randint
-    choice = randint(0, 1)
-    if choice == 0:
-        return P[randint(0, P_sample_size-1),:]
-    else:
-        return Q[randint(0, Q_sample_size-1),:]
+    M_sample_size = min(P_sample_size, Q_sample_size)
+    for i in range(M_sample_size):
+        if np.random.rand() > 0.5:
+            yield P[i]
+        else:
+            yield Q[i]
 
 def kullback_leibler_divergence(P, Q):
     return np.sum(list(filter(lambda x: not np.isnan(x), P * np.log(P/Q))))
@@ -181,7 +181,7 @@ def spike_level_feature_array(unit: SpikeCluster, time_step):
             #spike.features = spike_features(spike, time_step)
             feature_vector = list(features.values())
             feature_array.append(feature_vector)
-    
+
     return np.array(feature_array)
 
 
