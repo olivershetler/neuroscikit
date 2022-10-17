@@ -103,7 +103,7 @@ def test_hafting_spike_map():
 
     hafting_spike = HaftingSpikeMap(spatial_spike_train)
 
-    spike_map = hafting_spike.get_spike_map(smoothing_factor=3)
+    spike_map, _ = hafting_spike.get_spike_map(smoothing_factor=3)
 
     assert isinstance(hafting_spike, HaftingSpikeMap)
     assert hafting_spike.map_data.all() == spike_map.all()

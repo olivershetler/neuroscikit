@@ -10,7 +10,7 @@ def _interpolate_matrix(matrix, new_size=(256,256), cv2_interpolation_method=cv2
     return cv2.resize(matrix, dsize=new_size,
                       interpolation=cv2_interpolation_method)
 
-def _disk_mask(matrix):
+def disk_mask(matrix):
         y_segments, x_segments = matrix.shape
 
         y_center, x_center = (y_segments-1)/2, (x_segments-1)/2

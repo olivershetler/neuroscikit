@@ -41,7 +41,7 @@ def test_place_field():
     fields, fields_map = place_field(spatial_spike_train)
 
     assert type(fields) == list 
-    assert type(fields_map) == np.ndarray
+    assert type(fields_map) == np.ma.MaskedArray
 
     spatial_spike_train, _ = make_spatial_spike_train()
     rate_obj = HaftingRateMap(spatial_spike_train)
@@ -49,5 +49,5 @@ def test_place_field():
     fields, fields_map = place_field(rate_obj)
 
     assert type(fields) == list 
-    assert type(fields_map) == np.ndarray
+    assert type(fields_map) == np.ma.MaskedArray
 

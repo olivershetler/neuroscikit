@@ -27,7 +27,7 @@ def test_grid_score():
 
     gscore = grid_score(spatial_spike_train)
 
-    assert type(gscore) == np.float64
+    assert type(gscore) == np.float64 or type(gscore) == float
 
 def test_hd_score():
     spatial_spike_train, session_metadata = make_spatial_spike_train()

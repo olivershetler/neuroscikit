@@ -278,11 +278,11 @@ class HaftingSpikeMap():
             else:
                 self.smoothing_factor = smoothing_factor
 
-            self.map_data = self.compute_spike_map(self.spike_x, self.spike_y, smoothing_factor, self.arena_size)
+            self.map_data, self.map_data_raw = self.compute_spike_map(self.spike_x, self.spike_y, smoothing_factor, self.arena_size)
 
             self.spatial_spike_train.add_map_to_stats('spike', self)
 
-        return self.map_data
+        return self.map_data, self.map_data_raw
 
     def compute_spike_map(self, spike_x, spike_y, smoothing_factor, arena_size, resolution=64):
         # arena_ratio = arena_size[0]/arena_size[1]
@@ -315,9 +315,9 @@ class HaftingSpikeMap():
         # # Resize maps
         # spike_map = _interpolate_matrix(spike_map, cv2_interpolation_method=cv2.INTER_NEAREST)
 
-        spike_map, _ = _temp_spike_map(self.spatial_spike_train.x, self.spatial_spike_train.y, self.spatial_spike_train.t, arena_size, spike_x, spike_y, smoothing_factor)
+        spike_map, spike_map_raw = _temp_spike_map(self.spatial_spike_train.x, self.spatial_spike_train.y, self.spatial_spike_train.t, arena_size, spike_x, spike_y, smoothing_factor)
 
-        return spike_map
+        return spike_map, spike_map_raw
 
 class HaftingRateMap():
     def __init__(self, spatial_spike_train: SpatialSpikeTrain2D, **kwargs):
@@ -377,17 +377,21 @@ class HaftingRateMap():
         '''
         if self.smoothing_factor != None:
             occ_map_data, raw_occ, coverage = occupancy_map.get_occupancy_map(self.smoothing_factor)
-            spike_map_data = spike_map.get_spike_map(self.smoothing_factor)
+            spike_map_data, spike_map_data_raw = spike_map.get_spike_map(self.smoothing_factor)
         else:
             print('No smoothing factor provided, proceeding with value of 3')
             occ_map_data, raw_occ, coverage = occupancy_map.get_occupancy_map(3)
-            spike_map_data = spike_map.get_spike_map(3)
+            spike_map_data, spike_map_data_raw = spike_map.get_spike_map(3)
 
 
 
         assert occ_map_data.shape == spike_map_data.shape
 
-        rate_map_raw = _compute_unmasked_ratemap(occ_map_data, spike_map_data)
+        rate_map_raw = np.where(raw_occ<0.0001, 0, spike_map_data_raw/raw_occ)
+        rate_map = np.where(occ_map_data<0.0001, 0, spike_map_data/occ_map_data)
+        rate_map = rate_map/max(rate_map.flatten())
+
+        # rate_map_raw = _compute_unmasked_ratemap(occ_map_data, spike_map_data)
 
         # rate_map = np.ma.array(rate_map_raw, mask=coverage)
         rate_map = np.ma.array(rate_map_raw, mask=raw_occ)

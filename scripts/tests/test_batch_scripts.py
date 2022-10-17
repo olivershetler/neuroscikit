@@ -49,17 +49,22 @@ implant = {'implant_id': '001', 'implant_type': 'tetrode', 'implant_geometry': '
 session_settings = {'channel_count': 4, 'animal': animal, 'devices': devices, 'implant': implant}
 
 
-settings_dict = {'ppm': 511, 'session':  session_settings, 'smoothing_factor': 3, }
+settings_dict = {'ppm': 511, 'session':  session_settings, 'smoothing_factor': 3, 'useMatchedCut': False}
 
 study = make_study([data_dir], settings_dict)
+study.make_animals()
+print('Animals Made')
 
 def test_batch_map():
     tasks = {}
 
-    task_keys = ['binary_map', 'autocorrelation_map', 'sparsity', 'selectivity', 'information', 'coherence', 'speed_score', 'hd_score', 'tuning_curve', 'grid_score', 'border_score', 'field_sizes']
+    task_keys = ['binary_map', 'autocorrelation_map', 'sparsity', 'selectivity', 'information', 'coherence', 'speed_score', 'hd_score', 'tuning_curve', 'grid_score', 'border_score', 'field_sizes', 'disk_arena']
     
     for key in task_keys:
-        tasks[key] = True
+        if key == 'disk_arena':
+            tasks[key] = False
+        else:
+            tasks[key] = True
 
     batch_map(study, tasks)
 
@@ -70,16 +75,8 @@ def test_batch_map():
         assert key in study.animals[0].sessions['session_1'].get_cell_data()['cell_ensemble'].cells[0].stats_dict['cell_stats']
 
 
-# def test_batch_neurofunc():
 
-#     tasks = {}
-#     keys = ['binary_map', 'autocorrelation_map', 'sparsity', 'selectivity', 'information', 'coherence', 'speed_score', 'hd_score', 'tuning_curve', 'grid_score', 'border_score', 'field_sizes']
-#     for key in keys:
-#         tasks[key] = True
 
-#     batch_rate_maps(study, tasks)
-
-#     assert study.animals[0].stat_dict != None
 
 def test_batch_spike_analysis():
 
