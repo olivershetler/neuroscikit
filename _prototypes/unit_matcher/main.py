@@ -80,8 +80,8 @@ def run_unit_matcher(paths=[], settings={}, study=None):
                 values = list(map_dict.values())
                 keys = list(map_dict.keys())
                 for i in range(len(values)):
-                    # if values[i] in prev_map_dict:
-                    map_dict[keys[i]] = prev_map_dict[values[i]]
+                    if values[i] in prev_map_dict:
+                        map_dict[keys[i]] = prev_map_dict[values[i]]
 
                 new_cut_file_path, new_cut_data, header_data = format_cut(curr, map_dict)
                 print('Writing mapping: ' + str(map_dict))
