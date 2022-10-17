@@ -80,7 +80,6 @@ def run_unit_matcher(paths=[], settings={}, study=None):
                 values = list(map_dict.values())
                 keys = list(map_dict.keys())
                 for i in range(len(values)):
-                    print(keys[i], values[i])
                     # if values[i] in prev_map_dict:
                     map_dict[keys[i]] = prev_map_dict[values[i]]
 

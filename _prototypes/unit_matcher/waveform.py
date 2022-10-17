@@ -48,9 +48,9 @@ def waveform_features(waveform, time_step, channel):
 
 
     #------#
-    fd[f"{channel}f5"] = symmetric_logarithm((p4.dv - p2.dv))
-    fd[f"{channel}f6"] = (p6.dv - p4.dv)
-    fd[f"{channel}f7"] = symmetric_logarithm((p6.dv - p2.dv))
+    # fd[f"{channel}f5"] = symmetric_logarithm((p4.dv - p2.dv))
+    # fd[f"{channel}f6"] = (p6.dv - p4.dv)
+    # fd[f"{channel}f7"] = symmetric_logarithm((p6.dv - p2.dv))
     #------#
     """
     # integral of the spike slice in the waveform, normalized for time
