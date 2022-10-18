@@ -175,6 +175,15 @@ class Study(Workspace):
             animal_ids.append(session.animal_id)
         return animal_ids
 
+    def get_animal_by_id(self, animal_id):
+        assert animal_id in self.animal_ids
+        
+        assert self.animals is not None, 'Call self.make_animals() first'
+
+        for animal in self.animals:
+            if animal.animal_id == animal_id:
+                return animal
+                
     def _read_input_dict(self):
         sessions = []
         for key in self._input_dict:
