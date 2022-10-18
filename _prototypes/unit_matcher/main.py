@@ -133,7 +133,7 @@ def map_unit_matches_first_session(matches, match_distances, unmatched):
     for i in range(len(matches.squeeze())):
         map_dict[int(matches[i][0])] = i + 1
 
-    highest_matched_id = map_dict[max(map_dict, key=map_dict.get)]
+    highest_matched_id = max(map_dict.values())
     # unmatched = sorted(unmatched)
     empty_cell_id = highest_matched_id + 1
     unmatched_cell_start_id = empty_cell_id + 1
