@@ -18,7 +18,7 @@ implant = {'implant_id': 'id', 'implant_type': 'tetrode', 'implant_geometry': 's
 
 session_settings = {'channel_count': 4, 'animal': animal, 'devices': devices, 'implant': implant}
 
-settings_dict = {'ppm': 511, 'session': [session_settings, session_settings], 'smoothing_factor': 3, 'useMatchedCut': False}
+settings_dict = {'ppm': 511, 'session':session_settings, 'smoothing_factor': 3, 'useMatchedCut': False}
 
 session1, session2 = read_sequential_sessions(data_dir, settings_dict)
 
