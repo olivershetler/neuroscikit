@@ -23,7 +23,7 @@ from x_io.rw.axona.read_tetrode_and_cut import (
     _read_tetrode_header,
 )
 
-from x_io.rw.axona.read_pos import ( 
+from x_io.rw.axona.read_pos import (
     grab_position_data,
 )
 
@@ -31,7 +31,7 @@ def make_study(directory, settings_dict: list):
 
     if type(directory) != list:
         directory = [directory]
-    
+
     # study_dict = _init_study_dict(settings_dict)
     study_dict = {}
 
@@ -80,7 +80,7 @@ def _grab_tetrode_cut_position_files(paths: list, pos_files=[], cut_files=[], te
             pos_files (list):
                 List containing position file paths
     '''
- 
+
     # Check for set file
     if len(paths) == 1 and os.path.isdir(paths[0]):
         files = os.listdir(paths[0])
@@ -178,7 +178,7 @@ def _init_study_dict(settings_dicts):
 
     study_dict = {}
 
-    for i in range(len(settings_dicts['sessions'])):
+    for i in range(len(settings_dicts['session'])):
         study_dict['session_' + str(i+1)] = {}
 
     return study_dict
@@ -195,11 +195,11 @@ def batch_sessions(sorted_files, settings_dict, indiv_session_settings):
     """
     Sorted files: A nested list where each element is a collection of cut, tetrode and pos files
     belonging to the same session
-    
+
     """
     # assert len(cut_files) == len(tet_files)
     # assert len(tet_files) == len(pos_files)
-    # assert len(sorted_files) == len(settings_dict['sessions'])
+    # assert len(sorted_files) == len(settings_dict['session'])
 
     sessions = {}
 
@@ -222,9 +222,9 @@ def batch_sessions(sorted_files, settings_dict, indiv_session_settings):
             animal_id = str(indiv_session_settings['animal_ids'][i] + '_tet' + str(j+1))
 
             session_settings_dict['animal'] = {'animal_id': animal_id}
-            
 
-            if settings_dict['useMatchedCut'] == True: 
+
+            if settings_dict['useMatchedCut'] == True:
                 assert len(sorted_files[i]) > 3, print('Matched cut file not present, make sure to run unit matcher')
                 cut_file = matched_cut_files[j]
                 assert 'matched.cut' in cut_file
@@ -306,13 +306,13 @@ def _create_session_classes(session_dict, settings_dict):
     spike_cluster = session.make_class(SpikeClusterBatch, session_dict['devices']['implant']['implant_data'])
     spike_train = session.make_class(SpikeTrain, session_dict['devices']['implant']['implant_data'])
     position = session.make_class(Position2D, session_dict['devices']['axona_led_tracker']['led_position_data'])
-    
+
     # animal_metadata = AnimalMetadata(session_dict['animal'])
     # tracker_metadata = TrackerMetadata(session_dict['devices']['implant'])
     # implant_metadata = ImplantMetadata(session_dict['devices']['axona_led_tracker'])
     # devices_dict = {'axona_led_tracker': tracker_metadata, 'implant': implant_metadata}
     # devices_metadata = DevicesMetadata(devices_dict)
-    
+
     # spike_train = SpikeTrain(session_dict['devices']['implant']['implant_data'])
     # spike_cluster = SpikeClusterBatch(session_dict['devices']['implant']['implant_data'])
 
@@ -325,7 +325,7 @@ def _create_session_classes(session_dict, settings_dict):
 
     session_classes = {'metadata': session.session_metadata, 'data': session.session_data}
 
-    return session, session_classes 
+    return session, session_classes
 
 
 
@@ -347,9 +347,9 @@ def _init_session_dict(settings_dict):
     session_dict = {}
     session_dict['animal'] = {}
     session_dict['devices'] = {}
- 
+
     animal_keys = settings_dict['animal']
-    # animal_keys = ['animal_id', 'species', 'sex', 'age', 'weight', 'genotype', 'animal_notes'] 
+    # animal_keys = ['animal_id', 'species', 'sex', 'age', 'weight', 'genotype', 'animal_notes']
     devices = settings_dict['devices']
     # e.g. ['axona_led_tracker': True, 'implant': True,]
     implant = settings_dict['implant']
@@ -368,7 +368,7 @@ def _init_session_dict(settings_dict):
     for key in implant:
         session_dict['devices']['implant'][key] = implant[key]
 
-    session_dict['devices']['implant']['implant_data'] = {}   
+    session_dict['devices']['implant']['implant_data'] = {}
 
     # session_dict['devices']['implant']['implant_id'] = implant['implant_id']
     # session_dict['devices']['implant']['implant_type'] = implant['implant_type']
@@ -376,7 +376,7 @@ def _init_session_dict(settings_dict):
     # session_dict['devices']['implant']['wire_length'] = implant['wire_length']
     # session_dict['devices']['implant']['wire_length_units'] = implant['wire_length_units']
     # session_dict['devices']['implant']['implant_units'] = implant['implant_units']
-    # session_dict['devices']['implant']['implant_data'] = {}   
+    # session_dict['devices']['implant']['implant_data'] = {}
 
     return session_dict
 

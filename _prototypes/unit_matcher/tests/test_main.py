@@ -13,7 +13,6 @@ from _prototypes.unit_matcher.session import compare_sessions
 from _prototypes.unit_matcher.write_axona import format_new_cut_file_name
 
 data_dir = parent_dir + r'\neuroscikit_test_data\single_sequential'
-print(">>>>>", data_dir)
 
 animal = {'animal_id': 'id', 'species': 'mouse', 'sex': 'F', 'age': 1, 'weight': 1, 'genotype': 'type', 'animal_notes': 'notes'}
 devices = {'axona_led_tracker': True, 'implant': True}
@@ -21,7 +20,7 @@ implant = {'implant_id': 'id', 'implant_type': 'tetrode', 'implant_geometry': 's
 
 session_settings = {'channel_count': 4, 'animal': animal, 'devices': devices, 'implant': implant}
 
-settings_dict = {'ppm': 511, 'sessions': [session_settings,session_settings], 'smoothing_factor': 3, 'useMatchedCut': False}
+settings_dict = {'ppm': 511, 'session': [session_settings,session_settings], 'smoothing_factor': 3, 'useMatchedCut': False}
 
 session1, session2 = read_sequential_sessions(data_dir, settings_dict)
 

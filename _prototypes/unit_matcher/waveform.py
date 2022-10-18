@@ -52,7 +52,7 @@ def waveform_features(waveform, time_step, channel):
     # fd[f"{channel}f6"] = (p6.dv - p4.dv)
     # fd[f"{channel}f7"] = symmetric_logarithm((p6.dv - p2.dv))
     #------#
-    """
+
     # integral of the spike slice in the waveform, normalized for time
     # NOTE: This feature is NOT in the original paper
     # in the original paper, f4 is the correlation between
@@ -108,7 +108,7 @@ def waveform_features(waveform, time_step, channel):
         fd[f"{channel}f11"] = p2.dv / p4.dv
     except:
         return None
-    """
+
     # PHASE FEATURES
     # amplitude of the FD of the AP relating to p1
     fd[f"{channel}f12"] = p1.dv

@@ -65,7 +65,6 @@ Thera are then functions for extracting features from each domain.
 - `quartiles` and `interquartile_range` are for extracting quartiles and the interquartile range from a waveform.
 - `mean` and `variance` are for extracting the mean and variance from a waveform.
 - `skewness` and `kurtosis` are for extracting the skewness and kurtosis from a waveform.
-- `area_under_curve` is for extracting the area under the curve from a waveform.
 
 There is a function for organizing all the waveform features into a single data structure. This function will be called in the `spike` module to extract features from each waveform in a spike.
 

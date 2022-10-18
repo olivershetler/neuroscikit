@@ -18,7 +18,7 @@ implant = {'implant_id': 'id', 'implant_type': 'tetrode', 'implant_geometry': 's
 
 session_settings = {'channel_count': 4, 'animal': animal, 'devices': devices, 'implant': implant}
 
-settings_dict = {'ppm': 511, 'sessions': [session_settings,session_settings], 'smoothing_factor': 3}
+settings_dict = {'ppm': 511, 'session': [session_settings,session_settings], 'smoothing_factor': 3}
 
 
 def test_format_new_cut_file_name():
@@ -36,7 +36,7 @@ def test_apply_remapping():
     new_cut_data = apply_remapping(cut_data, map_dict)
 
     assert new_cut_data == cut_data
-    # assert 
+    # assert
 
 def test_write_cut():
     cut_file = r'C:\Users\aaoun\OneDrive - cumc.columbia.edu\Desktop\HussainiLab\neuroscikit_test_data\single_sequential\1-13_20210621-34-50x50cm-1500um-Test1_3.cut'
