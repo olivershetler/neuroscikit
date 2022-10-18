@@ -35,7 +35,9 @@ def sort_spikes_by_cell(clusters: SpikeClusterBatch):
     unique_labels = np.unique(cluster_labels)
     # comes in shape (channel count, spike time, nmb samples) but is nested list not numpy
     # want to rearrannge to be (spike time, channel count, nmb sample)
-    waves = np.array(waveforms).reshape((len(waveforms[0]), len(waveforms),  len(waveforms[0][0])))
+    # waves = np.array(waveforms).reshape((len(waveforms[0]), len(waveforms),  len(waveforms[0][0])))
+    waves = np.swapaxes(waveforms, 1, 0)
+    # waves = np.asarray(waveforms)
     for lbl in unique_labels:
         idx = np.where(cluster_labels == lbl)[0]
         spks = np.array(spike_times)[idx]
@@ -44,6 +46,7 @@ def sort_spikes_by_cell(clusters: SpikeClusterBatch):
         if len(spks) < 40000 and len(spks) > 100:
             cells.append(spks)
             sorted_waveforms.append(waves[idx,:,:].squeeze())
+            # sorted_waveforms.append(waves[:,idx,:].squeeze())
             sorted_label_ids.append(lbl)
         # sorted_clusters.append(indiv_clusters[idx])
 
