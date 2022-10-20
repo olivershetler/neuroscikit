@@ -163,10 +163,8 @@ def waveform_features(waveform, time_step, channel):
     fd[f"{channel}f24"] = skew(d2_waveform)
 
     for key, value in fd.items():
-        if value == value:
-            fd[key] = float(value)
-        else:
-            print(key, value)
+        if value == np.inf or value == -np.inf or np.isnan(value):
+            fd[key] = 0
     return fd
 
 def morphological_points(time_index, waveform, d_waveform, d2_waveform, time_step):
