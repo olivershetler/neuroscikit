@@ -135,7 +135,6 @@ def apply_cross_session_remapping(session_mappings, cross_session_matches):
 
     avg_JSD, cross_session_unmatched, first_session_unmatched = _agg_distances(cross_session_matches)
 
-    print(cross_session_unmatched, first_session_unmatched)
 
     JSD_vals = np.array(list(avg_JSD.values()))
     JSD_keys = np.array(list(avg_JSD.keys()))
@@ -151,8 +150,7 @@ def apply_cross_session_remapping(session_mappings, cross_session_matches):
         for i in range(len(sorted_JSD_keys)):
             key = sorted_JSD_keys[i]
             matches = np.array(cross_session_matches[key]['agg_matches']).reshape((-1,2))
-            print('MATCHES')
-            print(matches)
+
             comps = cross_session_matches[key]['comps']
 
             assert len(matches) == len(comps)
@@ -166,11 +164,10 @@ def apply_cross_session_remapping(session_mappings, cross_session_matches):
                 # E.g. session1- session2, cell 5 in ses2 not matched. But session2- session3, cell 5 in ses2 is matched
                 # mapping dictionary from ses2 to ses1 needs to update to account for new match label in session2-session3 comparison
                 if j == 0 and not session_mappings[comps[j]]['isFirstSession']:
-                    print('SHOULD ONLY SEE THIS LINE ONCE')
+
                     map_to_update = session_mappings[comps[j]-1]['map_dict']
-                    print(map_to_update)
+
                     map_to_update[pair[0]] = i + 1
-                    print(map_to_update)
 
                     session_mappings[comps[j]-1]['map_dict'] = map_to_update
 
@@ -180,10 +177,7 @@ def apply_cross_session_remapping(session_mappings, cross_session_matches):
 
                     first_ses_map_dict = session_mappings[comps[j]]['first_ses_map_dict']
 
-                    print('step 1')
-                    print(first_ses_map_dict)
                     first_ses_map_dict[pair[0]] = i + 1
-                    print(first_ses_map_dict)
 
                     session_mappings[comps[j]]['first_ses_map_dict'] = first_ses_map_dict
 
@@ -192,25 +186,13 @@ def apply_cross_session_remapping(session_mappings, cross_session_matches):
                 map_dict = session_mappings[comps[j]]['map_dict']
 
                 if prev_map_dict is not None:
-                    print('step 2')
-                    print(map_dict)
                     map_dict[pair[1]] = prev_map_dict[pair[0]]
-                    print(map_dict)
                 else:
-                    print('step 3')
-                    print(map_dict)
                     map_dict[pair[1]] = i + 1
-                    print(map_dict)
 
                 session_mappings[comps[j]]['map_dict'] = map_dict
 
                 prev_map_dict = map_dict
-
-
-            # if last comparison for this match does not contain the last session, cell is unmatched in session 1 when compared to session2
-            # E.g. session1- session2, cell 5 in ses2 is matched. But session2- session3, cell 5 in ses2 (ses1 in the comparison) is unmatched
-            # mapping dictionary from ses2 to ses1 needs to update to account for new match label in session2-session3 comparison
-            # if len(comps) < len(session_mappings):
 
 
         # add 1 for gap cell
