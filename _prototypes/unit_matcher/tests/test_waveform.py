@@ -80,13 +80,14 @@ def test_morphological_points():
 
 def test_waveform_features():
     i=-1
+    count = 0
     for wf in read.session_dict1['ch4']:
         i+=1
         try:
             feature_vector = waveform_features(wf, time_step)
         except:
-            print('Error in waveform', i)
-            #plot_waveform_points(wf, time_step)
+            count += 1
+    print(count, i, count/i)
 
 
 

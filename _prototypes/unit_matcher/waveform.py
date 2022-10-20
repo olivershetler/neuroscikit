@@ -29,30 +29,31 @@ def waveform_features(waveform, time_step, channel):
     d2_waveform = derivative2(waveform, time_step)
     # get morphological points
     p1, p2, p3, p4, p5, p6 = morphological_points(t, waveform, d_waveform, d2_waveform, time_step)
-    if p1 is None:
-        return None
 
     # FEATURE EXTRACTION
     fd = dict() # feature dictionary
 
     # get peak amplitude for source attribution
-    fd[f"{channel}peak_amplitude"] = p3.v
-
+    try:
+        fd[f"{channel}peak_amplitude"] = p3.v
+    except:
+        fd[f"{channel}peak_amplitude"] = 0
     # SHAPE FEATURES
     # waveform duration of the first derivative (FD) of the action potential (AP)
-    fd[f"{channel}f1"] = p5.t - p1.t
+    try:
+        fd[f"{channel}f1"] = p5.t - p1.t
+    except:
+        fd[f"{channel}f1"] = 0
     # peak to valley amplitude of the FD of the AP
-    fd[f"{channel}f2"] = p4.dv - p2.dv
+    try:
+        fd[f"{channel}f2"] = p4.dv - p2.dv
+    except:
+        fd[f"{channel}f2"] = 0
     # valley to valley amplitude of the FD of the AP
-    fd[f"{channel}f3"] = p6.dv - p2.dv
-
-
-    #------#
-    # fd[f"{channel}f5"] = symmetric_logarithm((p4.dv - p2.dv))
-    # fd[f"{channel}f6"] = (p6.dv - p4.dv)
-    # fd[f"{channel}f7"] = symmetric_logarithm((p6.dv - p2.dv))
-    #------#
-
+    try:
+        fd[f"{channel}f3"] = p6.dv - p2.dv
+    except:
+        fd[f"{channel}f3"] = 0
     # integral of the spike slice in the waveform, normalized for time
     # NOTE: This feature is NOT in the original paper
     # in the original paper, f4 is the correlation between
@@ -60,26 +61,26 @@ def waveform_features(waveform, time_step, channel):
     try:
         fd[f"{channel}f4"] = area_under_curve(waveform[p1.i:p5.i], time_step)/(p5.t - p1.t)
     except:
-        return None
+        fd[f"{channel}f4"] = 0
     # logarithm of the positve deflection of the FD of the AP
     # NOTE: This feature is NOT in the original paper
     # in the original paper, f5 is the logarithm of the term below
     # However, their definition did not generalize to excidatory
     # neurons, where the principal peak comes before the big trough.
-    #try:
-    #    fd["f5"] = symmetric_logarithm((p4.dv - p2.dv) / (p4.t - p2.t))
-    #except:
-    #    return None
+    try:
+        fd[f"{channel}f5"] = symmetric_logarithm((p4.dv - p2.dv) / (p4.t - p2.t))
+    except:
+        fd[f"{channel}f5"] = 0
     # negative deflection of the FD of the AP
     try:
         fd[f"{channel}f6"] = (p6.dv - p4.dv) / (p6.t - p4.t)
     except:
-        return None
+        fd[f"{channel}f6"] = 0
     # logarithm of the slope among valleys of the FD of the AP
-    #try:
-    #    fd["f7"] = symmetric_logarithm((p6.dv - p2.dv) / (p6.t - p2.t))
-    #except:
-    #    return None
+    try:
+        fd["f7"] = symmetric_logarithm((p6.dv - p2.dv) / (p6.t - p2.t))
+    except:
+        fd["f7"] = 0
     # root mean square of the pre-event amplitude of the FD of the AP
     # NOTE: This feature is MODIFIED from the original paper
     # in the original paper, f8 is the root mean square of the pre-event amplitude of the FD of the AP
@@ -89,43 +90,67 @@ def waveform_features(waveform, time_step, channel):
     # We use the first extremum of the first derivative as the cutoff
     # when the first voltage domain extremum is the boundary.
     try:
-        fd[f"{channel}f8"] = np.sqrt(np.mean([x**2 for x in d_waveform[:p1.i]])) if p1.i > 0 else np.sqrt(np.mean([x**2 for x in d_waveform[p1.i:p2.i]]))
+        fd[f"{channel}f8"] = np.sqrt(np.mean([x**2 for x in d_waveform[:p1.i+1]]))
     except:
-        return None
+        fd[f"{channel}f8"] = 0
+
     # # negative slope ratio of the FD of the AP
     # # print((p2.dv - p1.dv), (p2.t - p1.t), (p3.dv - p2.dv), (p3.t - p2.t))
     try:
         fd[f"{channel}f9"] = ((p2.dv - p1.dv)/(p2.t - p1.t))/((p3.dv - p2.dv)/(p3.t - p2.t))
     except:
-        return None
+        fd[f"{channel}f9"] = 0
     # # postive slope ratio of the FD of the AP
     try:
         fd[f"{channel}f10"] = ((p4.dv - p3.dv)/(p4.t - p3.t))/((p5.dv - p4.dv)/(p5.t - p4.t))
     except:
-        return None
+        fd[f"{channel}f10"] = 0
     # peak to valley ratio of the action potential
     try:
         fd[f"{channel}f11"] = p2.dv / p4.dv
     except:
-        return None
-
+        fd[f"{channel}f11"] = 0
     # PHASE FEATURES
     # amplitude of the FD of the AP relating to p1
-    fd[f"{channel}f12"] = p1.dv
+    try:
+        fd[f"{channel}f12"] = p1.dv
+    except:
+        fd[f"{channel}f12"] = 0
     # amplitude of the FD of the AP relating to p3
-    fd[f"{channel}f13"] = p3.dv
+    try:
+        fd[f"{channel}f13"] = p3.dv
+    except:
+        fd[f"{channel}f13"] = 0
     # amplitude of the FD of the AP relating to p4
-    fd[f"{channel}f14"] = p4.dv
+    try:
+        fd[f"{channel}f14"] = p4.dv
+    except:
+        fd[f"{channel}f14"] = 0
     # amplitude of the FD of the AP relating to p6
-    fd[f"{channel}f15"] = p5.dv
+    try:
+        fd[f"{channel}f15"] = p5.dv
+    except:
+        fd[f"{channel}f15"] = 0
     # amplitude of the FD of the AP relating to p6
-    fd[f"{channel}f16"] = p6.dv
+    try:
+        fd[f"{channel}f16"] = p6.dv
+    except:
+        fd[f"{channel}f16"] = 0
     # amplitude of the second derivative (SD) of the AP relating to p1
-    fd[f"{channel}f17"] = p1.d2v
+    try:
+        fd[f"{channel}f17"] = p1.d2v
+    except:
+        fd[f"{channel}f17"] = 0
     # amplitude of the SD of the AP relating to p3
-    fd[f"{channel}f18"] = p3.d2v
+    try:
+        fd[f"{channel}f18"] = p3.d2v
+    except:
+        fd[f"{channel}f18"] = 0
     # amplitude of the SD of the AP relating to p5
-    fd[f"{channel}f19"] = p5.d2v
+    try:
+        fd[f"{channel}f19"] = p5.d2v
+    except:
+        fd[f"{channel}f19"] = 0
     # inter-quartile range of the FD of the AP
     fd[f"{channel}f20"] = inter_quartile_range(d_waveform)
     # inter-quartile range of the SD of the AP
@@ -142,7 +167,6 @@ def waveform_features(waveform, time_step, channel):
             fd[key] = float(value)
         else:
             print(key, value)
-
     return fd
 
 def morphological_points(time_index, waveform, d_waveform, d2_waveform, time_step):
@@ -179,15 +203,23 @@ def morphological_points(time_index, waveform, d_waveform, d2_waveform, time_ste
         x = np.argmax(voltage_peak_values)
         # find principal voltage peak
         p3 = waveform_point(voltage_peaks[x])
-        # get pre-spike trough
-        p1 = waveform_point(max(filter(lambda i: i < p3.i, voltage_troughs)))
-        # get refractory trough
-        p5 = waveform_point(min(filter(lambda i: i > p3.i, voltage_troughs)))
-        # get refractory peak index (discard after use)
-        rp = waveform_point(min(filter(lambda i: i > p5.i, [0] + voltage_peaks + [len(waveform) - 1])))
-
     except:
-        return None, None, None, None, None, None
+        p3 = None
+        # get pre-spike trough
+    try:
+        p1 = waveform_point(max(filter(lambda i: i < p3.i, voltage_troughs)))
+    except:
+        p1 = None
+        # get refractory trough
+    try:
+        p5 = waveform_point(min(filter(lambda i: i > p3.i, voltage_troughs)))
+    except:
+        p5 = None
+        # get refractory peak index (discard after use)
+    try:
+        rp = waveform_point(min(filter(lambda i: i > p5.i, [0] + voltage_peaks + [len(waveform) - 1])))
+    except:
+        rp = None
     # get morphological points in the rate domain
     def steepest_point_in_region(start, end):
         rate_extrema_indexes = local_extrema(d_waveform[start.i:end.i], time_step)
@@ -200,11 +232,20 @@ def morphological_points(time_index, waveform, d_waveform, d2_waveform, time_ste
             return waveform_point(int(np.median([start.i, end.i])))
         return waveform_point(indexes[x])
     # get steepest point between pre-spike trough and principal peak
-    p2 = steepest_point_in_region(p1, p3)
+    try:
+        p2 = steepest_point_in_region(p1, p3)
+    except:
+        p2 = None
     # get steepest point between principal peak and refractory trough
-    p4 = steepest_point_in_region(p3, p5)
+    try:
+        p4 = steepest_point_in_region(p3, p5)
+    except:
+        p4 = None
     # get steepest point between refractory trough and refractory peak
-    p6 = steepest_point_in_region(p5, rp)
+    try:
+        p6 = steepest_point_in_region(p5, rp)
+    except:
+        p6 = None
 
     return p1, p2, p3, p4, p5, p6
 

@@ -86,11 +86,19 @@ def _mixture_sample(P:np.array, Q:np.array):
     Q_sample_size, Q_dimensions = Q.shape
 
     M_sample_size = min(P_sample_size, Q_sample_size)
+    """
     for i in range(M_sample_size):
         if np.random.rand() > 0.5:
             yield P[i]
         else:
             yield Q[i]
+    """
+    def random_assignment(i):
+        if np.random.rand() > 0.5:
+            return P[i]
+        else:
+            return Q[i]
+    return list(map(random_assignment, range(M_sample_size)))
 
 def kullback_leibler_divergence(P, Q):
     return np.sum(list(filter(lambda x: not np.isnan(x), P * np.log(P/Q))))
