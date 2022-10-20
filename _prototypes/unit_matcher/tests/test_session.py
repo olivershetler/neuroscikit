@@ -10,7 +10,7 @@ from library.study_space import Session
 from _prototypes.unit_matcher.read_axona import read_sequential_sessions
 from _prototypes.unit_matcher.session import compare_sessions, compute_distances, guess_remaining_matches, extract_full_matches
 
-data_dir = parent_dir + r'\neuroscikit_test_data\single_sequential'
+data_dir = parent_dir + r'\neuroscikit_test_data\single_sequential_2'
 
 animal = {'animal_id': 'id', 'species': 'mouse', 'sex': 'F', 'age': 1, 'weight': 1, 'genotype': 'type', 'animal_notes': 'notes'}
 devices = {'axona_led_tracker': True, 'implant': True}

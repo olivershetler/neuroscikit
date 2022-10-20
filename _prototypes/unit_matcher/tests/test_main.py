@@ -7,12 +7,12 @@ sys.path.append(prototype_dir)
 parent_dir = os.path.dirname(prototype_dir)
 
 # import _prototypes.unit_matcher.tests.read as read
-from _prototypes.unit_matcher.main import format_cut, run_unit_matcher, map_unit_matches_first_session, map_unit_matches_sequential_session
+from _prototypes.unit_matcher.main import apply_cross_session_remapping, format_cut, reorder_unmatched_cells, run_unit_matcher, map_unit_matches_first_session, map_unit_matches_sequential_session, format_mapping_dicts
 from _prototypes.unit_matcher.read_axona import read_sequential_sessions, temp_read_cut
 from _prototypes.unit_matcher.session import compare_sessions
-from _prototypes.unit_matcher.write_axona import format_new_cut_file_name
+from _prototypes.unit_matcher.write_axona import apply_remapping, format_new_cut_file_name
 
-data_dir = parent_dir + r'\neuroscikit_test_data\single_sequential'
+data_dir = parent_dir + r'\neuroscikit_test_data\single_sequential_2'
 
 animal = {'animal_id': 'id', 'species': 'mouse', 'sex': 'F', 'age': 1, 'weight': 1, 'genotype': 'type', 'animal_notes': 'notes'}
 devices = {'axona_led_tracker': True, 'implant': True}
@@ -25,6 +25,80 @@ settings_dict = {'ppm': 511, 'session': session_settings, 'smoothing_factor': 3,
 session1, session2 = read_sequential_sessions(data_dir, settings_dict)
 
 matches, match_distances, unmatched_2, unmatched_1 = compare_sessions(session1, session2)
+
+def test_format_mapping_dicts():
+    session_mappings = {}
+
+    matches =  np.array([[2,1],[3,2],[4,3],[1,4]])
+    unmatched_2 = [5]
+    unmatched_1 = [5]
+
+    session_mappings[1] = {}
+    session_mappings[1]['isFirstSession'] = True
+    session_mappings[1]['matches'] = matches
+    session_mappings[1]['match_distances'] = [.1,.2,.3,.4]
+    session_mappings[1]['unmatched_2'] = unmatched_2
+    session_mappings[1]['unmatched_1'] = unmatched_1
+    session_mappings[1]['pair'] = (session1, session2)
+
+    next_matches =  np.array([[1,4],[2,2],[3,1],[4,3],[5,6]])
+    next_unmatched_2 = [5]
+    next_unmatched_1 = []
+
+    session_mappings[2] = {}
+    session_mappings[2]['isFirstSession'] = False
+    session_mappings[2]['matches'] = next_matches
+    session_mappings[2]['match_distances'] = [.1,.2,.3,.4, .5]
+    session_mappings[2]['unmatched_2'] = next_unmatched_2
+    session_mappings[2]['unmatched_1'] = next_unmatched_1
+    session_mappings[2]['pair'] = (session1, session2)
+
+    cross_session_matches, session_mappings = format_mapping_dicts(session_mappings)
+
+    cross_session_matches = reorder_unmatched_cells(cross_session_matches)
+
+    for key in cross_session_matches:
+        print(key)
+        print(cross_session_matches[key])
+
+    assert len(matches) + len(unmatched_1) + len(next_unmatched_2) == len(cross_session_matches) -1
+
+def test_apply_cross_session_remapping():
+    session_mappings = {}
+
+    matches =  np.array([[2,1],[3,2],[4,3],[1,4]])
+    unmatched_2 = [5]
+    unmatched_1 = [5]
+
+    session_mappings[1] = {}
+    session_mappings[1]['isFirstSession'] = True
+    session_mappings[1]['matches'] = matches
+    session_mappings[1]['match_distances'] = [.1,.2,.3,.4]
+    session_mappings[1]['unmatched_2'] = unmatched_2
+    session_mappings[1]['unmatched_1'] = unmatched_1
+    session_mappings[1]['pair'] = (session1, session2)
+
+    next_matches =  np.array([[1,4],[2,2],[3,1],[4,3],[5,6]])
+    next_unmatched_2 = [5]
+    next_unmatched_1 = []
+
+    session_mappings[2] = {}
+    session_mappings[2]['isFirstSession'] = False
+    session_mappings[2]['matches'] = next_matches
+    session_mappings[2]['match_distances'] = [.1,.2,.3,.4, .5]
+    session_mappings[2]['unmatched_2'] = next_unmatched_2
+    session_mappings[2]['unmatched_1'] = next_unmatched_1
+    session_mappings[2]['pair'] = (session1, session2)
+
+    cross_session_matches, session_mappings = format_mapping_dicts(session_mappings)
+    cross_session_matches = reorder_unmatched_cells(cross_session_matches)
+    remapping_dicts = apply_cross_session_remapping(session_mappings, cross_session_matches)
+
+    for map_dict in remapping_dicts:
+        print(map_dict)
+
+    assert type(remapping_dicts) == list
+    assert type(remapping_dicts[0]) == dict
 
 def test_map_unit_matches_first_session():
     map_dict = map_unit_matches_first_session(matches, match_distances, unmatched_1)

@@ -8,7 +8,7 @@ parent_dir = os.path.dirname(prototype_dir)
 from library.study_space import Session
 from _prototypes.unit_matcher.read_axona import read_sequential_sessions, temp_read_cut
 
-data_dir = parent_dir + r'\neuroscikit_test_data\single_sequential'
+data_dir = parent_dir + r'\neuroscikit_test_data\single_sequential_2'
 
 animal = {'animal_id': 'id', 'species': 'mouse', 'sex': 'F', 'age': 1, 'weight': 1, 'genotype': 'type', 'animal_notes': 'notes'}
 devices = {'axona_led_tracker': True, 'implant': True}
