@@ -94,8 +94,12 @@ def guess_remaining_matches(distances, pairs):
         remaining_match_distances.append(distances[row_ind[i], col_ind[i]])
 
     # session1_unmatched = list(set(np.arange(len(distances))) - set(remaining_matches[0]))
-    session2_unmatched = list(set(list(np.arange(len(distances[0])))) - set(list(col_ind)))
-    session1_unmatched = list(set(list(np.arange(len(distances)))) - set(list(row_ind)))
+    if len(distances) > 0:
+        session2_unmatched = list(set(list(np.arange(len(distances[0])))) - set(list(col_ind)))
+        session1_unmatched = list(set(list(np.arange(len(distances)))) - set(list(row_ind)))
+    else:
+        session2_unmatched = []
+        session1_unmatched = []
 
     unmatched_2 = []
     for i in range(len(session2_unmatched)):
@@ -145,6 +149,9 @@ def compare_sessions(session1: Session, session2: Session):
     if np.asarray(full_matches).size > 0 and np.asarray(remaining_matches).size > 0:
         matches = np.vstack((full_matches, remaining_matches))
         match_distances = np.hstack((full_match_distances, remaining_match_distances))
+    else:
+        matches = full_matches
+        match_distances = full_match_distances
 
     # matches = np.vstack((full_matches, remaining_matches))
     # matches = np.vstack((matches, unmatched))
