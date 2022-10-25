@@ -40,7 +40,9 @@ def sort_spikes_by_cell(clusters: SpikeClusterBatch):
     # waves = np.asarray(waveforms)
     for lbl in unique_labels:
         idx = np.where(cluster_labels == lbl)[0]
-        spks = np.array(spike_times)[idx]
+        idx = idx[idx <= len(spike_times)-1]
+        # print(np.array(spike_times).squeeze().shape, idx)
+        spks = np.array(spike_times).squeeze()[idx]
         if type(spks) == float or type(spks) == np.float64:
             spks = [spks]
         if len(spks) < 40000 and len(spks) > 100:

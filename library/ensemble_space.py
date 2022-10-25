@@ -49,6 +49,8 @@ class CellEnsemble(Workspace):
             self.session_metadata = None
             self.animal_id = None
 
+        self.cell_label_dict = None
+
     def _read_input_dict(self):
         cells = []
         for key in self._input_dict:
@@ -67,6 +69,19 @@ class CellEnsemble(Workspace):
         for cell in self.cells:
             ids.append(cell.cluster.cluster_label)
         return ids
+
+    def get_cell_label_dict(self):
+        if self.cell_label_dict is None:
+            self.cell_label_dict = {}
+            for cell in self.cells:
+                lbl = cell.cluster.cluster_label
+                self.cell_label_dict[lbl] = cell
+        return self.cell_label_dict
+
+    def get_cell_by_id(self, id):
+        if self.cell_label_dict is None:
+            self._init_cell_label_dict()
+        return self.cell_label_dict[id]
 
 
 class Cell(Workspace):

@@ -272,6 +272,8 @@ class Animal(Workspace):
 
         self.animal_id = self.sessions[list(self.sessions.keys())[0]].animal_id
 
+        self.stats_dict = {}
+
 
     def _read_input_dict(self):
         sessions = {}

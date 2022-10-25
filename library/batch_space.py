@@ -354,6 +354,7 @@ class SpikeClusterBatch(Workspace):
                 for key in session_constant:
                     input_dict[key] = session_constant[key]
                 idx = np.where(self.cluster_labels == i)[0]
+                idx = idx[idx <= len(self.event_times)-1]
                 for j in range(len(self.waveforms)):
                     key = 'channel_' + str(j+1)
                     input_dict[key] = np.asarray(self.waveforms[key])[idx]

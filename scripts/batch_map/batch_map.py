@@ -53,11 +53,11 @@ def batch_map(study: Study, tasks: dict, saveData=False):
 
             c = 1
 
+            pos_obj = session.get_position_data()['position']
+
             for cell in session.get_cell_data()['cell_ensemble'].cells:
 
                 print('session ' + str(k) + ', cell ' + str(c))
-                
-                pos_obj = session.get_position_data()['position']
 
                 # print('SpatialSPikeTrain Class')
                 spatial_spike_train = session.make_class(SpatialSpikeTrain2D, {'cell': cell, 'position': pos_obj})
