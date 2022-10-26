@@ -25,6 +25,7 @@ explicitely having to define that class (unless one wants to, in which case they
 - Position2D (holds position data)
 
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 For analyses requiring sorted data/workspace classes
 
 These classes are all made upon file loading and readng. After one has a study with multiple of these sessions, we can call
@@ -36,12 +37,16 @@ Animal() also makes CellEnsemble() which makes Cell() which hold valid data. Dat
 One distinction we can make is that after sorting + writing a matched.cut file, we can use the new labels on the Cell class instead of having to laod in a new study.
 So SpikeCluster would differ from Cell as SpikeCluster is pre sorting labels and Cell is post sorting. So we wouldnt need to load in a whole new study simply to
 view data with old vs new cut labels
+
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 For analyses involving maps.
 
-The first step in a batch process would be to create a SpatialSpikeTrain2D calss for each Cell. Maybe 'Cell' should be the map workspace class since they belonging
-to a cell. This also helps further delineate SpikeCLuster from Cell as conceptually maps would be assocaited to a cleaned up Cell not a cluster. 
+The first step in a batch process would be to create a SpatialSpikeTrain2D class for each Cell. Maybe 'Cell' should be the map workspace class since they belong
+to a cell. This also helps further delineate SpikeCluster from Cell as conceptually maps would be assocaited to a cleaned up Cell not a cluster. 
 
 Spatial spike train ccan be used directly on any map function as is and will create Hafting maps as required. If the user wants to change things slightly on the hafting map, 
 they can directly create and pass in that hafting map to the functions. So even though hafting maps can be thought of as being derivates of SpatialSpikeTrain2D, the code is
 flexible to both. And will not waste time recomputing previously stored maps.
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------
