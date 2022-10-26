@@ -265,9 +265,6 @@ def make_session(cut_file, tet_file, pos_file, settings_dict, session_settings_d
 
     # session.set_animal_id()
 
-    dir_names = np.array([x[1] for x in os.walk('library')])[0]
-    session.session_metadata.set_dir_names(dir_names)
-
     session.session_metadata.add_file_paths(cut_file, tet_file, pos_file, ppm)
 
     assert isinstance(session, Session)

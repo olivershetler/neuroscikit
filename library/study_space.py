@@ -41,6 +41,8 @@ class Session(Workspace):
         else:
             self.smoothing_factor = None
 
+        dir_names = np.array([x[1] for x in os.walk('library')])[0]
+        self.session_metadata.set_dir_names(dir_names)
 
     def set_smoothing_factor(self, smoothing_factor):
         self.smoothing_factor = smoothing_factor
