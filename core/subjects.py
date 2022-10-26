@@ -52,9 +52,15 @@ class SessionMetadata():
                 print('Ses object is in the input dict and init fxn, init fnx will override')
             self.session_object = kwargs['session_object']
 
-        self.dir_names = [x[1] for x in os.walk('library')][0]
+        # self.dir_names = [x[1] for x in os.walk('library')][0]
+        self.dir_names = None
 
         self.file_paths = {}
+
+    def set_dir_names(self, names):
+        self.dir_names = {}
+        for key in names:
+            self.dir_names[key] = {}
 
     def add_file_paths(self, cut_file, tet_file, pos_file, ppm):
         self.file_paths['cut'] = cut_file
