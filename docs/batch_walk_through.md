@@ -45,7 +45,7 @@ For analyses involving maps.
 The first step in a batch process would be to create a SpatialSpikeTrain2D class for each Cell. Maybe 'Cell' should be the map workspace class since they belong
 to a cell. This also helps further delineate SpikeCluster from Cell as conceptually maps would be assocaited to a cleaned up Cell not a cluster. 
 
-Spatial spike train ccan be used directly on any map function as is and will create Hafting maps as required. If the user wants to change things slightly on the hafting map, 
+Spatial spike train can be used directly on any map function as is and will create Hafting maps as required. If the user wants to change things slightly on the hafting map, 
 they can directly create and pass in that hafting map to the functions. So even though hafting maps can be thought of as being derivates of SpatialSpikeTrain2D, the code is
 flexible to both. And will not waste time recomputing previously stored maps.
 

@@ -22,13 +22,13 @@ Study() enables Session() and Annimal()
     belonging to a session have a '.session_metadata' attribute. This attribute is either passed in to the input dictionary or attempted to be read from
     the Session() class. This also allows us to easily change the session that a class belongs to by just pointing to a different session metadata instance.
 
-    This is also generally the first class made in file reading/loading. Multiple sessions are colelcted before a study is made and the first class for e.g.
+    This is also generally the first class made in file reading/loading. Multiple sessions are collected before a study is made and the first class for e.g.
     a new axona tetrode file is the Session() class
 
         ---> SessionMetadata() - CORE CLASS (ONLY TO HOLD CLASS INSTANCE REFERENCES)
 
         As per the name, this holds a dictionary with references to the instances of metadata. For now there are only two but the class was made
-        in anticipation of more and do help segregate any metadata/data specific attributes instead of having them all be in Session()
+        in anticipation of more and to help segregate any metadata/data specific attributes instead of having them all be in Session()
 
         {'animal': AnimalMetadata, 'devices': DevicesMetadata}
 
@@ -38,7 +38,7 @@ Study() enables Session() and Annimal()
             e.g. Data/Mouse_A/tetrode_files...., Data/Mouse_B/tetrode files
             Apart from the Animal ID, there is no other AnimalMetadata that is required for things to run. And currently that is being read from the folder name. 
 
-            This class is subject to either being removed or changed to read necessary animal metadata from the relevant files (although animal id is not in the files but rather
+            This class is subject to either being removed or changed so we can read necessary animal metadata from the relevant files (although animal id is not in the files but rather
             the file name and is quite inconsistently formatted across the lab)
 
             ---> DevicesMetadata() - CORE CLASS (ONLY TO HOLD CLASS INSTANCE REFERENCES)
@@ -58,7 +58,7 @@ Study() enables Session() and Annimal()
             
             /// session_object.get_devices_metadata()['axona_led_tracker'] ///
 
-            So this doesn't look useful in the casees of having few devices but allows for much better organization if we have more:/. And also the idea was to prevent against having to create a unique class for every single device and having to use different if statements to see what we're working with
+            So this doesn't look useful in the casees of having few devices but allows for much better organization if we have more. And also the idea was to prevent against having to create a unique class for every single device and having to use different if statements to see what device metadata class we have. 
 
                 ---> TrackerMetadata() (LOW USE/IMPORTANCE)
 
@@ -76,12 +76,14 @@ Study() enables Session() and Annimal()
 
         e.g. {'spike_train': SpikeTrain, 'spike_cluster': SpikeClusterBatch, 'spatial_spike_train: SpatialSpikeTrain2D}
 
+        Session class also has functions to return dictionaries holding different core session data like cell data instances or spike data instances
+
             --> SpikeClusterBatch - CORE CLASS (HIGHLY USED)
 
-            Created with every Session that is made. Conceptually, this class holds a colelction of unsorted spikes belonging to a variety of clusters.
+            Created with every Session that is made. Conceptually, this class holds a collection of unsorted spikes belonging to a variety of clusters.
 
-            Requires inputs are event times, event labels and event signal. If no event labels are needed, a workaround/fix can be added to autopopulate these labels.
-            For example if all event times loaded are from the same cluster/cell, all event labels can me set equal. Alternatively we can add functions to check
+            Required inputs are event times, event labels and event signal. If no event labels are needed, a workaround/fix can be added to autopopulate these labels (not implemented yet).
+            For example if all event times loaded are from the same cluster/cell, all event labels can be set equal. Alternatively we can add functions to check
             whether data is sorted or not and if unsorted use SpikeClusterBatch otherwise populate multiple Cell classes since data is sorted. Personally would advocate
             for making labels if they dont exist. SpikeCluster (batch/no batch) and Cell (ensemble/not) classes are conceptually useful to distinguish between analyses
             that require separated + sorted data as opposed to just aggregated spike data. 
@@ -91,9 +93,9 @@ Study() enables Session() and Annimal()
                 THIS WILL NOT BE CREATED AS PART OF A SESSION OR STUDY. Currently, SpikeClusterBatch precedes single label SpikeCluster classes and these are instantiated
                 as part of the procedure:
                 
-                \\\ study.make_animals() --> sort session sequentiallly --> sort_spikes_by_cell() --> filtler/map/reduce specific spike times/waveforms belonging to that label \\\
+                \\\ study.make_animals() --> sort session sequentiallly --> sort_spikes_by_cell() --> filter/map/reduce specific spike times/waveforms belonging to that label --> Spike Cluster \\\
 
-                Can add checks if data is all sorted to just use SpikeCluster. But having batch and non batch is again because of added flexibility. E.g. if data in SpikeClusterBatch 
+                Can add checks to see if the data is all sorted and if so use SpikeCluster. But having batch and non batch is again because of added flexibility. E.g. if data in SpikeClusterBatch 
                 is all the same cell, can still be dividied e.g. into trials based on cluster label. So its more so a class to divided neural data by label, which in our case is cell label
                 but could realstically follow any other grouping logic based on other properties. E.g. giving cell types different labels and groupings all spike times + waveforms belonging
                 to that cell type
