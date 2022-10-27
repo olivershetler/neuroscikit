@@ -20,8 +20,6 @@ from scipy.signal import convolve2d
 
 REQUIRED_OVERLAP_PIXELS = 0
 
-
-
 # def autocorrelation(ratemap: np.ndarray, arena_size: tuple) -> np.ndarray:
 def autocorrelation(spatial_map: SpatialSpikeTrain2D | HaftingRateMap, **kwargs):
     '''
@@ -103,7 +101,7 @@ def opexebo_autocorrelation(firing_map):
     Parameters
     ----------
     firing_map: np.ndarray
-        NxM matrix, smoothed firing map. map is not necessary a numpy array. 
+        NxM matrix, smoothed firing map. map is not necessary a numpy array.
         May contain NaNs.
 
     Returns
@@ -114,7 +112,7 @@ def opexebo_autocorrelation(firing_map):
     See Also
     --------
     opexebo.general.normxcorr2_general
-        
+
     Notes
     -----
     BNT.+analyses.autocorrelation
@@ -172,7 +170,7 @@ def normxcorr2_general(array):
     Python implementation of the Matlab `generalized-normalized cross correlation`
     function, adapted by Vadim Frolov. Some generality was abandoned in the adaption
     as unnecessary for autocorrelogram calculation.
-    
+
     For the original function, see https://se.mathworks.com/matlabcentral/fileexchange/29005-generalized-normalized-cross-correlation
 
     Parameters
@@ -191,7 +189,7 @@ def normxcorr2_general(array):
     if not np.sum(np.isfinite(array)) == array.size:
         raise ValueError("Input array contains NaN values.")
 
-    
+
     A = _shift_data(array)
     T = _shift_data(array)
 
@@ -326,7 +324,7 @@ def _local_sum(A, m, n):
     calculating the local sum.  Otherwise, the slower but more general method
     can be used.  The faster method is more than twice as fast and is also
     less memory intensive.
-    
+
     As it is currently called (2021-04-12), the `else` case appears to never
     be invoked
     """
@@ -340,7 +338,7 @@ def _local_sum(A, m, n):
         lastColumn = s[:, -1].reshape((s.shape[0], 1))
         # secondPart = np.matlib.repmat(lastColumn, 1, n-1) - s[:, 0:-1]
         secondPart = np.tile(lastColumn, (1, n-1)) - s[:, 0:-1]
-        
+
         local_sum_A = np.concatenate((s, secondPart), axis=1)
     else:
         # breal the padding into parts to save on memory

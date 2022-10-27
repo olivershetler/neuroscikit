@@ -19,12 +19,14 @@ def extract_average_spike_widths(study) -> dict:
                 principal_waveform = wf_avg[principal_channel_index]
                 peak_index = np.argmax(principal_waveform)
                 trough_list = list(filter(lambda x: x > peak_index, troughs(principal_waveform, time_step)))
-                trough_index = trough_list[0]
-                if trough_index == len(principal_waveform) - 1:
-                    trough_index = int(np.median(peak_index, trough_index))
-                spike_width = (trough_index - peak_index) * time_step
+                if len(trough_list) > 0:
+                    trough_index = trough_list[0]
+                    spike_width = (trough_index - peak_index) * time_step
+                else:
+                    trough_index = len(principal_waveform) - 1
+                    spike_width = int((trough_index - peak_index)/2) * time_step
+                assert spike_width > 0, 'Spike width is negative'
                 firing_rate = n_spikes/spike_times[-1]
-
                 output_df['animal_id'].append(animal_id)
                 output_df['session_signature'].append(session_signature)
                 output_df['unit_id'].append(unit)

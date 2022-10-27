@@ -229,6 +229,7 @@ class Study(Workspace):
 
         return sorted_animal_sessions
 
+
     def make_animals(self):
         if self.animals is None:
             animal_sessions = self._sort_session_by_animal()
@@ -263,7 +264,6 @@ class SessionData():
     def _add_session_data(self, key, data_class):
         assert 'Metadata' not in key and 'metadata' not in key, 'Cannot add metadata class to session data'
         self.data[key] = data_class
-
 
 
 class Animal(Workspace):
