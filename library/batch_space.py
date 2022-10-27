@@ -20,7 +20,7 @@ class SpikeTrainBatch(Workspace):
         self.duration, self.sample_rate, self.events_binary, self.event_times, self.session_metadata = self._read_input_dict()
 
         if 'session_metadata' in kwargs:
-            if self.session_metadata != None: 
+            if self.session_metadata != None:
                 print('Ses metadata is in the input dict and init fxn, init fnx will override')
             self.session_metadata = kwargs['session_metadata']
 
@@ -58,7 +58,7 @@ class SpikeTrainBatch(Workspace):
             spike_data_present = True
         assert spike_data_present == True, 'No spike times or binary spikes provided'
 
-        session_metadata = None 
+        session_metadata = None
         if 'session_metadata' in self._input_dict:
             session_metadata = self._input_dict['session_metadata']
 
@@ -134,7 +134,7 @@ class SpikeTrainBatch(Workspace):
 
     def _init_stats_dict(self):
         stats_dict = {}
-        
+
         for dir in self.dir_names:
             if dir != 'tests' and 'cache' not in dir:
                 stats_dict[dir] = {}
@@ -218,7 +218,7 @@ class SpikeClusterBatch(Workspace):
         for i in range(len(channel_keys)):
             if channel_keys[i] in self._input_dict.keys():
                 # waveforms.append(self._input_dict[channel_keys[i]])
-                waveforms[channel_keys[i]] = self._input_dict[channel_keys[i]]  
+                waveforms[channel_keys[i]] = self._input_dict[channel_keys[i]]
         return waveforms
 
     # returns all channel waveforms across all spike times
@@ -299,7 +299,7 @@ class SpikeClusterBatch(Workspace):
             cluster_waveforms.append(cluster_chan)
 
         return len(clusterevent_times), clusterevent_times, cluster_waveforms
-        
+
 
 
 
@@ -365,13 +365,10 @@ class SpikeClusterBatch(Workspace):
 
     def _init_stats_dict(self):
         stats_dict = {}
-        path = 'library'
-        dir_names = [x[1] for x in os.walk(path)][0]
-        
-        for dir in dir_names:
+
+        for dir in self.dir_names:
             if dir != 'tests' and 'cache' not in dir:
                 stats_dict[dir] = {}
 
         return stats_dict
 
-    
