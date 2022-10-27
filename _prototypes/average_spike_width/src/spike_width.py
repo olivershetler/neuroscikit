@@ -2,12 +2,12 @@ import numpy as np
 from _prototypes.unit_matcher.waveform import time_index, troughs
 
 def extract_average_spike_widths(study) -> dict:
-    output_df = {'animal_id':[], 'session_signature':[], 'unit_id':[], 'spike_width':[], 'firing_rate':[]}
+    output_df = {'session_signature':[], 'tetrode':[], 'unit_id':[], 'spike_width':[], 'firing_rate':[]}
     for animal in study.animals:
-        animal_id = animal.animal_id
         for key, session in animal.sessions.items():
             cluster_labels = session.session_data.data['spike_cluster'].get_unique_cluster_labels()
             session_signature = session.session_metadata.file_paths['pos'][:-4].split('\\')[-1].split('/')[-1]
+            tetrode = session.session_metadata.file_paths['tet'].split('.')[-1]
             for unit in cluster_labels:
                 n_spikes, spike_times, waveforms = session.session_data.data['spike_cluster'].get_single_spike_cluster_instance(unit)
                 sample_rate = session.session_data.data['spike_cluster'].sample_rate
@@ -27,8 +27,8 @@ def extract_average_spike_widths(study) -> dict:
                     spike_width = int((trough_index - peak_index)/2) * time_step
                 assert spike_width > 0, 'Spike width is negative'
                 firing_rate = n_spikes/spike_times[-1]
-                output_df['animal_id'].append(animal_id)
                 output_df['session_signature'].append(session_signature)
+                output_df['tetrode'].append(tetrode)
                 output_df['unit_id'].append(unit)
                 output_df['spike_width'].append(spike_width)
                 output_df['firing_rate'].append(firing_rate)
