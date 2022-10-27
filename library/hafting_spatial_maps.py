@@ -383,8 +383,6 @@ class HaftingRateMap():
             occ_map_data, raw_occ, coverage = occupancy_map.get_occupancy_map(3)
             spike_map_data, spike_map_data_raw = spike_map.get_spike_map(3)
 
-
-
         assert occ_map_data.shape == spike_map_data.shape
 
         rate_map_raw = np.where(raw_occ<0.0001, 0, spike_map_data_raw/raw_occ)

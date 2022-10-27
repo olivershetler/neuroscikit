@@ -24,7 +24,7 @@ class Session(Workspace):
         self.animal_id = None
 
         self.session_data, self.session_metadata = self._read_input_dict()
-        
+
         if not isinstance(self.session_metadata, SessionMetadata) == 0:
             self.session_metadata = SessionMetadata({}, session_object=self)
             device_metadata = DevicesMetadata(input_dict={}, session_metadata=self.session_metadata)
@@ -41,12 +41,20 @@ class Session(Workspace):
         else:
             self.smoothing_factor = None
 
-        dir_names = np.array([x[1] for x in os.walk('library')])[0]
+        dir_names = ['cluster',
+                    'filters',
+                    'maps',
+                    'opexebo',
+                    'scores',
+                    'spatial',
+                    'spike',
+                    'tests']
+
         self.session_metadata.set_dir_names(dir_names)
 
     def set_smoothing_factor(self, smoothing_factor):
         self.smoothing_factor = smoothing_factor
-    
+
     def update_time_index(self, class_object):
         time_index = make_seconds_index_from_rate(class_object.duration, class_object.sample_rate)
         self.time_index = time_index
@@ -57,7 +65,7 @@ class Session(Workspace):
         return self.animal_id
 
     def set_animal_id(self):
-        if 'animal' in self.session_metadata.metadata: 
+        if 'animal' in self.session_metadata.metadata:
             self.animal_id = self.session_metadata.metadata['animal'].animal_id
             print('Animal ID set')
 
@@ -127,7 +135,7 @@ class Session(Workspace):
         return pos_dict
 
     def make_class(self, ClassName, input_dict: dict):
-        class_object = ClassName(input_dict, session_metadata=self.session_metadata) 
+        class_object = ClassName(input_dict, session_metadata=self.session_metadata)
 
         if 'Metadata' in str(ClassName) or 'metadata' in str(ClassName):
             if isinstance(class_object, TrackerMetadata):
@@ -179,13 +187,13 @@ class Study(Workspace):
 
     def get_animal_by_id(self, animal_id):
         assert animal_id in self.animal_ids
-        
+
         assert self.animals is not None, 'Call self.make_animals() first'
 
         for animal in self.animals:
             if animal.animal_id == animal_id:
                 return animal
-                
+
     def _read_input_dict(self):
         sessions = []
         for key in self._input_dict:
@@ -215,7 +223,7 @@ class Study(Workspace):
 
         for animal_id in list(unsorted_animal_session.keys()):
             sort_order = np.argsort(animal_session_datetime[animal_id])
-            animal_sesions = np.asarray(unsorted_animal_session[animal_id])[sort_order] 
+            animal_sesions = np.asarray(unsorted_animal_session[animal_id])[sort_order]
             for j in range(len(animal_sesions)):
                 sorted_animal_sessions[animal_id]['session_'+str(j+1)] = animal_sesions[j]
 
@@ -235,23 +243,23 @@ class Study(Workspace):
         if self.animals == None:
             self.make_animals()
         return self.animals
-      
+
 
 class SessionData():
     def __init__(self, input_dict={}):
-        self._input_dict = input_dict 
+        self._input_dict = input_dict
 
         self.data = self._read_input_dict()
 
     def _read_input_dict(self):
-        core_data_instances = {} 
-        
+        core_data_instances = {}
+
         for key in self._input_dict:
             core_data_instances[key] = self._input_dict[key]
 
         return core_data_instances
 
-    
+
     def _add_session_data(self, key, data_class):
         assert 'Metadata' not in key and 'metadata' not in key, 'Cannot add metadata class to session data'
         self.data[key] = data_class
@@ -260,7 +268,7 @@ class SessionData():
 
 class Animal(Workspace):
     """
-    Holds all sessions belonging to an animal, TO BE ADDED: ordered sequentially in time 
+    Holds all sessions belonging to an animal, TO BE ADDED: ordered sequentially in time
     """
     ### Currently input is a list of dictionaries, once we save ordered sessions in x_io study class we will input nested dictionaries
     def __init__(self, input_dict: dict):
@@ -295,7 +303,7 @@ class Animal(Workspace):
         core_data = {}
         keys = list(session.session_data.data.keys())
         for i in range(len(keys)):
-            core_type = session.session_data.data[keys[i]] 
+            core_type = session.session_data.data[keys[i]]
             core_data = self._check_core_type(keys[i], core_type, core_data)
 
         return core_data
@@ -341,6 +349,6 @@ class Animal(Workspace):
         # self.cell_ids['session_'+str(len(self.sessions)+1)] = cell_ids
 
 
-        
 
-    
+
+
