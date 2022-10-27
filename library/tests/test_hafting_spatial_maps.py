@@ -15,6 +15,8 @@ from core.spikes import SpikeTrain
 from core.spatial import Position2D
 from core.spatial import Position2D
 from core.subjects import SessionMetadata
+from PIL import Image
+from matplotlib import cm
 
 def test_spatial_spike_train():
     spike_times = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
@@ -151,6 +153,9 @@ def test_hafting_rate_map():
     hafting_rate = HaftingRateMap(spatial_spike_train)
 
     rate_map, _ = hafting_rate.get_rate_map(smoothing_factor=3)
+
+    colored_ratemap = Image.fromarray(np.uint8(cm.jet(rate_map)*255))
+    colored_ratemap.save('test.png')
 
     assert isinstance(hafting_rate, HaftingRateMap)
     assert type(hafting_rate.map_data) == np.ma.core.MaskedArray

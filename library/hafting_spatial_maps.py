@@ -197,9 +197,10 @@ class HaftingOccupancyMap():
 
             if isinstance(self.spatial_spike_train, SpatialSpikeTrain2D):
                 self.spatial_spike_train.add_map_to_stats('occupancy', self)
+
         return self.map_data, self.raw_map_data, self.coverage
 
-    def compute_occupancy_map(self, pos_t, pos_x, pos_y, arena_size, smoothing_factor, resolution=64, mask_threshold=1):
+    def compute_occupancy_map(self, pos_t, pos_x, pos_y, arena_size, smoothing_factor, resolution=16, mask_threshold=1):
 
         # arena_ratio = arena_size[0]/arena_size[1]
         # h = smoothing_factor #smoothing factor in centimeters
@@ -284,7 +285,7 @@ class HaftingSpikeMap():
 
         return self.map_data, self.map_data_raw
 
-    def compute_spike_map(self, spike_x, spike_y, smoothing_factor, arena_size, resolution=64):
+    def compute_spike_map(self, spike_x, spike_y, smoothing_factor, arena_size, resolution=16):
         # arena_ratio = arena_size[0]/arena_size[1]
         # # h = smoothing_factor #smoothing factor in centimeters
 
@@ -392,7 +393,7 @@ class HaftingRateMap():
         # rate_map_raw = _compute_unmasked_ratemap(occ_map_data, spike_map_data)
 
         # rate_map = np.ma.array(rate_map_raw, mask=coverage)
-        rate_map = np.ma.array(rate_map_raw, mask=raw_occ)
+        # rate_map = np.ma.array(rate_map_raw, mask=raw_occ)
         # rate_map = np.ma.array(rate_map, mask=occ_map_data)
 
         return rate_map, rate_map_raw

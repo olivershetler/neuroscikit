@@ -193,7 +193,7 @@ def _compute_resize_ratio(arena_size: tuple) -> tuple:
     '''
 
     # Each maps largest dimension is always set to 64
-    base_resolution = 64
+    base_resolution = 16
     resize_ratio = arena_size[0] / arena_size[1] # height/width
 
     # If width is smaller than height, set height resize to 64 and row to less
@@ -296,8 +296,8 @@ def _temp_occupancy_map(position: Position2D, smoothing_factor) -> np.ndarray:
     coverage_map = cv2.dilate(coverage_map, kernel, iterations=1)
 
     # Resize maps
-    occ_map_raw = _interpolate_matrix(occ_map_raw, cv2_interpolation_method=cv2.INTER_NEAREST)
-    occ_map_smoothed = _interpolate_matrix(occ_map_smoothed, cv2_interpolation_method=cv2.INTER_NEAREST)
+    occ_map_raw = _interpolate_matrix(occ_map_raw, new_size=(64,64), cv2_interpolation_method=cv2.INTER_NEAREST)
+    occ_map_smoothed = _interpolate_matrix(occ_map_smoothed, new_size=(64,64),  cv2_interpolation_method=cv2.INTER_NEAREST)
     occ_map_smoothed = occ_map_smoothed/max(occ_map_smoothed.flatten())
 
     return occ_map_smoothed, occ_map_raw, coverage_map
@@ -343,9 +343,9 @@ def _temp_spike_map(pos_x: np.ndarray, pos_y: np.ndarray, pos_t: np.ndarray,
     spike_map_smooth = cv2.filter2D(spike_map_raw,-1,_gkern(kernlen, std))
 
     # Resize maps
-    spike_map_smooth = _interpolate_matrix(spike_map_smooth, cv2_interpolation_method=cv2.INTER_NEAREST)
+    spike_map_smooth = _interpolate_matrix(spike_map_smooth, new_size=(64,64), cv2_interpolation_method=cv2.INTER_NEAREST)
     spike_map_smooth = spike_map_smooth/max(spike_map_smooth.flatten())
-    spike_map_raw = _interpolate_matrix(spike_map_raw, cv2_interpolation_method=cv2.INTER_NEAREST)
+    spike_map_raw = _interpolate_matrix(spike_map_raw, new_size=(64,64),  cv2_interpolation_method=cv2.INTER_NEAREST)
 
 
 

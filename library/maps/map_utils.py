@@ -44,7 +44,7 @@ def _compute_resize_ratio(arena_size: tuple) -> tuple:
     '''
 
     # Each maps largest dimension is always set to 64
-    base_resolution = 64
+    base_resolution = 16
     resize_ratio = arena_size[0] / arena_size[1] # height/width
 
     # If width is smaller than height, set height resize to 64 and row to less

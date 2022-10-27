@@ -57,21 +57,22 @@ def batch_map(study: Study, tasks: dict, saveData=False):
             for cell in session.get_cell_data()['cell_ensemble'].cells:
 
                 print('session ' + str(k) + ', cell ' + str(c))
-
+                print(cell.event_times[:10])
                 # print('SpatialSPikeTrain Class')
                 spatial_spike_train = session.make_class(SpatialSpikeTrain2D, {'cell': cell, 'position': pos_obj})
                 # stop()
 
-                # print('HafftingOccupancyMap')
-                occ_obj = HaftingOccupancyMap(spatial_spike_train)
-                occ_map, _, _ = occ_obj.get_occupancy_map()
+                # # print('HafftingOccupancyMap')
+                # occ_obj = HaftingOccupancyMap(spatial_spike_train)
+                # occ_map, _, _ = occ_obj.get_occupancy_map()
 
-                # print('HaftingSpikeMap')
-                spike_obj = HaftingSpikeMap(spatial_spike_train)
-                spike_map = spike_obj.get_spike_map()
+                # # print('HaftingSpikeMap')
+                # spike_obj = HaftingSpikeMap(spatial_spike_train)
+                # spike_map = spike_obj.get_spike_map()
 
                 # print('HaftingRateMap')
-                rate_obj = HaftingRateMap(spatial_spike_train)
+                # rate_obj = HaftingRateMap(spatial_spike_train)
+                rate_obj = spatial_spike_train.get_map('rate')
                 rate_map, raw_rate_map = rate_obj.get_rate_map()
 
                 # print('Map Stats')
@@ -79,6 +80,8 @@ def batch_map(study: Study, tasks: dict, saveData=False):
 
                 # print('Autocorr')
                 autocorr_map = autocorrelation(spatial_spike_train)
+
+                occ_map = spatial_spike_train.get_map('occupancy')
 
                 cell_stats = {}
                 cell_stats['rate_map_smooth'] = rate_map

@@ -78,25 +78,25 @@ def test_batch_map():
 
 
 
-def test_batch_spike_analysis():
+# def test_batch_spike_analysis():
 
-    batch_spike_analysis(study)
+#     batch_spike_analysis(study)
 
-    # test_keys = ['spike']
+#     # test_keys = ['spike']
 
-    # for key in test_keys:
-    #     print(key)
-    assert 'spike' in study.animals[0].sessions['session_1'].get_cell_data()['cell_ensemble'].cells[0].stats_dict
+#     # for key in test_keys:
+#     #     print(key)
+#     assert 'spike' in study.animals[0].sessions['session_1'].get_cell_data()['cell_ensemble'].cells[0].stats_dict
 
-    # test_keys = ['cluster']
+#     # test_keys = ['cluster']
 
-    # for key in test_keys:
-    #     print(key)
-    assert 'cluster' in study.animals[0].sessions['session_1'].get_spike_data()['spike_cluster'].stats_dict
+#     # for key in test_keys:
+#     #     print(key)
+#     assert 'cluster' in study.animals[0].sessions['session_1'].get_spike_data()['spike_cluster'].stats_dict
 
 
 if __name__ == '__main__':
     # test_batch_neurofunc()
-    test_batch_spike_analysis()
+    # test_batch_spike_analysis()
     test_batch_map()
     # pass
