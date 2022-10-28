@@ -214,6 +214,7 @@ def batch_sessions(sorted_files, settings_dict, indiv_session_settings):
         matched_cut_files = sorted_files[i]['matched_cut']
 
         assert len(cut_files) == len(tet_files), "Number of tetrode and cut files doesn't match"
+        assert len(cut_files) == len(matched_cut_files), "Number of matched cut and regular cut files is different"
 
         for j in range(len(cut_files)):
 

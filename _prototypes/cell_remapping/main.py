@@ -2,6 +2,7 @@ import os, sys
 import numpy as np
 import matplotlib.pyplot as plt
 import ot
+import pandas as pd
 
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
@@ -16,6 +17,9 @@ from PIL import Image
 from matplotlib import cm
 from library.map_utils import _interpolate_matrix
 import cv2
+import openpyxl as xl
+from openpyxl.utils.cell import get_column_letter
+from openpyxl.worksheet.dimensions import ColumnDimension
 
 
 def batch_remapping(paths=[], settings={}, study=None):
@@ -28,9 +32,15 @@ def batch_remapping(paths=[], settings={}, study=None):
     elif isinstance(study, Study):
         study.make_animals()
 
+    output = {}
+    keys = ['animal_id','tetrode','unit_id','wasserstein', 'session_ids']
+    
+    for key in keys:
+        output[key] = []
+
     c = 0
 
-    for animal in study.animals: 
+    for animal in study.animals:
 
         max_matched_cell_count = len(animal.sessions[sorted(list(animal.sessions.keys()))[-1]].get_cell_data()['cell_ensemble'].cells)
 
@@ -45,14 +55,10 @@ def batch_remapping(paths=[], settings={}, study=None):
             prev = None 
             curr = None 
 
-            # print('Cell ' + str(cell_label))
-
             for i in range(len(list(animal.sessions.keys()))):
                 seskey = 'session_' + str(i+1)
-                print(i, seskey)
                 ses = animal.sessions[seskey]
 
-                # print(seskey)
                 
                 if j == 0:
                     assert 'matched' in ses.session_metadata.file_paths['cut'], 'Matched cut file was not used for data loading, cannot proceed with non matched cut file as cluster/cell labels are not aligned'
@@ -60,7 +66,7 @@ def batch_remapping(paths=[], settings={}, study=None):
                 pos_obj = ses.get_position_data()['position']
 
                 ensemble = ses.get_cell_data()['cell_ensemble']
-   
+
                 if cell_label in ensemble.get_cell_label_dict():
                     cell = ensemble.get_cell_by_id(cell_label)
                     # print(cell, print(cell.event_times))
@@ -80,7 +86,18 @@ def batch_remapping(paths=[], settings={}, study=None):
                     if prev is not None:
                         # distance = wasserstein_distance(prev.squeeze(), curr.squeeze())
                         wass, _, _ = compute_rate_remapping(prev, curr)
-                        print(wass)
+
+                        output['animal_id'].append(animal.animal_id)
+                        output['unit_id'].append(cell_label)
+                        output['tetrode'].append(animal.animal_id.split('tet')[-1])
+                        output['session_ids'].append(['session_' + str(i), 'session_' + str(i+1)])
+                        output['wasserstein'].append(wass)
+
+                        # global remapping ?
+                        # centroids cdist
+                        # nswe 4 direction distance
+                        # 
+                        # print(wass)
                         # print(prev[:10], curr[:10], wass)
                         remapping_distances[i-1,cell_label-1] = wass
 
@@ -115,13 +132,14 @@ def batch_remapping(paths=[], settings={}, study=None):
 
         print(remapping_distances, remapping_session_ids)
 
+    df = pd.DataFrame(output)
+    df.to_csv(PROJECT_PATH + '/_prototypes/cell_remapping' + '/remapping.csv')
+
 
 
 def compute_rate_remapping(X, Y):
     # distance = wasserstein_distance(prev, ses)
     coords = np.array([X.flatten(), Y.flatten()]).T
-
-    print(X.shape, Y.shape, coords.shape)
     coordsSqr = np.sum(coords**2, 1)
     M = coordsSqr[:, None] + coordsSqr[None, :] - 2*coords.dot(coords.T)
     M[M < 0] = 0

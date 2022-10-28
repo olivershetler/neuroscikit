@@ -117,8 +117,8 @@ def _compute_resize_ratio(arena_size: tuple) -> tuple:
     else:
         row_resize = base_resolution
         column_resize = base_resolution
-    print('HERE')
-    print(row_resize, column_resize)
+    # print('HERE')
+    # print(row_resize, column_resize)
     return row_resize, column_resize
 
 def _gkern(kernlen: int, std: int) -> np.ndarray:
