@@ -14,7 +14,6 @@ def extract_average_spike_widths(study) -> dict:
                 n_spikes, spike_times, waveforms = session.session_data.data['spike_cluster'].get_single_spike_cluster_instance(unit)
                 sample_rate = session.session_data.data['spike_cluster'].sample_rate
                 time_step = 1 / sample_rate
-
                 wf_avg = np.array(waveforms).mean(axis=1)
                 max_vals = list(map(lambda x: max(x), [wf_avg[0], wf_avg[1], wf_avg[2], wf_avg[3]]))
                 principal_channel_index = np.argmax(max_vals)
