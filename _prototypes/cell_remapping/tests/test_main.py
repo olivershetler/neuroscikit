@@ -9,6 +9,7 @@ parent_dir = os.path.dirname(prototype_dir)
 from _prototypes.cell_remapping.main import batch_remapping
 
 # data_dir = parent_dir + r'\neuroscikit_test_data\single_sequential'
+# data_dir = parent_dir + r'\neuroscikit_test_data\20180502-ROUND-3000_ONLY_TET_2'
 data_dir = parent_dir + r'\neuroscikit_test_data\20180502-ROUND-3000'
 
 animal = {'animal_id': 'id', 'species': 'mouse', 'sex': 'F', 'age': 1, 'weight': 1, 'genotype': 'type', 'animal_notes': 'notes'}

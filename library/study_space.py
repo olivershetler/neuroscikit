@@ -330,14 +330,16 @@ class Animal(Workspace):
         assert isinstance(spike_cluster, SpikeClusterBatch)
         # assert isinstance(spike_cluster, SpikeTrainBatch)
         good_sorted_cells, good_sorted_waveforms, good_clusters, good_label_ids = sort_spikes_by_cell(spike_cluster)
+        # print(good_sorted_cells, good_label_ids)
         # spike_train.set_sorted_label_ids(good_label_ids)
         print('Session data added, spikes sorted by cell')
         ensemble = session.make_class(CellEnsemble, None)
-        for i in range(len(good_sorted_cells)):
+        for i in range(len(good_label_ids)):
             cell_dict = {'event_times': good_sorted_cells[i], 'signal': good_sorted_waveforms[i], 'session_metadata': session.session_metadata, 'cluster': good_clusters[i]}
-            # cell = Cell(cell_dict)
-            cell = session.make_class(Cell, cell_dict)
+            cell = Cell(cell_dict, session_metadata=session.session_metadata)
+            # cell = session.make_class(Cell, cell_dict)
             ensemble.add_cell(cell)
+            # print('Cell Added')
 
         return ensemble, good_label_ids
 
