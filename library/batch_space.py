@@ -172,8 +172,8 @@ class SpikeClusterBatch(Workspace):
         self.spike_objects = []
         self.waveforms = waveforms
         self.good_label_ids = None
-        self.stats_dict = self._init_stats_dict()
         self.dir_names = self.session_metadata.dir_names
+        self.stats_dict = self._init_stats_dict()
         # self._adjusted_labels = []
 
         # unique = self.get_unique_cluster_labels()
