@@ -21,7 +21,6 @@ from matplotlib import cm
 #     def __init__(self, study: StudyWorkspace):
 #         pass
 
-
 def batch_map(study: Study, tasks: dict, saveData=False):
     """
     Computes rate maps across all animals, sessions, cells in a study.
@@ -70,7 +69,7 @@ def batch_map(study: Study, tasks: dict, saveData=False):
                 # print('HaftingSpikeMap')
                 spike_obj = HaftingSpikeMap(spatial_spike_train)
                 spike_map = spike_obj.get_spike_map()
-                
+
                 # print('HaftingRateMap')
                 rate_obj = HaftingRateMap(spatial_spike_train)
                 rate_map, raw_rate_map = rate_obj.get_rate_map()
@@ -86,7 +85,7 @@ def batch_map(study: Study, tasks: dict, saveData=False):
                 cell_stats['occupancy_map'] = occ_map
                 cell_stats['rate_map_raw'] = raw_rate_map
                 cell_stats['autocorrelation_map'] = autocorr_map
-                
+
                 # print('Check Disk')
                 if 'disk_arena' in tasks and tasks['disk_arena'] == False:
                     fp = session.session_metadata.file_paths['cut']
@@ -158,13 +157,16 @@ def batch_map(study: Study, tasks: dict, saveData=False):
                     cell_stats['b_score_right'] = b_score[3]
                 elif tasks['border_score'] and tasks['dsik_arena']:
                     print('Cannot compute border score on disk arena')
-                
+
                 # print('Field sizes')
                 if tasks['field_sizes']:
                     image, n_labels, labels, centroids, field_sizes = map_blobs(spatial_spike_train)
                     cell_stats['field_size_data'] = {'image': image, 'n_labels': n_labels, 'labels': labels, 'centroids': centroids, 'field_sizes': field_sizes}
 
                 cell.stats_dict['cell_stats'] = cell_stats
+
+                colored_ratemap = Image.fromarray(np.uint8(cm.jet(rate_map)*255))
+                colored_ratemap.save('ratemap_cell_' + str(c) + '_session_' + str(k) + '.png')
 
                 if saveData == True:
 
@@ -173,5 +175,5 @@ def batch_map(study: Study, tasks: dict, saveData=False):
                     pass
 
                 c += 1
-                
+
             k += 1
