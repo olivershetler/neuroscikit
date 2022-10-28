@@ -116,6 +116,10 @@ def _grab_tetrode_cut_position_files(paths: list, pos_files=[], cut_files=[], te
             elif file[-1:].isdigit() and 'clu' not in file and 'cut' not in file and 'eeg' not in file and 'egf' not in file:
                 tetrode_files.append(file)
 
+    file_lists = [cut_files, tetrode_files, pos_files, matched_cut_files, animal_dir_names]
+    for file_list in file_lists:
+        file_list = list(set(file_list))
+
     return cut_files, tetrode_files, pos_files, matched_cut_files, animal_dir_names
 
 def _group_session_files(cut_files, tetrode_files, pos_files, matched_cut_files, animal_dir_names):
@@ -149,9 +153,9 @@ def _group_session_files(cut_files, tetrode_files, pos_files, matched_cut_files,
         session = pos_file[:-4]
 
         # Grab the tetrode and cut files belonging to this session only
-        select_tetrodes = [tetrode for tetrode in tetrode_files if session in tetrode]
-        select_cuts = [cut for cut in cut_files if session in cut]
-        select_cuts_matched = [cut for cut in matched_cut_files if session in cut]
+        select_tetrodes = [tetrode for tetrode in tetrode_files if session == tetrode[:-2]]
+        select_cuts = [cut for cut in cut_files if session == cut[:-6]]
+        select_cuts_matched = [cut for cut in matched_cut_files if session == cut[:-14]]
 
         # Ensures that only collections containing all three: pos, cut and tetrode files are added
         if len(select_tetrodes) == 0 or len(select_cuts) == 0:
@@ -214,7 +218,6 @@ def batch_sessions(sorted_files, settings_dict, indiv_session_settings):
         matched_cut_files = sorted_files[i]['matched_cut']
 
         assert len(cut_files) == len(tet_files), "Number of tetrode and cut files doesn't match"
-        assert len(cut_files) == len(matched_cut_files), "Number of matched cut and regular cut files is different"
 
         for j in range(len(cut_files)):
 
