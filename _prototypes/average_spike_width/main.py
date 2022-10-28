@@ -41,3 +41,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+# When integrating this into neuroscikit, switch from make_study to a method that makes sessions, extracts estimates and then deletes the session so that the memory is freed up.

@@ -6,7 +6,9 @@ def extract_average_spike_widths(study) -> dict:
     for animal in study.animals:
         for key, session in animal.sessions.items():
             cluster_labels = session.session_data.data['spike_cluster'].get_unique_cluster_labels()
-            session_signature = session.session_metadata.file_paths['pos'][:-4].split('\\')[-1].split('/')[-1]
+            session_signature = session.session_metadata.file_paths['tet'].split('\\')[-1].split('/')[-1].split('.')[0]
+            alt_session_signature = session.session_metadata.file_paths['cut'].split('\\')[-1].split('/')[-1].split('_')[0]
+            assert session_signature == alt_session_signature
             tetrode = session.session_metadata.file_paths['tet'].split('.')[-1]
             for unit in cluster_labels:
                 n_spikes, spike_times, waveforms = session.session_data.data['spike_cluster'].get_single_spike_cluster_instance(unit)
