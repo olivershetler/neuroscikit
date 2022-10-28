@@ -49,6 +49,8 @@ def batch_remapping(paths=[], settings={}, study=None):
         remapping_indices = [[] for k in range(max_matched_cell_count)]
         remapping_session_ids = [[] for k in range(max_matched_cell_count)]
 
+        agg_ratemaps = [[] for k in range(len(list(animal.sessions.keys()))-1)]
+
         for j in range(int(max_matched_cell_count)):
             cell_label = j + 1
             
@@ -81,11 +83,12 @@ def batch_remapping(paths=[], settings={}, study=None):
                     rate_map_obj = spatial_spike_train.get_map('rate')
                     rate_map, _ = rate_map_obj.get_rate_map()
                     curr = np.copy(rate_map)
+                    agg_ratemaps[i] = curr
 
 
                     if prev is not None:
                         # distance = wasserstein_distance(prev.squeeze(), curr.squeeze())
-                        wass, _, _ = compute_rate_remapping(prev, curr)
+                        wass, _, _ = compute_wasserstein_distance(prev, curr)
 
                         output['animal_id'].append(animal.animal_id)
                         output['unit_id'].append(cell_label)
@@ -132,12 +135,35 @@ def batch_remapping(paths=[], settings={}, study=None):
 
         print(remapping_distances, remapping_session_ids)
 
+        # agg_session_wass = compute_global_remapping(agg_ratemaps, animal)
+
     df = pd.DataFrame(output)
-    df.to_csv(PROJECT_PATH + '/_prototypes/cell_remapping' + '/remapping.csv')
+    df.to_csv(PROJECT_PATH + '/_prototypes/cell_remapping' + '/rate_remapping.csv')
 
 
+# def compute_global_remapping(agg_ratemaps, animal):
+#     prevAvg = None
+#     currAvg = None
+#     agg_session_wass = {}
 
-def compute_rate_remapping(X, Y):
+#     keys = ['animal_id','wasserstein', 'session_ids']
+    
+#     for key in keys:
+#         agg_session_wass[key] = []
+
+#     for k in range(len(agg_ratemaps)):
+#         avg_ratemap = avg_session_ratemaps(agg_ratemaps[k])
+#         currAvg = avg_ratemap
+#         if prevAvg is not None:
+#             session_wass = compute_wasserstein_distance(prevAvg, currAvg)
+#             agg_session_wass['animal_id'] = animal.animal_id
+#             agg_session_wass['wasserstein'] = session_wass
+#             agg_session_wass['session_ids'] = ['session_' + str(k+1),'session_' + str(k+2)]
+#         prevAvg = currAvg
+#     return agg_session_wass
+
+
+def compute_wasserstein_distance(X, Y):
     # distance = wasserstein_distance(prev, ses)
     coords = np.array([X.flatten(), Y.flatten()]).T
     coordsSqr = np.sum(coords**2, 1)
@@ -160,6 +186,16 @@ def compute_rate_remapping(X, Y):
 
     return wass, l2dist, I
 
+# def avg_session_ratemaps(ratemaps):
+#     avg_ratemap = []
 
-def compute_global_remapping():
-    pass
+#     for i in range(len(ratemaps)):
+#         if i == 0:
+#             avg_ratemap = ratemaps[i]
+#         else:
+#             avg_ratemap = avg_ratemap + ratemaps[i]
+
+#     avg_ratemap = avg_ratemap / len(ratemaps)
+
+#     return avg_ratemap
+
