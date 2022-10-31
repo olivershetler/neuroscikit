@@ -17,9 +17,9 @@ This module reads axona cut and tetrode files. DONE (batch_read in x_io or singl
 It then extracts the spike waveforms from the cut file. DONE (batch_read or single pair read in read_axona)
 It then matches the spike waveforms to the units in the tetrode file. DONE (part of core class loading)
 It then produces a dictionary of the spike waveforms for each unit. DONE (No dictionary --> Core class with waveforms per Spike. Collection Spike = Cluster)
-It then extracts features from the spike waveforms for each unit. 
-It then matches the spike waveforms to the units in the tetrode file.
-It then produces a remapping of the units in the tetrode file. 
+It then extracts features from the spike waveforms for each unit. DONE
+It then matches the spike waveforms to the units in the tetrode file. DONE
+It then produces a remapping of the units in the tetrode file. DONE
 It then applies the remapping to the cut file data. DONE (map dict changes cut data)
 It then writes the remapped cut file data to a new cut file. DONE (new cut data writs to file)
 Read, Retain, Map, Write

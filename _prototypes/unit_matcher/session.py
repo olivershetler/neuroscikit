@@ -40,6 +40,7 @@ def compute_distances(session1_cluster: SpikeClusterBatch, session2_cluster: Spi
             # assert len(idx2) == 0
 
             distance = jensen_shannon_distance(session1_feature_arrays[i], session2_feature_arrays[j])
+            print('JSD: ' + str(distance))
 
             if 'JSD' not in session1_unit_clusters[i].stats_dict:
                 session1_unit_clusters[i].stats_dict['JSD'] = []
