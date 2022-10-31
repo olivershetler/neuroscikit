@@ -11,9 +11,17 @@ from core.spikes import SpikeCluster
 from library.batch_space import SpikeClusterBatch
 
 
-def compute_distances(session1_cluster: SpikeClusterBatch, session2_cluster: SpikeClusterBatch): # change to feature vector array
+def compute_distances(session1_cluster: SpikeClusterBatch, session2_cluster: SpikeClusterBatch, JSD=True, MSDoWFM=False): # change to feature vector array
     """
     Iterates through all the across-session unit pairings and computing their respective Jensen-Shannon distances
+    Parameters
+    ----------
+    session1_cluster: SpikeClusterBatch
+    session2_cluster: SpikeClusterBatch
+    JSD: bool
+        If True, computes the Jensen-Shannon distance between the two sessions' unit feature vectors
+    MSDoWFM: bool
+        If True, computes the Mean Squared Difference of Waveform Means between the two sessions' unit feature vectors
     """
 
     session1_unit_clusters = session1_cluster.get_spike_cluster_instances()
@@ -31,13 +39,6 @@ def compute_distances(session1_cluster: SpikeClusterBatch, session2_cluster: Spi
 
     for i in range(len(session1_feature_arrays)):
         for j in range(len(session2_feature_arrays)):
-            # print('Session1 - Cell ' + str(i) + '; Session2 - Cell ' + str(j))
-
-            # idx1 = np.where(session1_feature_array != session1_feature_array)[0]
-            # idx2 = np.where(session2_feature_array != session2_feature_array)[0]
-            # print(idx1, idx2)
-            # assert len(idx1) == 0
-            # assert len(idx2) == 0
 
             distance = jensen_shannon_distance(session1_feature_arrays[i], session2_feature_arrays[j])
 
@@ -48,9 +49,6 @@ def compute_distances(session1_cluster: SpikeClusterBatch, session2_cluster: Spi
             if 'JSD' not in session2_unit_clusters[j].stats_dict:
                 session2_unit_clusters[j].stats_dict['JSD'] = []
             session2_unit_clusters[j].stats_dict['JSD'] = distance
-
-            # distances.append(distance)
-            # pairs.append[[unit1, unit2]]
 
             distances[i,j] = distance
             pairs[i,j] = [session1_unit_clusters[i].cluster_label, session2_unit_clusters[j].cluster_label]
@@ -118,7 +116,7 @@ def guess_remaining_matches(distances, pairs):
         unit_id = pairs[session1_unmatched[i], 0][0]
         # unmatched_1.append([0, unit_id])
         unmatched_1.append(unit_id)
-    
+
     return remaining_matches, remaining_match_distances, unmatched_2, unmatched_1
 
 def compare_sessions(session1: Session, session2: Session):
@@ -141,7 +139,7 @@ def compare_sessions(session1: Session, session2: Session):
     #     to_stack.append(remaining_matches)
     # if np.asarray(unmatched).size > 0:
     #     to_stack.append(unmatched)
-    
+
     # matches = to_stack[0]
     # for i in range(1,len(to_stack)):
     #     matches = np.vstack((matches, to_stack[i]))
@@ -156,7 +154,7 @@ def compare_sessions(session1: Session, session2: Session):
     # matches = np.vstack((full_matches, remaining_matches))
     # matches = np.vstack((matches, unmatched))
 
-    return matches, match_distances, unmatched_2, unmatched_1 
+    return matches, match_distances, unmatched_2, unmatched_1
 
 
 
