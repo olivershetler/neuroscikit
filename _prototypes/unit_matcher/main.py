@@ -1,5 +1,6 @@
 import os, sys
 import numpy as np
+import time
 
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
@@ -26,6 +27,9 @@ Read, Retain, Map, Write
 """
 
 def run_unit_matcher(paths=[], settings={}, study=None):
+    print("Running Unit Matcher. Starting Time Tracker.")
+    start_time = time.time()
+
     if study is None:
         assert len(paths) > 0 and len(settings) > 0
         # make study --> will load + sort data: SpikeClusterBatch (many units) --> SpikeCluster (a unit) --> Spike (an event)
@@ -39,11 +43,11 @@ def run_unit_matcher(paths=[], settings={}, study=None):
 
     for animal in study.animals:
         # SESSIONS INSIDE OF ANIMAL WILL BE SORTED SEQUENTIALLY AS PART OF ANIMAL(WORKSPACE) CLASS IN STUDY_SPACE.PY
-        prev = None 
-        curr = None 
+        prev = None
+        curr = None
         prev_map_dict = None
         isFirstSession = False
-        
+
         session_mappings = {}
         comparison_count = 1
         for session in animal.sessions:
@@ -51,7 +55,7 @@ def run_unit_matcher(paths=[], settings={}, study=None):
 
             # if first session of sequence there is no prev session
             if prev is not None:
-                matches, match_distances, unmatched_2, unmatched_1 = compare_sessions(prev, curr)
+                matches, match_distances, unmatched_2, unmatched_1 = compare_sessions(prev, curr, 'JSD')
                 print('Comparison ' + str(comparison_count))
                 print(matches, unmatched_1, unmatched_2)
                 session_mappings[comparison_count] = {}
@@ -86,7 +90,7 @@ def run_unit_matcher(paths=[], settings={}, study=None):
             new_cut_file_path, new_cut_data, header_data = format_cut(map_dict['session'], map_dict['map_dict'])
             print('Writing mapping: ' + str(map_dict['map_dict']))
             write_cut(new_cut_file_path, new_cut_data, header_data)
-
+    print("Unit Matcher Complete. Time Elapsed: " + str(time.time() - start_time))
     return study
 
 def reorder_unmatched_cells(cross_session_matches):
@@ -172,7 +176,7 @@ def apply_cross_session_remapping(session_mappings, cross_session_matches):
                     session_mappings[comps[j]-1]['map_dict'] = map_to_update
 
                     prev_map_dict = map_to_update
-                    
+
                 if session_mappings[comps[j]]['isFirstSession']:
 
                     first_ses_map_dict = session_mappings[comps[j]]['first_ses_map_dict']
@@ -200,29 +204,29 @@ def apply_cross_session_remapping(session_mappings, cross_session_matches):
 
         for i in range(len(cross_session_unmatched)):
             key = cross_session_unmatched[i]
-            
+
             unmatched = cross_session_matches[key]['prev_unmatched']
             unmatched_comps = cross_session_matches[key]['unmatched_comps']
 
             for j in range(len(unmatched_comps)):
                 map_dict = session_mappings[unmatched_comps[j]]['map_dict']
-                
+
                 max_id = max_id + i + 1
-                map_dict[unmatched[j]] = max_id 
+                map_dict[unmatched[j]] = max_id
 
                 session_mappings[unmatched_comps[j]]['map_dict'] = map_dict
 
         for i in range(len(first_session_unmatched)):
             key = first_session_unmatched[i]
-            
+
             unmatched = cross_session_matches[key]['unmatched_1']
             unmatched_comps = cross_session_matches[key]['unmatched_1_comps']
 
             for j in range(len(unmatched_comps)):
                 first_ses_map_dict = session_mappings[unmatched_comps[j]]['first_ses_map_dict']
-                
+
                 max_id = max_id + i + 1
-                first_ses_map_dict[unmatched[j]] = max_id 
+                first_ses_map_dict[unmatched[j]] = max_id
 
                 session_mappings[unmatched_comps[j]]['first_ses_map_dict'] = first_ses_map_dict
 
@@ -231,7 +235,7 @@ def apply_cross_session_remapping(session_mappings, cross_session_matches):
         if session_mappings[key]['isFirstSession']:
             remapping_dicts.append({'map_dict': session_mappings[key]['first_ses_map_dict'], 'session': session_mappings[key]['pair'][0]})
         remapping_dicts.append({'map_dict': session_mappings[key]['map_dict'], 'session': session_mappings[key]['pair'][1]})
-        
+
 
     return remapping_dicts
 
@@ -240,7 +244,7 @@ def format_mapping_dicts(session_mappings):
     prev_map_dict = None
     prev_matched_labels = None
     prev_unmatched = []
-    
+
     for comparison in session_mappings:
         unmatched_2 = session_mappings[comparison]['unmatched_2']
 
@@ -287,7 +291,7 @@ def format_mapping_dicts(session_mappings):
         prev_unmatched = unmatched_2
 
     cross_session_matches = add_last_unmatched(comparison, cross_session_matches, prev_unmatched)
-    
+
     return cross_session_matches, session_mappings
 
 
@@ -408,7 +412,7 @@ def add_last_unmatched(comparison, cross_session_matches, last_unmatched):
             cross_session_matches[cross_ses_key]['unmatched_comps'].append(comparison)
 
     return cross_session_matches
- 
+
 
 
 
@@ -428,8 +432,8 @@ def add_last_unmatched(comparison, cross_session_matches, last_unmatched):
 
 #     for animal in study.animals:
 #         # SESSIONS INSIDE OF ANIMAL WILL BE SORTED SEQUENTIALLY AS PART OF ANIMAL(WORKSPACE) CLASS IN STUDY_SPACE.PY
-#         prev = None 
-#         curr = None 
+#         prev = None
+#         curr = None
 #         prev_map_dict = None
 #         isFirstSession = False
 #         for session in animal.sessions:
@@ -498,7 +502,7 @@ def format_cut(session: Session, map_dict: dict):
 
 def map_unit_matches_sequential_session(matches, unmatched):
     map_dict = {}
-    
+
     for pair in matches:
         map_dict[int(pair[1])] = int(pair[0])
 
@@ -535,7 +539,7 @@ def map_unit_matches_first_session(matches, match_distances, unmatched):
 #     matches = np.asarray(matches)[sort_ids]
 
 #     map_dict = {}
-    
+
 #     for pair in matches:
 #         map_dict[int(pair[1])] = int(pair[0])
 
@@ -561,7 +565,7 @@ def map_unit_matches_first_session(matches, match_distances, unmatched):
 
 batch main fxn takes in study and does procedure across all pairs of sequenntial sessions
 
-main fxn takes directory or session1 folder, session2 folder. 
+main fxn takes directory or session1 folder, session2 folder.
     If directory assert only two sessions
     Figure out which session follows which
     Extract waveforms from cut
@@ -578,7 +582,7 @@ main fxn takes directory or session1 folder, session2 folder.
 
 #     session_2 follows session_1
 
-#     Returns 
+#     Returns
 #     """
 
 #     assert isinstance(session_1, Session), 'Make sure inputs are of Session() class type'
