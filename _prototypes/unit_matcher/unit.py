@@ -74,6 +74,7 @@ def compute_mixture(P:np.array, Q:np.array):
 
     return M
 
+
 def _mixture_sample(P:np.array, Q:np.array):
     """Sample a mixture distribution between two probability distributions.
 
@@ -85,20 +86,17 @@ def _mixture_sample(P:np.array, Q:np.array):
     P_sample_size, P_dimensions = P.shape
     Q_sample_size, Q_dimensions = Q.shape
 
-    M_sample_size = min(P_sample_size, Q_sample_size)
-    """
-    for i in range(M_sample_size):
-        if np.random.rand() > 0.5:
-            yield P[i]
-        else:
-            yield Q[i]
-    """
-    def random_assignment(i):
-        if np.random.rand() > 0.5:
-            return P[i]
-        else:
-            return Q[i]
-    return list(map(random_assignment, range(M_sample_size)))
+    M_sample_size = max(P_sample_size, Q_sample_size)
+    if M_sample_size % 2 != 0:
+        M_sample_size -= 1
+
+    P_sample = np.random.choice(P, size=int(M_sample_size/2), replace=False)
+    Q_sample = np.random.choice(Q, size=int(M_sample_size/2), replace=False)
+    M_sample = np.concatenate((P_sample, Q_sample), axis=0)
+
+    return list(M_sample.flatten())
+
+
 
 def kullback_leibler_divergence(P, Q):
     return np.sum(list(filter(lambda x: not np.isnan(x), P * np.log(P/Q))))
