@@ -12,7 +12,7 @@ from _prototypes.unit_matcher.unit import (
 )
 
 P = np.random.rand(5500, 24)
-Q = np.random.rand(5000, 24) + 100
+Q = np.random.rand(10000, 24) + 100
 
 def test_multivariate_kullback_leibler_divergence():
     print("D(P||Q): ", multivariate_kullback_leibler_divergence(P, Q))

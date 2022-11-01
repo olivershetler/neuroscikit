@@ -7,12 +7,57 @@ sys.path.append(PROJECT_PATH)
 
 from library.study_space import Session
 from _prototypes.unit_matcher.unit import jensen_shannon_distance, spike_level_feature_array
-from _prototypes.unit_matcher.unit_mean import unit_mean_mean_squared_difference
+from _prototypes.unit_matcher.unit_mean import mean_squared_difference_of_unit_means
 from core.spikes import SpikeCluster
 from library.batch_space import SpikeClusterBatch
 
+def compute_distances(session1_cluster, session2_cluster, method='JSD'):
+    """
+    Compute the distances between two sessions' units.
+    Parameters
+    ----------
+    session1_cluster: SpikeClusterBatch
+    session2_cluster: SpikeClusterBatch
+    method: str
+        The method of distance computation to use
+    """
+    if method == 'JSD':
+        return compute_JSD_distances(session1_cluster, session2_cluster)
+    elif method == 'MSD':
+        return compute_MSD_distances(session1_cluster, session2_cluster)
+    else:
+        raise ValueError('Invalid distance computation method')
 
-def compute_distances(session1_cluster: SpikeClusterBatch, session2_cluster: SpikeClusterBatch, method='JSD'): # change to feature vector array
+def compute_MSD_distances(session1_cluster: SpikeClusterBatch, session2_cluster: SpikeClusterBatch):
+    """
+    Compute the mean squared difference of unit means between two sessions.
+    """
+    session1_unit_clusters = session1_cluster.get_spike_cluster_instances()
+    session2_unit_clusters = session2_cluster.get_spike_cluster_instances()
+
+    distances = np.zeros((len(session1_unit_clusters), len(session2_unit_clusters)))
+    pairs = np.zeros((len(session1_unit_clusters), len(session2_unit_clusters), 2))
+
+    for i in range(len(session1_unit_clusters)):
+        for j in range(len(session2_unit_clusters)):
+
+            distance = mean_squared_difference_of_unit_means(session1_unit_clusters[i].waveforms, session2_unit_clusters[j].waveforms)
+            print('MSD: ' + str(distance))
+
+            if 'MSD' not in session1_unit_clusters[i].stats_dict:
+                session1_unit_clusters[i].stats_dict['MSD'] = []
+            session1_unit_clusters[i].stats_dict['MSD'] = distance
+
+            if 'MSD' not in session2_unit_clusters[j].stats_dict:
+                session2_unit_clusters[j].stats_dict['MSD'] = []
+            session2_unit_clusters[j].stats_dict['MSD'] = distance
+
+            distances[i,j] = distance
+            pairs[i,j] = [session1_unit_clusters[i].cluster_label, session2_unit_clusters[j].cluster_label]
+
+    return distances, pairs
+
+def compute_JSD_distances(session1_cluster: SpikeClusterBatch, session2_cluster: SpikeClusterBatch): # change to feature vector array
     """
     Iterates through all the across-session unit pairings and computing their respective Jensen-Shannon distances
     Parameters
@@ -24,7 +69,6 @@ def compute_distances(session1_cluster: SpikeClusterBatch, session2_cluster: Spi
     MSDoWFM: bool
         If True, computes the Mean Squared Difference of Waveform Means between the two sessions' unit feature vectors
     """
-    assert method in ['JSD', 'MSD'], "method must be either 'JSD' or 'MSDoWFM'\n\n 'JSD' computes the Jensen-Shannon distance between the two sessions' unit feature vectors\n\n 'MSDoWFM' computes the Mean Squared Difference of Waveform Means between the two sessions' unit feature vectors."
 
     session1_unit_clusters = session1_cluster.get_spike_cluster_instances()
     session2_unit_clusters = session2_cluster.get_spike_cluster_instances()
@@ -42,19 +86,16 @@ def compute_distances(session1_cluster: SpikeClusterBatch, session2_cluster: Spi
     for i in range(len(session1_feature_arrays)):
         for j in range(len(session2_feature_arrays)):
 
-            if method == 'JSD':
-                distance = jensen_shannon_distance(session1_feature_arrays[i], session2_feature_arrays[j])
-            elif method == 'MSD':
-                distance = unit_mean_mean_squared_difference(session1_feature_arrays[i], session2_feature_arrays[j])
-            print(f'{method}: ' + str(distance))
+            distance = jensen_shannon_distance(session1_feature_arrays[i], session2_feature_arrays[j])
+            print('JSD: ' + str(distance))
 
-            if method not in session1_unit_clusters[i].stats_dict:
-                session1_unit_clusters[i].stats_dict[method] = []
-            session1_unit_clusters[i].stats_dict[method] = distance
+            if 'JSD' not in session1_unit_clusters[i].stats_dict:
+                session1_unit_clusters[i].stats_dict['JSD'] = []
+            session1_unit_clusters[i].stats_dict['JSD'] = distance
 
-            if method not in session2_unit_clusters[j].stats_dict:
-                session2_unit_clusters[j].stats_dict[method] = []
-            session2_unit_clusters[j].stats_dict[method] = distance
+            if 'JSD' not in session2_unit_clusters[j].stats_dict:
+                session2_unit_clusters[j].stats_dict['JSD'] = []
+            session2_unit_clusters[j].stats_dict['JSD'] = distance
 
             distances[i,j] = distance
             pairs[i,j] = [session1_unit_clusters[i].cluster_label, session2_unit_clusters[j].cluster_label]
@@ -125,7 +166,7 @@ def guess_remaining_matches(distances, pairs):
 
     return remaining_matches, remaining_match_distances, unmatched_2, unmatched_1
 
-def compare_sessions(session1: Session, session2: Session):
+def compare_sessions(session1: Session, session2: Session, method='JSD'):
     """
     FD = feature dict
     1 & 2 = sessions 1 & 2 (session 2 follows session 1)
@@ -133,7 +174,7 @@ def compare_sessions(session1: Session, session2: Session):
     # compare output of extract features from session1 and session2
     # return mapping dict from session2 old label to new matched label based on session1 cell labels
 
-    distances, pairs = compute_distances(session1.get_spike_data()['spike_cluster'], session2.get_spike_data()['spike_cluster'])
+    distances, pairs = compute_distances(session1.get_spike_data()['spike_cluster'], session2.get_spike_data()['spike_cluster'], method)
     full_matches, full_match_distances, remaining_distances, remaining_pairs = extract_full_matches(distances, pairs)
 
     remaining_matches, remaining_match_distances, unmatched_2, unmatched_1 = guess_remaining_matches(remaining_distances, remaining_pairs)

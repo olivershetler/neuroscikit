@@ -26,7 +26,7 @@ It then writes the remapped cut file data to a new cut file. DONE (new cut data 
 Read, Retain, Map, Write
 """
 
-def run_unit_matcher(paths=[], settings={}, study=None):
+def run_unit_matcher(paths=[], settings={}, method='JSD', study=None):
     print("Running Unit Matcher. Starting Time Tracker.")
     start_time = time.time()
 
@@ -55,7 +55,7 @@ def run_unit_matcher(paths=[], settings={}, study=None):
 
             # if first session of sequence there is no prev session
             if prev is not None:
-                matches, match_distances, unmatched_2, unmatched_1 = compare_sessions(prev, curr, 'JSD')
+                matches, match_distances, unmatched_2, unmatched_1 = compare_sessions(prev, curr, method)
                 print('Comparison ' + str(comparison_count))
                 print(matches, unmatched_1, unmatched_2)
                 session_mappings[comparison_count] = {}
