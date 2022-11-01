@@ -1,4 +1,6 @@
-def compare_unit_means(unit1, unit2):
+import numpy as np
+
+def mean_squared_difference_of_unit_means(unit1, unit2):
     """Return the mean squared difference between the mean waveforms of two units.
 
     Parameters

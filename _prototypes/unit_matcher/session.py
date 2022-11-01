@@ -7,11 +7,12 @@ sys.path.append(PROJECT_PATH)
 
 from library.study_space import Session
 from _prototypes.unit_matcher.unit import jensen_shannon_distance, spike_level_feature_array
+from _prototypes.unit_matcher.unit_mean import unit_mean_mean_squared_difference
 from core.spikes import SpikeCluster
 from library.batch_space import SpikeClusterBatch
 
 
-def compute_distances(session1_cluster: SpikeClusterBatch, session2_cluster: SpikeClusterBatch, JSD=True, MSDoWFM=False): # change to feature vector array
+def compute_distances(session1_cluster: SpikeClusterBatch, session2_cluster: SpikeClusterBatch, method='JSD'): # change to feature vector array
     """
     Iterates through all the across-session unit pairings and computing their respective Jensen-Shannon distances
     Parameters
@@ -23,6 +24,7 @@ def compute_distances(session1_cluster: SpikeClusterBatch, session2_cluster: Spi
     MSDoWFM: bool
         If True, computes the Mean Squared Difference of Waveform Means between the two sessions' unit feature vectors
     """
+    assert method in ['JSD', 'MSD'], "method must be either 'JSD' or 'MSDoWFM'\n\n 'JSD' computes the Jensen-Shannon distance between the two sessions' unit feature vectors\n\n 'MSDoWFM' computes the Mean Squared Difference of Waveform Means between the two sessions' unit feature vectors."
 
     session1_unit_clusters = session1_cluster.get_spike_cluster_instances()
     session2_unit_clusters = session2_cluster.get_spike_cluster_instances()
@@ -40,16 +42,19 @@ def compute_distances(session1_cluster: SpikeClusterBatch, session2_cluster: Spi
     for i in range(len(session1_feature_arrays)):
         for j in range(len(session2_feature_arrays)):
 
-            distance = jensen_shannon_distance(session1_feature_arrays[i], session2_feature_arrays[j])
-            print('JSD: ' + str(distance))
+            if method == 'JSD':
+                distance = jensen_shannon_distance(session1_feature_arrays[i], session2_feature_arrays[j])
+            elif method == 'MSD':
+                distance = unit_mean_mean_squared_difference(session1_feature_arrays[i], session2_feature_arrays[j])
+            print(f'{method}: ' + str(distance))
 
-            if 'JSD' not in session1_unit_clusters[i].stats_dict:
-                session1_unit_clusters[i].stats_dict['JSD'] = []
-            session1_unit_clusters[i].stats_dict['JSD'] = distance
+            if method not in session1_unit_clusters[i].stats_dict:
+                session1_unit_clusters[i].stats_dict[method] = []
+            session1_unit_clusters[i].stats_dict[method] = distance
 
-            if 'JSD' not in session2_unit_clusters[j].stats_dict:
-                session2_unit_clusters[j].stats_dict['JSD'] = []
-            session2_unit_clusters[j].stats_dict['JSD'] = distance
+            if method not in session2_unit_clusters[j].stats_dict:
+                session2_unit_clusters[j].stats_dict[method] = []
+            session2_unit_clusters[j].stats_dict[method] = distance
 
             distances[i,j] = distance
             pairs[i,j] = [session1_unit_clusters[i].cluster_label, session2_unit_clusters[j].cluster_label]
