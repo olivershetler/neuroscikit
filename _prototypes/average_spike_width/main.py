@@ -27,8 +27,10 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import tkinter as tk
 from tkinter import filedialog
+import time
 
 def main():
+    start_time = time.time()
     root = tk.Tk()
     root.withdraw()
     input_dir = filedialog.askdirectory(parent=root,title='Please select a data directory.')
@@ -38,6 +40,7 @@ def main():
     output = extract_average_spike_widths(study)
     df = pd.DataFrame(output)
     df.to_csv(output_dir + '/spike_widths.csv')
+    print('Total run time: ' + str(time.time() - start_time))
 
 if __name__ == '__main__':
     main()
