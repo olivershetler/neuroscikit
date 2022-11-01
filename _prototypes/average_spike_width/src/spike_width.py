@@ -1,13 +1,14 @@
 import numpy as np
 from _prototypes.unit_matcher.waveform import time_index, troughs
+import warnings
 
 def extract_average_spike_widths(study) -> dict:
     output_df = {'session_signature':[], 'tetrode':[], 'unit_id':[], 'spike_width':[], 'firing_rate':[]}
     for animal in study.animals:
         for key, session in animal.sessions.items():
             cluster_labels = session.session_data.data['spike_cluster'].get_unique_cluster_labels()
-            session_signature = session.session_metadata.file_paths['tet'].split('\\')[-1].split('/')[-1].split('.')[0]
-            alt_session_signature = session.session_metadata.file_paths['cut'].split('\\')[-1].split('/')[-1].split('_')[0]
+            session_signature = session.session_metadata.file_paths['tet'].split('\\')[-1].split('/')[-1][:-2]
+            alt_session_signature = session.session_metadata.file_paths['cut'].split('\\')[-1].split('/')[-1][:-6]
             assert session_signature == alt_session_signature
             tetrode = session.session_metadata.file_paths['tet'].split('.')[-1]
             for unit in cluster_labels:
@@ -26,7 +27,8 @@ def extract_average_spike_widths(study) -> dict:
                 else:
                     trough_index = len(principal_waveform) - 1
                     spike_width = int((trough_index - peak_index)/2) * time_step
-                assert spike_width > 0, 'Spike width is negative'
+                if spike_width > 0:
+                    warnings.warn(f'Negative spike width for unit {unit} in session {session_signature}.\n\nThe mean waveform is:\n{principal_waveform}\n\nThe peak index is {peak_index} and the trough index is {trough_index}.')
                 firing_rate = n_spikes/spike_times[-1]
                 output_df['session_signature'].append(session_signature)
                 output_df['tetrode'].append(tetrode)
