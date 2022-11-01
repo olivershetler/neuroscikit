@@ -27,9 +27,9 @@ def extract_average_spike_widths(study) -> dict:
                 else:
                     trough_index = len(principal_waveform) - 1
                     spike_width = int((trough_index - peak_index)/2) * time_step
-                if spike_width > 0:
+                if spike_width < 0:
                     warnings.warn(f'Negative spike width for unit {unit} in session {session_signature}.\n\nThe mean waveform is:\n{principal_waveform}\n\nThe peak index is {peak_index} and the trough index is {trough_index}.')
-                firing_rate = n_spikes/spike_times[-1]
+                firing_rate = n_spikes/session.time_index[-1]
                 output_df['session_signature'].append(session_signature)
                 output_df['tetrode'].append(tetrode)
                 output_df['unit_id'].append(unit)
