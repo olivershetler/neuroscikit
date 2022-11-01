@@ -193,8 +193,8 @@ def morphological_points(time_index, waveform, d_waveform, d2_waveform, time_ste
     waveform_point = lambda i: Point(i, time_index, waveform, d_waveform, d2_waveform)
 
     # get morphological points in the voltage domain
-    voltage_peaks = peaks(waveform, time_step)
-    voltage_troughs = [0] + troughs(waveform, time_step) + [len(waveform) - 1]
+    voltage_peaks = peaks(waveform)
+    voltage_troughs = [0] + troughs(waveform) + [len(waveform) - 1]
     voltage_peak_values = [waveform[i] for i in voltage_peaks]
     voltage_trough_values = [waveform[i] for i in voltage_troughs]
     try:
@@ -220,7 +220,7 @@ def morphological_points(time_index, waveform, d_waveform, d2_waveform, time_ste
         rp = None
     # get morphological points in the rate domain
     def steepest_point_in_region(start, end):
-        rate_extrema_indexes = local_extrema(d_waveform[start.i:end.i], time_step)
+        rate_extrema_indexes = local_extrema(d_waveform[start.i:end.i])
         r = lambda start, end: list(filter(lambda i: i > start.i and i < end.i, rate_extrema_indexes))
         v = lambda indexes: [abs(d_waveform[i]) for i in indexes]
         indexes = r(start, end)
@@ -324,7 +324,7 @@ def filter_indexes(extrema_indexes, start, end):
     # get the indexes of the extrema in the region
     return list(filter(lambda i: start <= i <= end, extrema_indexes))
 
-def local_extrema(t, time_step):
+def local_extrema(t):
     """
     Find the local extrema in a time series.
     """
@@ -334,11 +334,11 @@ def local_extrema(t, time_step):
     _is_extrema = lambda i: _is_peak(i) or _is_trough(i)
     return list(filter(_is_extrema, range(1, len(t) - 1)))
 
-def peaks(t, time_step):
+def peaks(t):
     _is_peak = lambda i: t[i] > t[i - 1] and t[i] >= t[i + 1] and t[i] > 0
     return list(filter(_is_peak, range(1, len(t) - 1)))
 
-def troughs(t, time_step):
+def troughs(t):
     _is_trough = lambda i: t[i] < t[i - 1] and t[i] <= t[i + 1] and t[i] < 0
     return list(filter(_is_trough, range(1, len(t) - 1)))
 
