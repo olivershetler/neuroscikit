@@ -90,14 +90,18 @@ def _grab_tetrode_cut_position_files(paths: list, pos_files=[], cut_files=[], te
                 cut_files, tetrode_files, pos_files, matched_cut_files, animal_dir_names = _grab_tetrode_cut_position_files(os.listdir(fpath), pos_files=pos_files, cut_files=cut_files, tetrode_files=tetrode_files, matched_cut_files=matched_cut_files, animal_dir_names=animal_dir_names, parent_path=fpath)
             if file[-3:] == 'pos':
                 pos_files.append(fpath)
-                animal_dir_names.append(os.path.basename(os.path.dirname(fpath)))
+                # animal_dir_names.append(os.path.basename(os.path.dirname(fpath)))
             elif file[-3:] == 'cut':
                 if 'matched' not in file:
                     cut_files.append(fpath)
+                    matched_cut_files.append(paths[0] + '/' + file)
                 else:
                     matched_cut_files.append(paths[0] + '/' + file)
             elif file[-1:].isdigit() and 'clu' not in file and 'cut' not in file and 'eeg' not in file and 'egf' not in file:
                 tetrode_files.append(fpath)
+                to_add = os.path.basename(os.path.dirname(fpath))
+                if to_add not in animal_dir_names:
+                    animal_dir_names.append(to_add)
     else:
         for file in paths:
             if parent_path != None:
@@ -107,7 +111,6 @@ def _grab_tetrode_cut_position_files(paths: list, pos_files=[], cut_files=[], te
                 cut_files, tetrode_files, pos_files, matched_cut_files, animal_dir_names = _grab_tetrode_cut_position_files(os.listdir(file), pos_files=pos_files, cut_files=cut_files, tetrode_files=tetrode_files, matched_cut_files=matched_cut_files, animal_dir_names=animal_dir_names, parent_path=file)
             if file[-3:] == 'pos':
                 pos_files.append(file)
-                animal_dir_names.append(os.path.basename(os.path.dirname(fpath)))
             elif file[-3:] == 'cut':
                 if 'matched' not in file:
                     cut_files.append( file)
@@ -115,6 +118,9 @@ def _grab_tetrode_cut_position_files(paths: list, pos_files=[], cut_files=[], te
                     matched_cut_files.append(file)
             elif file[-1:].isdigit() and 'clu' not in file and 'cut' not in file and 'eeg' not in file and 'egf' not in file:
                 tetrode_files.append(file)
+                to_add = os.path.basename(os.path.dirname(fpath))
+                if to_add not in animal_dir_names:
+                    animal_dir_names.append(to_add)
 
     file_lists = [cut_files, tetrode_files, pos_files, matched_cut_files, animal_dir_names]
     for file_list in file_lists:
@@ -212,8 +218,9 @@ def batch_sessions(sorted_files, settings_dict, indiv_session_settings):
 
 
         pos_file = sorted_files[i]['pos']
-        assert len(pos_file) == 1, 'Cannot have more than one pos_file in a session'
-        pos_file = pos_file[0]
+        assert len(pos_file) <= 1, 'Cannot have more than one pos_file in a session'
+        if len(pos_file) == 1:
+            pos_file = pos_file[0]
         cut_files = sorted_files[i]['cut']
         tet_files = sorted_files[i]['tet']
         matched_cut_files = sorted_files[i]['matched_cut']
@@ -263,6 +270,10 @@ def make_session(cut_file, tet_file, pos_file, settings_dict, session_settings_d
     if session_settings_dict['devices']['axona_led_tracker'] == True:
         pos_dict = grab_position_data(pos_file, ppm)
         implant_data_dict['sample_rate'] = pos_dict['sample_rate']
+    else:
+        pos_dict = {}
+        print('No position data provided, unable to extract sample rate from file, proceeding with default value of 50')
+        implant_data_dict['sample_rate'] = 50
 
     session_dict = _fill_session_dict(session_dict, implant_data_dict, pos_dict, session_settings_dict)
 
@@ -297,20 +308,23 @@ def _create_session_classes(session_dict, settings_dict):
     # session.set_animal_id()
 
     tracker_dict = {}
-    for key in session_dict['devices']['axona_led_tracker']:
-        if 'data' not in str(key):
-            tracker_dict[key] = session_dict['devices']['axona_led_tracker'][key]
-    tracker_metadata = session.make_class(TrackerMetadata, tracker_dict)
+    if 'axona_led_tracker' in  session_dict['devices']:
+        for key in session_dict['devices']['axona_led_tracker']:
+            if 'data' not in str(key):
+                tracker_dict[key] = session_dict['devices']['axona_led_tracker'][key]
+        tracker_metadata = session.make_class(TrackerMetadata, tracker_dict)
+        position = session.make_class(Position2D, session_dict['devices']['axona_led_tracker']['led_position_data'])
 
     implant_dict = {}
-    for key in session_dict['devices']['implant']:
-        if 'data' not in str(key):
-            implant_dict[key] = session_dict['devices']['implant'][key]
-    implant_metadata = session.make_class(ImplantMetadata, implant_dict)
+    if 'implant' in  session_dict['devices']:
+        for key in session_dict['devices']['implant']:
+            if 'data' not in str(key):
+                implant_dict[key] = session_dict['devices']['implant'][key]
+        implant_metadata = session.make_class(ImplantMetadata, implant_dict)
 
-    spike_cluster = session.make_class(SpikeClusterBatch, session_dict['devices']['implant']['implant_data'])
-    spike_train = session.make_class(SpikeTrain, session_dict['devices']['implant']['implant_data'])
-    position = session.make_class(Position2D, session_dict['devices']['axona_led_tracker']['led_position_data'])
+        spike_cluster = session.make_class(SpikeClusterBatch, session_dict['devices']['implant']['implant_data'])
+        spike_train = session.make_class(SpikeTrain, session_dict['devices']['implant']['implant_data'])
+    
 
     # animal_metadata = AnimalMetadata(session_dict['animal'])
     # tracker_metadata = TrackerMetadata(session_dict['devices']['implant'])
