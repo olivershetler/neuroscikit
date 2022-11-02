@@ -156,6 +156,7 @@ def _group_session_files(cut_files, tetrode_files, pos_files, matched_cut_files,
         select_tetrodes = [tetrode for tetrode in tetrode_files if session == tetrode[:-2]]
         select_cuts = [cut for cut in cut_files if session == cut[:-6]]
         select_cuts_matched = [cut for cut in matched_cut_files if session == cut[:-14]]
+        pos_file = list(filter(lambda pos: session == pos[:-4], pos_files))[0]
 
         # Ensures that only collections containing all three: pos, cut and tetrode files are added
         if len(select_tetrodes) == 0 or len(select_cuts) == 0:
