@@ -10,7 +10,7 @@ STUDY_SETTINGS = {
 
 
 # Switch devices to True/False based on what is being used (to be extended for more devices in future)
-device_settings = {'axona_led_tracker': True, 'implant': True}
+device_settings = {'axona_led_tracker': False, 'implant': True}
 
 # Make sure implant metadata is correct, change if not, AT THE MINIMUM leave implant_type: tetrode
 implant_settings = {'implant_type': 'tetrode', 'implant_geometry': 'square', 'wire_length': 25, 'wire_length_units': 'um', 'implant_units': 'uV'}
