@@ -111,8 +111,12 @@ class SpikeTrain():
         return self.event_times >= other.event_times
 
     def _read_input_dict(self):
-        duration = self._input_dict['duration']
-        sample_rate = self._input_dict['sample_rate']
+        duration = None 
+        sample_rate = None
+        if 'duration' in  self._input_dict:
+            duration = self._input_dict['duration']
+        if 'sample_rate' in  self._input_dict:
+            sample_rate = self._input_dict['sample_rate']
         events_binary = [] 
         event_times = []
         event_labels = []
@@ -286,8 +290,12 @@ class SpikeCluster(): # collection of spike objects
         return self.cluster_label
 
     def _read_input_dict(self):
-        duration = self._input_dict['duration']
-        sample_rate = self._input_dict['sample_rate']
+        duration = None 
+        sample_rate = None
+        if 'duration' in  self._input_dict:
+            duration = self._input_dict['duration']
+        if 'sample_rate' in  self._input_dict:
+            sample_rate = self._input_dict['sample_rate']
         # events_binary = self._input_dict['events_binary']
         cluster_label = self._input_dict['cluster_label']
         # assert type(events_binary) == list, 'Binary spikes are not a list, check inputs'

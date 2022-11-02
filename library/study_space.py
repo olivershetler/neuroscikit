@@ -56,7 +56,10 @@ class Session(Workspace):
         self.smoothing_factor = smoothing_factor
 
     def update_time_index(self, class_object):
-        time_index = make_seconds_index_from_rate(class_object.duration, class_object.sample_rate)
+        if class_object.duration is None or class_object.sample_rate is None:
+            time_index = None
+        else:
+            time_index = make_seconds_index_from_rate(class_object.duration, class_object.sample_rate)
         self.time_index = time_index
 
     def get_animal_id(self):
