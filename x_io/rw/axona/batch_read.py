@@ -272,8 +272,8 @@ def make_session(cut_file, tet_file, pos_file, settings_dict, session_settings_d
         implant_data_dict['sample_rate'] = pos_dict['sample_rate']
     else:
         pos_dict = {}
-        print("No pos file was found for this session. Setting to default value of 50. This will not affect tetrode analysis.")
-        implant_data_dict['sample_rate'] = 50
+        # print('No position data provided, unable to extract sample rate from file, proceeding with default value of 50')
+        implant_data_dict['sample_rate'] = None
 
     session_dict = _fill_session_dict(session_dict, implant_data_dict, pos_dict, session_settings_dict)
 
@@ -324,7 +324,7 @@ def _create_session_classes(session_dict, settings_dict):
 
         spike_cluster = session.make_class(SpikeClusterBatch, session_dict['devices']['implant']['implant_data'])
         spike_train = session.make_class(SpikeTrain, session_dict['devices']['implant']['implant_data'])
-
+    
 
     # animal_metadata = AnimalMetadata(session_dict['animal'])
     # tracker_metadata = TrackerMetadata(session_dict['devices']['implant'])
@@ -404,6 +404,7 @@ def _get_session_data(cut_file, tet_file, ch_count=4):
     with open(cut_file, 'r') as open_cut_file, open(tet_file, 'rb') as open_tet_file:
         cut_data = _read_cut(open_cut_file)
         tetrode_data = _format_spikes(open_tet_file)
+        # header_data = _read_tetrode_header(open_tet_file)
 
     if ch_count != len(tetrode_data[1]):
         ch_count = len(tetrode_data[1])
@@ -416,7 +417,7 @@ def _get_session_data(cut_file, tet_file, ch_count=4):
 
 def _fill_implant_data(implant_data_dict, tetrode_data, cut_data, ch_count):
     implant_data_dict['duration'] = tetrode_data[-1]['duration']
-    # implant_data_dict['sample_rate'] = tetrode_data[-1]['sample_rate']
+    implant_data_dict['waveform_sample_rate'] = tetrode_data[-1]['sample_rate']
 
     implant_data_dict['datetime'] = tetrode_data[-1]['datetime']
 

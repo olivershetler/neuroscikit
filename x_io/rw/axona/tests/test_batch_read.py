@@ -151,6 +151,8 @@ def test_make_session():
     if devices['implant'] == True:
         assert isinstance(session.get_devices_metadata()['implant'], ImplantMetadata)
     assert isinstance(session.get_spike_data()['spike_train'], SpikeTrain)
+    assert isinstance(session.get_spike_data()['spike_cluster'], SpikeClusterBatch)
+    assert int(session.get_spike_data()['spike_cluster'].waveform_sample_rate) == int(48000)
 
 def test__grab_tetrode_cut_position_files():
 

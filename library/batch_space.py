@@ -158,7 +158,7 @@ class SpikeClusterBatch(Workspace):
         else:
             self.session_metadata = None
 
-        duration, sample_rate, cluster_labels, event_times, waveforms = self._read_input_dict()
+        duration, sample_rate, cluster_labels, event_times, waveforms, waveform_sample_rate = self._read_input_dict()
 
         assert type(cluster_labels) == list, 'Cluster labels missing'
         assert type(cluster_labels[0]) == int, 'Cluster labels missing'
@@ -169,6 +169,7 @@ class SpikeClusterBatch(Workspace):
         self.time_index = self.session_metadata.session_object.time_index
 
         self.event_times = event_times
+        self.waveform_sample_rate = waveform_sample_rate
         self.cluster_labels = cluster_labels
         self.duration = duration
         self.sample_rate = sample_rate
@@ -206,6 +207,8 @@ class SpikeClusterBatch(Workspace):
             duration = self._input_dict['duration']
         if 'sample_rate' in  self._input_dict:
             sample_rate = self._input_dict['sample_rate']
+        if 'waveform_sample_rate' in self._input_dict:
+            waveform_sample_rate = self._input_dict['waveform_sample_rate']
         # events_binary = self._input_dict['events_binary']
         cluster_labels = self._input_dict['event_labels']
         # assert type(events_binary) == list, 'Binary spikes are not a list, check inputs'
@@ -217,7 +220,7 @@ class SpikeClusterBatch(Workspace):
         #     spike_data_present = True
         # assert spike_data_present == True, 'No spike times or binary spikes provided'
         waveforms = self._extract_waveforms()
-        return duration, sample_rate, cluster_labels, event_times, waveforms
+        return duration, sample_rate, cluster_labels, event_times, waveforms, waveform_sample_rate
 
     # uses InputKeys() to get channel bychannel waveforms
     def _extract_waveforms(self):
@@ -367,6 +370,7 @@ class SpikeClusterBatch(Workspace):
                 for j in range(len(self.waveforms)):
                     key = 'channel_' + str(j+1)
                     input_dict[key] = np.asarray(self.waveforms[key])[idx]
+                input_dict['waveform_sample_rate'] = self.waveform_sample_rate
                 instances.append(SpikeCluster(input_dict))
                     # labelled.append(self.cluster_labels[i])
         # assert len(labelled) == max(self.cluster_labels)

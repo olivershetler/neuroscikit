@@ -201,7 +201,7 @@ class SpikeCluster(): # collection of spike objects
         self._input_dict = input_dict
 
 
-        self.duration, self.sample_rate, self.cluster_label, self.event_times, self.waveforms, self.session_metadata = self._read_input_dict()
+        self.duration, self.sample_rate, self.cluster_label, self.event_times, self.waveforms, self.session_metadata, self.waveform_sample_rate = self._read_input_dict()
 
         if 'session_metadata' in kwargs:
             if self.session_metadata != None: 
@@ -296,6 +296,8 @@ class SpikeCluster(): # collection of spike objects
             duration = self._input_dict['duration']
         if 'sample_rate' in  self._input_dict:
             sample_rate = self._input_dict['sample_rate']
+        if 'waveform_sample_rate' in self._input_dict:
+            waveform_sample_rate = self._input_dict['waveform_sample_rate']
         # events_binary = self._input_dict['events_binary']
         cluster_label = self._input_dict['cluster_label']
         # assert type(events_binary) == list, 'Binary spikes are not a list, check inputs'
@@ -314,7 +316,7 @@ class SpikeCluster(): # collection of spike objects
         session_metadata = None
         if 'session_metadata' in self._input_dict:
             session_metadata = self._input_dict['session_metadata']
-        return duration, sample_rate, cluster_label, event_times, waveforms, session_metadata
+        return duration, sample_rate, cluster_label, event_times, waveforms, session_metadata, waveform_sample_rate
 
     def _extract_waveforms(self):
         input_keys = InputKeys()
