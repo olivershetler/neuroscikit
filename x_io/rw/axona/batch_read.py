@@ -99,9 +99,9 @@ def _grab_tetrode_cut_position_files(paths: list, pos_files=[], cut_files=[], te
                     matched_cut_files.append(paths[0] + '/' + file)
             elif file[-1:].isdigit() and 'clu' not in file and 'cut' not in file and 'eeg' not in file and 'egf' not in file:
                 tetrode_files.append(fpath)
+            elif file[-3:] == 'set':
                 to_add = os.path.basename(os.path.dirname(fpath))
-                if to_add not in animal_dir_names:
-                    animal_dir_names.append(to_add)
+                animal_dir_names.append(to_add)
     else:
         for file in paths:
             if parent_path != None:
@@ -118,9 +118,9 @@ def _grab_tetrode_cut_position_files(paths: list, pos_files=[], cut_files=[], te
                     matched_cut_files.append(file)
             elif file[-1:].isdigit() and 'clu' not in file and 'cut' not in file and 'eeg' not in file and 'egf' not in file:
                 tetrode_files.append(file)
+            elif file[-3:] == 'set':
                 to_add = os.path.basename(os.path.dirname(fpath))
-                if to_add not in animal_dir_names:
-                    animal_dir_names.append(to_add)
+                animal_dir_names.append(to_add)
 
     file_lists = [cut_files, tetrode_files, pos_files, matched_cut_files, animal_dir_names]
     for file_list in file_lists:
