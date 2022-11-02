@@ -145,7 +145,7 @@ def _group_session_files(cut_files, tetrode_files, pos_files, matched_cut_files,
     c = 0
 
     # Make list of ession signatures from tetrode files
-    session_signatures = set([tet.split('/')[-1].split('\\')[-1][:-2] for tet in tetrode_files])
+    session_signatures = set([tet[:-2] for tet in tetrode_files])
 
     # Iterate over each position file
     for session in session_signatures:
@@ -212,6 +212,8 @@ def batch_sessions(sorted_files, settings_dict, indiv_session_settings):
 
 
         pos_file = sorted_files[i]['pos']
+        assert len(pos_file) == 1, 'Cannot have more than one pos_file in a session'
+        pos_file = pos_file[0]
         cut_files = sorted_files[i]['cut']
         tet_files = sorted_files[i]['tet']
         matched_cut_files = sorted_files[i]['matched_cut']
