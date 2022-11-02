@@ -144,13 +144,13 @@ def _group_session_files(cut_files, tetrode_files, pos_files, matched_cut_files,
 
     c = 0
 
+    # Make list of ession signatures from tetrode files
+    session_signatures = set([tet.split('/').split('\\')[-1][:-2] for tet in tetrode_files])
+
     # Iterate over each position file
-    for pos_file in pos_files:
+    for session in session_signatures:
         # Will group common files
         collection = {}
-
-        # Grab session handle from .pos file
-        session = pos_file[:-4]
 
         # Grab the tetrode and cut files belonging to this session only
         select_tetrodes = [tetrode for tetrode in tetrode_files if session == tetrode[:-2]]
@@ -201,9 +201,6 @@ def batch_sessions(sorted_files, settings_dict, indiv_session_settings):
     belonging to the same session
 
     """
-    # assert len(cut_files) == len(tet_files)
-    # assert len(tet_files) == len(pos_files)
-    # assert len(sorted_files) == len(settings_dict['session'])
 
     sessions = {}
 

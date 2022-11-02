@@ -11,7 +11,7 @@ import os
 import sys
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
- 
+
 
 from x_io.rw.axona.read_tetrode_and_cut import (
     _read_cut
@@ -65,7 +65,7 @@ settings_dict = {'ppm': 511, 'session':  session_settings, 'smoothing_factor': 3
 
 
 def test__init_implant_data():
-    ch_count = 4 
+    ch_count = 4
     implant_data_dict = _init_implant_data(ch_count)
 
     assert type(implant_data_dict) == dict
@@ -154,7 +154,7 @@ def test__grab_tetrode_cut_position_files():
     assert type(tetrode_files) == list
     assert type(matched_cut_files) == list
     assert type(animal_dir_names) == list
- 
+
     assert len(cut_files) == 1
     assert len(pos_files) == 1
     assert len(tetrode_files) == 1
@@ -164,9 +164,9 @@ def test__grab_tetrode_cut_position_files():
 # def test__init_study_dict():
 #     study_dict = _init_study_dict(settings_dict)
 
-#     assert type(study_dict) == dict 
+#     assert type(study_dict) == dict
 
-def test__group_session_files():  
+def test__group_session_files():
 
     cut_files, tetrode_files, pos_files, matched_cut_files, animal_dir_names = _grab_tetrode_cut_position_files([data_dir], pos_files=[], cut_files=[], tetrode_files=[])
 
@@ -174,9 +174,6 @@ def test__group_session_files():
 
     assert len(sorted_files[0]['cut']) == len(cut_files)
     assert len(cut_files) == len(tetrode_files)
-    assert len(tetrode_files) == len(pos_files)
-
-    # assert len(pos_files) == len(matched_cut_files)
 
 def test_batch_sessions():
 
@@ -187,7 +184,7 @@ def test_batch_sessions():
     indiv_session_settings['animal_ids'] = '1'
     sessions = batch_sessions(sorted_files, settings_dict, indiv_session_settings)
 
-    assert type(sessions) == dict 
+    assert type(sessions) == dict
     assert len(sessions) == 1
     assert isinstance(sessions['session_1'], Session)
 
@@ -196,7 +193,7 @@ def test_make_study():
 
     assert isinstance(study, Study)
     assert len(study.sessions) > 0
-    assert isinstance(study._input_dict['session_1'], Session) 
+    assert isinstance(study._input_dict['session_1'], Session)
 
 
 

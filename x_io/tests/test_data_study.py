@@ -49,7 +49,6 @@ def make_1D_timestamps(T=2, dt=0.02):
 
 def make_2D_timestamps(count=20, T=2, dt=0.02):
     time = np.arange(0,T,dt)
-    # spk_times = np.zeros((count, len(time)))
     spk_times = []
 
     for i in range(count):
@@ -79,14 +78,7 @@ def test_event_spike_class():
     ch_count = 8
     samples_per_wave = 50
     waveforms = make_waveforms(ch_count, len(spike_times), samples_per_wave)
-
-    # T = 2
-    # dt = .02
     idx = np.random.choice(len(spike_times), size=1)[0]
-
-    # input_dict1 = {}
-    # input_dict1['sample_length'] = int(T / dt)
-    # input_dict1['sample_rate'] = float(T / dt)
     spike_time = spike_times[idx]
     cluster_label = int(idx + 1)
 
