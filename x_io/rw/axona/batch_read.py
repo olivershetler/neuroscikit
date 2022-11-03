@@ -272,7 +272,7 @@ def make_session(cut_file, tet_file, pos_file, settings_dict, session_settings_d
         implant_data_dict['sample_rate'] = pos_dict['sample_rate']
     else:
         pos_dict = {}
-        print('No position data provided, unable to extract sample rate from file, proceeding with default value of 50')
+        print("No pos file was found for this session. Setting to default value of 50. This will not affect tetrode analysis.")
         implant_data_dict['sample_rate'] = 50
 
     session_dict = _fill_session_dict(session_dict, implant_data_dict, pos_dict, session_settings_dict)
@@ -324,7 +324,7 @@ def _create_session_classes(session_dict, settings_dict):
 
         spike_cluster = session.make_class(SpikeClusterBatch, session_dict['devices']['implant']['implant_data'])
         spike_train = session.make_class(SpikeTrain, session_dict['devices']['implant']['implant_data'])
-    
+
 
     # animal_metadata = AnimalMetadata(session_dict['animal'])
     # tracker_metadata = TrackerMetadata(session_dict['devices']['implant'])

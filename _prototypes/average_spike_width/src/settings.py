@@ -11,6 +11,7 @@ STUDY_SETTINGS = {
 
 # Switch devices to True/False based on what is being used (to be extended for more devices in future)
 device_settings = {'axona_led_tracker': False, 'implant': True}
+# make_session will fail if axona_led_tracker is True and no led_tracker file (.pos) is found in the session folder for any of the groups of session files.
 
 # Make sure implant metadata is correct, change if not, AT THE MINIMUM leave implant_type: tetrode
 implant_settings = {'implant_type': 'tetrode', 'implant_geometry': 'square', 'wire_length': 25, 'wire_length_units': 'um', 'implant_units': 'uV'}
