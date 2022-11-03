@@ -53,7 +53,7 @@ class SpikeTrain():
         self.duration, self.sample_rate, self.events_binary, self.event_times, self.event_labels, self.session_metadata = self._read_input_dict()
 
         if 'session_metadata' in kwargs:
-            if self.session_metadata != None: 
+            if self.session_metadata != None:
                 print('Ses metadata is in the input dict and init fxn, init fnx will override')
             self.session_metadata = kwargs['session_metadata']
 
@@ -67,7 +67,7 @@ class SpikeTrain():
         self.dir_names = self.session_metadata.dir_names
 
         self.stats_dict = self._init_stats_dict()
-        
+
 
     def __len__(self):
         if len(self.event_labels) == 0:
@@ -111,13 +111,13 @@ class SpikeTrain():
         return self.event_times >= other.event_times
 
     def _read_input_dict(self):
-        duration = None 
+        duration = None
         sample_rate = None
         if 'duration' in  self._input_dict:
             duration = self._input_dict['duration']
         if 'sample_rate' in  self._input_dict:
             sample_rate = self._input_dict['sample_rate']
-        events_binary = [] 
+        events_binary = []
         event_times = []
         event_labels = []
         session_metadata = None
@@ -204,7 +204,7 @@ class SpikeCluster(): # collection of spike objects
         self.duration, self.sample_rate, self.cluster_label, self.event_times, self.waveforms, self.session_metadata, self.waveform_sample_rate = self._read_input_dict()
 
         if 'session_metadata' in kwargs:
-            if self.session_metadata != None: 
+            if self.session_metadata != None:
                 print('Ses metadata is in the input dict and init fxn, init fnx will override')
             self.session_metadata = kwargs['session_metadata']
 
@@ -216,7 +216,10 @@ class SpikeCluster(): # collection of spike objects
         # self.time_index = make_seconds_index_from_rate(self.duration, self.sample_rate)
         self.time_index = self.session_metadata.session_object.time_index
         if self.time_index is None:
-            self.time_index = make_seconds_index_from_rate(self.duration, self.sample_rate)
+            if self.duration is not None and self.sample_rate is not None:
+                self.time_index = make_seconds_index_from_rate(self.duration, self.sample_rate)
+            else:
+                self.time_index = None
         self.spike_objects = []
         self.dir_names = self.session_metadata.dir_names
         self.stats_dict = self._init_stats_dict()
@@ -273,7 +276,7 @@ class SpikeCluster(): # collection of spike objects
                 # input_dict[key] = self.waveforms[j][i]
                 spike_waveforms[key] = self.waveforms[key][i]
                 # print(key + ' FILLED', len(spike_waveforms[key]))
-            
+
             instances.append(Spike(input_dict['spike_time'], input_dict['cluster_label'], spike_waveforms, self))
 
         self.spike_objects = instances
@@ -290,7 +293,7 @@ class SpikeCluster(): # collection of spike objects
         return self.cluster_label
 
     def _read_input_dict(self):
-        duration = None 
+        duration = None
         sample_rate = None
         if 'duration' in  self._input_dict:
             duration = self._input_dict['duration']
