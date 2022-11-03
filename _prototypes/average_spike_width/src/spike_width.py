@@ -19,7 +19,8 @@ def extract_average_spike_widths(study) -> dict:
                 principal_waveform = wf_avg[principal_channel_index]
                 peak_index = np.argmax(principal_waveform)
                 trough_list = list(filter(lambda x: x > peak_index, troughs(principal_waveform)))
-                sample_rate = session.session_data.data['spike_cluster'].sample_rate
+                #sample_rate = session.session_data.data['spike_cluster'].sample_rate --- this sample rate is for position data; NOT waveforms.
+                sample_rate = 48000 # this needs to be changed to the sample rate of the waveform data when that is available.
                 print('sample rate: ' + str(sample_rate))
                 if len(trough_list) > 0:
                     trough_index = trough_list[0]
