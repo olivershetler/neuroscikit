@@ -11,7 +11,7 @@ from library.maps.map_utils import _compute_resize_ratio, _interpolate_matrix, _
 
 def spike_map(pos_x: np.ndarray, pos_y: np.ndarray, pos_t: np.ndarray,
                 arena_size: tuple, spike_x: np.ndarray, spike_y: np.ndarray,
-                kernlen: int, std: int) -> np.ndarray:
+                kernlen: int, std: int, interp_size=(64,64)) -> np.ndarray:
 
 
 
@@ -46,9 +46,9 @@ def spike_map(pos_x: np.ndarray, pos_y: np.ndarray, pos_t: np.ndarray,
     spike_map_smooth = cv2.filter2D(spike_map_raw,-1,_gkern(kernlen, std))
 
     # Resize maps
-    spike_map_smooth = _interpolate_matrix(spike_map_smooth, new_size=(64,64),  cv2_interpolation_method=cv2.INTER_NEAREST)
+    spike_map_smooth = _interpolate_matrix(spike_map_smooth, new_size=interp_size,  cv2_interpolation_method=cv2.INTER_NEAREST)
     spike_map_smooth = spike_map_smooth/max(spike_map_smooth.flatten())
-    spike_map_raw = _interpolate_matrix(spike_map_raw, new_size=(64,64), cv2_interpolation_method=cv2.INTER_NEAREST)
+    spike_map_raw = _interpolate_matrix(spike_map_raw, new_size=interp_size, cv2_interpolation_method=cv2.INTER_NEAREST)
 
 
 

@@ -185,7 +185,7 @@ class HaftingOccupancyMap():
             self.smoothing_factor = kwargs['settings']['smoothing_factor']
             print('overriding session smoothing factor for input smoothing facator')
 
-    def get_occupancy_map(self, smoothing_factor=None):
+    def get_occupancy_map(self, smoothing_factor=None, new_size=None):
         if self.map_data is None:
             if self.smoothing_factor != None:
                 smoothing_factor = self.smoothing_factor
@@ -193,14 +193,17 @@ class HaftingOccupancyMap():
             else:
                 self.smoothing_factor = smoothing_factor
 
-            self.map_data, self.raw_map_data, self.coverage = self.compute_occupancy_map(self.t, self.x, self.y, self.arena_size, smoothing_factor)
+            if new_size is not None:
+                self.map_data, self.raw_map_data, self.coverage = self.compute_occupancy_map(self.t, self.x, self.y, self.arena_size, smoothing_factor, new_size=new_size)
+            else:
+                self.map_data, self.raw_map_data, self.coverage = self.compute_occupancy_map(self.t, self.x, self.y, self.arena_size, smoothing_factor)
 
             if isinstance(self.spatial_spike_train, SpatialSpikeTrain2D):
                 self.spatial_spike_train.add_map_to_stats('occupancy', self)
 
         return self.map_data, self.raw_map_data, self.coverage
 
-    def compute_occupancy_map(self, pos_t, pos_x, pos_y, arena_size, smoothing_factor, resolution=16, mask_threshold=1):
+    def compute_occupancy_map(self, pos_t, pos_x, pos_y, arena_size, smoothing_factor, new_size=64, mask_threshold=1):
 
         # arena_ratio = arena_size[0]/arena_size[1]
         # h = smoothing_factor #smoothing factor in centimeters
@@ -237,7 +240,9 @@ class HaftingOccupancyMap():
 
         # valid_occupancy_map = np.rot90(valid_occupancy_map)
 
-        valid_occupancy_map, raw_occ, coverage = _temp_occupancy_map(self.spatial_spike_train.position, self.smoothing_factor)
+
+
+        valid_occupancy_map, raw_occ, coverage = _temp_occupancy_map(self.spatial_spike_train.position, self.smoothing_factor, interp_size=(new_size, new_size))
 
         return valid_occupancy_map, raw_occ, coverage
 
@@ -271,21 +276,24 @@ class HaftingSpikeMap():
     #         assert isinstance(spatial_spike_train, SpatialSpikeTrain2D)
     #     return spatial_spike_train
 
-    def get_spike_map(self, smoothing_factor=None):
+    def get_spike_map(self, smoothing_factor=None, new_size=None):
         if self.map_data is None:
             if self.smoothing_factor != None:
                 smoothing_factor = self.smoothing_factor
                 assert smoothing_factor != None, 'Need to add smoothing factor to function inputs'
             else:
                 self.smoothing_factor = smoothing_factor
-
-            self.map_data, self.map_data_raw = self.compute_spike_map(self.spike_x, self.spike_y, smoothing_factor, self.arena_size)
+            
+            if new_size is not None:
+                self.map_data, self.map_data_raw = self.compute_spike_map(self.spike_x, self.spike_y, smoothing_factor, self.arena_size, new_size=new_size)
+            else:
+                self.map_data, self.map_data_raw = self.compute_spike_map(self.spike_x, self.spike_y, smoothing_factor, self.arena_size)
 
             self.spatial_spike_train.add_map_to_stats('spike', self)
 
         return self.map_data, self.map_data_raw
 
-    def compute_spike_map(self, spike_x, spike_y, smoothing_factor, arena_size, resolution=16):
+    def compute_spike_map(self, spike_x, spike_y, smoothing_factor, arena_size, new_size=64):
         # arena_ratio = arena_size[0]/arena_size[1]
         # # h = smoothing_factor #smoothing factor in centimeters
 
@@ -316,7 +324,7 @@ class HaftingSpikeMap():
         # # Resize maps
         # spike_map = _interpolate_matrix(spike_map, cv2_interpolation_method=cv2.INTER_NEAREST)
 
-        spike_map, spike_map_raw = _temp_spike_map(self.spatial_spike_train.x, self.spatial_spike_train.y, self.spatial_spike_train.t, arena_size, spike_x, spike_y, smoothing_factor)
+        spike_map, spike_map_raw = _temp_spike_map(self.spatial_spike_train.x, self.spatial_spike_train.y, self.spatial_spike_train.t, arena_size, spike_x, spike_y, smoothing_factor, interp_size=(new_size,new_size))
 
         return spike_map, spike_map_raw
 
@@ -352,18 +360,21 @@ class HaftingRateMap():
             self.smoothing_factor = kwargs['settings']['smoothing_factor']
             print('overriding session smoothing factor for input smoothing facator')
 
-    def get_rate_map(self, smoothing_factor=None):
+    def get_rate_map(self, smoothing_factor=None, new_size=None):
         if self.map_data is None:
             if self.smoothing_factor == None:
                 self.smoothing_factor = smoothing_factor
                 assert smoothing_factor != None, 'Need to add smoothing factor to function inputs'
 
-            self.map_data, self.raw_map_data = self.compute_rate_map(self.occ_map, self.spike_map)
+            if new_size is not None:
+                self.map_data, self.raw_map_data = self.compute_rate_map(self.occ_map, self.spike_map, new_size=new_size)
+            else:
+                self.map_data, self.raw_map_data = self.compute_rate_map(self.occ_map, self.spike_map)
 
             self.spatial_spike_train.add_map_to_stats('rate', self)
         return self.map_data, self.raw_map_data
 
-    def compute_rate_map(self, occupancy_map, spike_map):
+    def compute_rate_map(self, occupancy_map, spike_map, new_size=None):
         '''
         Parameters:
             spike_x: the x-coordinates of the spike events
@@ -376,13 +387,24 @@ class HaftingRateMap():
         Returns:
             rate_map: spike density divided by occupancy density
         '''
-        if self.smoothing_factor != None:
-            occ_map_data, raw_occ, coverage = occupancy_map.get_occupancy_map(self.smoothing_factor)
-            spike_map_data, spike_map_data_raw = spike_map.get_spike_map(self.smoothing_factor)
+
+        if new_size is None:
+            if self.smoothing_factor != None:
+                occ_map_data, raw_occ, coverage = occupancy_map.get_occupancy_map(self.smoothing_factor)
+                spike_map_data, spike_map_data_raw = spike_map.get_spike_map(self.smoothing_factor)
+            else:
+                print('No smoothing factor provided, proceeding with value of 3')
+                occ_map_data, raw_occ, coverage = occupancy_map.get_occupancy_map(3)
+                spike_map_data, spike_map_data_raw = spike_map.get_spike_map(3)
         else:
-            print('No smoothing factor provided, proceeding with value of 3')
-            occ_map_data, raw_occ, coverage = occupancy_map.get_occupancy_map(3)
-            spike_map_data, spike_map_data_raw = spike_map.get_spike_map(3)
+            if self.smoothing_factor != None:
+                occ_map_data, raw_occ, coverage = occupancy_map.get_occupancy_map(self.smoothing_factor, new_size=new_size)
+                spike_map_data, spike_map_data_raw = spike_map.get_spike_map(self.smoothing_factor, new_size=new_size)
+            else:
+                print('No smoothing factor provided, proceeding with value of 3')
+                occ_map_data, raw_occ, coverage = occupancy_map.get_occupancy_map(3, new_size=new_size)
+                spike_map_data, spike_map_data_raw = spike_map.get_spike_map(3, new_size=new_size)
+
 
         assert occ_map_data.shape == spike_map_data.shape
 
