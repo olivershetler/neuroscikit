@@ -42,7 +42,7 @@ class SpikeTrainBatch(Workspace):
         self.good_label_ids = sorted_ids
 
     def _read_input_dict(self):
-        duration = None 
+        duration = None
         sample_rate = None
         if 'duration' in  self._input_dict:
             duration = self._input_dict['duration']
@@ -201,7 +201,7 @@ class SpikeClusterBatch(Workspace):
         self.good_label_ids = sorted_ids
 
     def _read_input_dict(self):
-        duration = None 
+        duration = None
         sample_rate = None
         if 'duration' in  self._input_dict:
             duration = self._input_dict['duration']
@@ -351,7 +351,7 @@ class SpikeClusterBatch(Workspace):
         instances = []
         # labelled = []
 
-        session_constant = {'session_metadata': self.session_metadata, 'duration': int(self.duration), 'sample_rate': float(self.sample_rate)}
+        session_constant = {'session_metadata': self.session_metadata, 'duration': self.duration, 'sample_rate': self.sample_rate}
         # Both are 2d arrays so can do len() to iterate thru number of cells
         for i in self.get_unique_cluster_labels():
             if i in self.good_label_ids:
