@@ -116,7 +116,7 @@ def _grab_tetrode_cut_position_files(paths: list, pos_files=[], cut_files=[], te
                     cut_files.append( file)
                 else:
                     matched_cut_files.append(file)
-            elif file[-1:].isdigit() and 'clu' not in file and 'cut' not in file and 'eeg' not in file and 'egf' not in file:
+            elif file[-1:].isdigit() and 'clu' not in file and 'cut' not in file and 'eeg' not in file and 'egf' not in file and 'output' not in file:
                 tetrode_files.append(file)
             elif file[-3:] == 'set':
                 to_add = os.path.basename(os.path.dirname(fpath))
@@ -166,23 +166,23 @@ def _group_session_files(cut_files, tetrode_files, pos_files, matched_cut_files,
 
         # Ensures that only collections containing all three: pos, cut and tetrode files are added
         if len(select_tetrodes) == 0 or len(select_cuts) == 0:
-            print('BREAKING FOR LOOP, NO FILES FOUND FOR SESSION WITH SIGNATURE: ' + str(session))
-            break
+            print('SKIPPING, NO FILES FOUND FOR SESSION WITH SIGNATURE: ' + str(session))
+            pass
+        else:
+            # Add these files into a single data strucutre
+            # collection.append(pos_file)
+            # collection += (select_tetrodes + select_cuts + select_cuts_matched)
+            collection['pos'] = pos_file
+            collection['tet'] = sorted(select_tetrodes)
+            collection['cut'] = sorted(select_cuts)
+            collection['matched_cut'] = sorted(select_cuts_matched)
 
-        # Add these files into a single data strucutre
-        # collection.append(pos_file)
-        # collection += (select_tetrodes + select_cuts + select_cuts_matched)
-        collection['pos'] = pos_file
-        collection['tet'] = sorted(select_tetrodes)
-        collection['cut'] = sorted(select_cuts)
-        collection['matched_cut'] = sorted(select_cuts_matched)
+            # Accumulate these collections to a separate data structure as 'groups' of files.
+            grouped_sessions.append(collection)
+            tetrode_counts.append(len(select_tetrodes))
+            animal_ids.append(animal_dir_names[c])
 
-        # Accumulate these collections to a separate data structure as 'groups' of files.
-        grouped_sessions.append(collection)
-        tetrode_counts.append(len(select_tetrodes))
-        animal_ids.append(animal_dir_names[c])
-
-        c += 1
+            c += 1
 
     return grouped_sessions, tetrode_counts, animal_ids
 

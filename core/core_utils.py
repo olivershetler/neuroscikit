@@ -24,14 +24,7 @@ def make_seconds_index_from_rate(sample_length, sample_rate):
     """
     start_time = 0
     dt = 1/sample_rate
-
-    # time = []
-
     time = np.arange(start_time, int(sample_length), dt)
-
-    # for i in range(start_time, int(sample_length*sample_rate)):
-    #     time.append(i*dt)
-
     return time
 
 

@@ -354,8 +354,8 @@ class HaftingRateMap():
 
     def get_rate_map(self, smoothing_factor=None):
         if self.map_data is None:
-            if smoothing_factor == None:
-                smoothing_factor = self.smoothing_factor
+            if self.smoothing_factor == None:
+                self.smoothing_factor = smoothing_factor
                 assert smoothing_factor != None, 'Need to add smoothing factor to function inputs'
 
             self.map_data, self.raw_map_data = self.compute_rate_map(self.occ_map, self.spike_map)

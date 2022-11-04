@@ -216,7 +216,8 @@ class SpikeCluster(): # collection of spike objects
         # self.time_index = make_seconds_index_from_rate(self.duration, self.sample_rate)
         self.time_index = self.session_metadata.session_object.time_index
         if self.time_index is None:
-            self.time_index = make_seconds_index_from_rate(self.duration, self.sample_rate)
+            if self.duration is not None and self.sample_rate is not None:
+                self.time_index = make_seconds_index_from_rate(self.duration, self.sample_rate)
         self.spike_objects = []
         self.dir_names = self.session_metadata.dir_names
         self.stats_dict = self._init_stats_dict()
