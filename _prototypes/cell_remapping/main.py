@@ -49,7 +49,7 @@ def batch_remapping(paths=[], settings={}, study=None):
         remapping_indices = [[] for k in range(max_matched_cell_count)]
         remapping_session_ids = [[] for k in range(max_matched_cell_count)]
 
-        agg_ratemaps = [[] for k in range(len(list(animal.sessions.keys()))-1)]
+        # agg_ratemaps = [[] for k in range(len(list(animal.sessions.keys()))-1)]
 
         for j in range(int(max_matched_cell_count)):
             cell_label = j + 1
@@ -83,7 +83,7 @@ def batch_remapping(paths=[], settings={}, study=None):
                     rate_map_obj = spatial_spike_train.get_map('rate')
                     rate_map, _ = rate_map_obj.get_rate_map()
                     curr = np.copy(rate_map)
-                    agg_ratemaps[i] = curr
+                    # agg_ratemaps[i] = curr
 
 
                     if prev is not None:
@@ -95,6 +95,8 @@ def batch_remapping(paths=[], settings={}, study=None):
                         output['tetrode'].append(animal.animal_id.split('tet')[-1])
                         output['session_ids'].append(['session_' + str(i), 'session_' + str(i+1)])
                         output['wasserstein'].append(wass)
+
+                        # point_dist = compute_dist_from_point()
 
                         # global remapping ?
                         # centroids cdist
@@ -127,10 +129,10 @@ def batch_remapping(paths=[], settings={}, study=None):
             animal.stats_dict['rate_remapping']['cell_' + str(cell_label)]['distances'] = distances
             animal.stats_dict['rate_remapping']['cell_' + str(cell_label)]['session_pairs'] = session_pairs
 
-            toplot = _interpolate_matrix(curr, new_size=(256,256), cv2_interpolation_method=cv2.INTER_NEAREST)
-            colored_ratemap = Image.fromarray(np.uint8(cm.jet(toplot)*255))
+            # toplot = _interpolate_matrix(curr, new_size=(256,256), cv2_interpolation_method=cv2.INTER_NEAREST)
+            # colored_ratemap = Image.fromarray(np.uint8(cm.jet(toplot)*255))
             # print(i, j)
-            colored_ratemap.save('ratemap_cell_' + str(c) + '.png')
+            # colored_ratemap.save('ratemap_cell_' + str(c) + '.png')
             c += 1
 
         print(remapping_distances, remapping_session_ids)
@@ -162,6 +164,8 @@ def batch_remapping(paths=[], settings={}, study=None):
 #         prevAvg = currAvg
 #     return agg_session_wass
 
+def compute_dist_from_point(xcoord, ycoord):
+    pass
 
 def compute_wasserstein_distance(X, Y):
     # distance = wasserstein_distance(prev, ses)

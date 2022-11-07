@@ -37,7 +37,8 @@ def run_unit_matcher(paths=[], settings={}, method='JSD', study=None):
         # make animals
         study.make_animals()
     elif isinstance(study, Study):
-        study.make_animals()
+        if study.animals is None:
+            study.make_animals()
 
     print('Starting Unit Matching')
 
@@ -55,6 +56,8 @@ def run_unit_matcher(paths=[], settings={}, method='JSD', study=None):
 
             # if first session of sequence there is no prev session
             if prev is not None:
+                print("NEW 1")
+                print(prev, curr, method)
                 matches, match_distances, unmatched_2, unmatched_1 = compare_sessions(prev, curr, method)
                 print('Comparison ' + str(comparison_count))
                 print(matches, unmatched_1, unmatched_2)

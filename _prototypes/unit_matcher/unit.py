@@ -25,6 +25,7 @@ def jensen_shannon_distance(P:np.array, Q:np.array):
     P, Q : 2D arrays (sample_size, dimensions)
         Probability distributions of equal length that sum to 1
     """
+    print(P.shape, Q.shape)
     P_sample_size, P_dimensions = P.shape
     Q_sample_size, Q_dimensions = Q.shape
     assert P_dimensions == Q_dimensions, f"Dimensionality of P ({P_dimensions}) and Q ({Q_dimensions}) must be equal"
@@ -43,6 +44,8 @@ def jensen_shannon_distance(P:np.array, Q:np.array):
     kl_qm = _kldiv(Q, M)
 
     jensen_shannen_divergence = (kl_pm + kl_qm)/2
+
+    print('JSD: ' + str(np.sqrt(jensen_shannen_divergence)) + ' ' + str(P.shape) + ' ' + str(Q.shape))
 
     return np.sqrt(jensen_shannen_divergence)
 
