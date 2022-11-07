@@ -253,7 +253,7 @@ class SpikeCluster(): # collection of spike objects
         instances = []
 
         # Both are 2d arrays so can do len() to iterate thru number of cells
-        for i in range(len(self.event_times)):
+        def make_spike_object(i):
             input_dict = {}
             input_dict['duration'] = self.duration
             input_dict['sample_rate'] = self.sample_rate
@@ -276,6 +276,8 @@ class SpikeCluster(): # collection of spike objects
                 # print(key + ' FILLED', len(spike_waveforms[key]))
 
             instances.append(Spike(input_dict['spike_time'], input_dict['cluster_label'], spike_waveforms, self))
+
+        map(make_spike_object, range(len(self.event_times)))
 
         self.spike_objects = instances
 
