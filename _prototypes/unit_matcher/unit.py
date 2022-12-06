@@ -65,9 +65,11 @@ def compute_mixture(P:np.array, Q:np.array):
     i = np.argmin([P_sample_size, Q_sample_size])
     if i == 0:
         P_sample = P
-        Q_sample = np.random.choice(Q, size=half_sample_size, replace=False)
+        Q_sample_index = np.random.choice(list(range(Q_sample_size)), size=half_sample_size, replace=False)
+        Q_sample = Q[Q_sample_index]
     elif i == 1:
-        P_sample = np.random.choice(P, size=half_sample_size, replace=False)
+        P_sample+_index = np.random.choice(list(range(P_sample_size)), size=half_sample_size, replace=False)
+        P_sample = P[P_sample_index]
         Q_sample = Q
     M_sample = np.concatenate((P_sample, Q_sample), axis=0)
 
