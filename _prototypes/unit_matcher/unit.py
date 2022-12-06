@@ -46,31 +46,8 @@ def jensen_shannon_distance(P:np.array, Q:np.array):
 
     return np.sqrt(jensen_shannen_divergence)
 
+
 def compute_mixture(P:np.array, Q:np.array):
-    """Compute the mixture distribution between two probability distributions.
-
-    Input
-    -----
-    P, Q : 2D arrays (sample_size, dimensions)
-        Probability distributions of equal length that sum to 1
-    """
-    P_sample_size, P_dimensions = P.shape
-    Q_sample_size, Q_dimensions = Q.shape
-
-    from random import randint, sample
-
-    #M = np.array([_mixture_sample(P, Q) for _ in range(max(P_sample_size, Q_sample_size))])
-
-    ss = int(min(P_sample_size, Q_sample_size)/2)
-
-    M = np.concatenate((P[0:ss,:], Q[ss:,:]), axis=0)
-
-    # print("M", M.shape)
-
-    return M
-
-
-def _mixture_sample(P:np.array, Q:np.array):
     """Sample a mixture distribution between two probability distributions.
 
     Input
