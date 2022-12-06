@@ -148,7 +148,7 @@ def _group_session_files(cut_files, tetrode_files, pos_files, matched_cut_files,
     tetrode_counts = []
     animal_ids = []
 
-    c = 0
+    # c = 0
 
     # Make list of ession signatures from tetrode files
     session_signatures = set([tet[:-2] for tet in tetrode_files])
@@ -178,11 +178,14 @@ def _group_session_files(cut_files, tetrode_files, pos_files, matched_cut_files,
             collection['matched_cut'] = sorted(select_cuts_matched)
 
             # Accumulate these collections to a separate data structure as 'groups' of files.
+            # print(animal_dir_names[c], session, collection)
             grouped_sessions.append(collection)
             tetrode_counts.append(len(select_tetrodes))
-            animal_ids.append(animal_dir_names[c])
+            # print(session.split('/'),select_tetrodes, select_tetrodes[0])
+            # animal_ids.append(session.split('/')[-2])
+            animal_ids.append(os.path.normpath(select_tetrodes[0]).split(os.path.sep)[-2])
 
-            c += 1
+            # c += 1
 
     return grouped_sessions, tetrode_counts, animal_ids
 

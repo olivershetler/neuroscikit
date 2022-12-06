@@ -58,14 +58,15 @@ class Study():
         return animal_sessions
 
     def make_animals(self):
-        animal_sessions = self._sort_session_by_animal()
-        animals = []
+        if self.animals is None:
+            animal_sessions = self._sort_session_by_animal()
+            animals = []
 
-        for animal in animal_sessions:
-            animal_instance = Animal(animal)
-            animals.append(animal_instance)
+            for animal in animal_sessions:
+                animal_instance = Animal(animal)
+                animals.append(animal_instance)
 
-        self.animals = animals
+            self.animals = animals
 
     def get_animals(self):
         if self.animals == None:
