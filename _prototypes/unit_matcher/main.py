@@ -1,6 +1,13 @@
 import os, sys
 import numpy as np
 import time
+from sklearn.decomposition import PCA
+import csv
+import itertools
+import sys
+import xlsxwriter
+import pandas as pd
+import pickle
 
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
@@ -11,6 +18,7 @@ from _prototypes.unit_matcher.write_axona import get_current_cut_data, write_cut
 from _prototypes.unit_matcher.read_axona import temp_read_cut
 from _prototypes.unit_matcher.session import compare_sessions
 from x_io.rw.axona.batch_read import make_study
+from _prototypes.unit_matcher.unit import spike_level_feature_array
 
 """
 
@@ -26,7 +34,7 @@ It then writes the remapped cut file data to a new cut file. DONE (new cut data 
 Read, Retain, Map, Write
 """
 
-def run_unit_matcher(paths=[], settings={}, method='JSD', study=None):
+def run_unit_matcher(paths=[], settings={}, method='JSD', dim_redux='PCA', study=None):
     print("Running Unit Matcher. Starting Time Tracker.")
     start_time = time.time()
 
@@ -42,6 +50,8 @@ def run_unit_matcher(paths=[], settings={}, method='JSD', study=None):
 
     print('Starting Unit Matching')
 
+    animal_pca_results = {}
+
     for animal in study.animals:
         # SESSIONS INSIDE OF ANIMAL WILL BE SORTED SEQUENTIALLY AS PART OF ANIMAL(WORKSPACE) CLASS IN STUDY_SPACE.PY
         prev = None
@@ -50,15 +60,82 @@ def run_unit_matcher(paths=[], settings={}, method='JSD', study=None):
         isFirstSession = False
 
         session_mappings = {}
+        animal_pca_results[animal.animal_id] = {}
         comparison_count = 1
+
+        if dim_redux == 'PCA':
+            agg_session_feats = []
+            agg_session_ids = []
+            agg_cell_ids = []
+            c = 1
+            for session in animal.sessions:
+                single_ses_cell_ids = []
+                ses = animal.sessions[session]
+                cluster_batch = ses.get_spike_data()['spike_cluster']
+                clusters = cluster_batch.get_spike_cluster_instances()
+                for i in range(len(clusters)):
+                    feature_array = spike_level_feature_array(clusters[i], 1/cluster_batch.sample_rate)
+                    if len(agg_session_feats) == 0:
+                        agg_session_feats = feature_array
+                        agg_session_ids = np.ones(len(feature_array)) * c
+                        single_ses_cell_ids = np.ones(len(feature_array)) * i
+                    else:
+                        agg_session_feats = np.vstack((agg_session_feats, feature_array))
+                        agg_session_ids = np.hstack((agg_session_ids, np.ones(len(feature_array)) * c))
+                        single_ses_cell_ids = np.hstack((single_ses_cell_ids, np.ones(len(feature_array)) * i))
+                agg_cell_ids.append(single_ses_cell_ids)
+                c += 1
+
+            agg_session_feats = np.array(agg_session_feats)
+            agg_session_ids = np.array(agg_session_ids)
+            agg_cell_ids = np.array(agg_cell_ids)
+
+            # is in shape (samples, features)
+            pca = PCA(n_components=agg_session_feats.shape[1])
+            # pass in (features, samples) with components = features so output is (features, samples)
+            pca.fit(agg_session_feats.T)
+
+            components = pca.components_
+            explained_variance = pca.explained_variance_
+            singular_values = pca.singular_values_
+            explained_variance_ratio = pca.explained_variance_ratio_
+
+            # animal_pca_results[animal.animal_id]['feature_names'] = feature_names
+            animal_pca_results[animal.animal_id]['explained_variance_ratio'] = explained_variance_ratio
+            animal_pca_results[animal.animal_id]['singular_values'] = singular_values
+            animal_pca_results[animal.animal_id]['explained_variance'] = explained_variance
+            c = 1
+            for comp in components:
+                animal_pca_results[animal.animal_id]['component_' + str(c)] = comp
+                c += 1
+            c = 1
+            for feat in agg_session_feats:
+                animal_pca_results[animal.animal_id]['feat_' + str(c)] = feat
+                c += 1
+            animal_pca_results[animal.animal_id]['agg_session_ids'] = agg_session_ids
+            c = 1
+            for ses_cell_ids in agg_cell_ids:
+                animal_pca_results[animal.animal_id]['cell_ids_ses_' + str(c)] = ses_cell_ids
+                c += 1
+        # stop()
+
+            indiv_ses_feats, unique_ses_ids = split_agg_feature_array(agg_session_feats, agg_session_ids, agg_cell_ids)
+
+        elif dim_redux is None or dim_redux == 'None' :
+            indiv_ses_feats = None
+            curr_pca = None
+            prev_pca = None
+
+
         for session in animal.sessions:
             curr = animal.sessions[session]
 
+            if dim_redux is not None:
+                curr_pca = indiv_ses_feats[int(session[-1]) - 1]
+        
             # if first session of sequence there is no prev session
             if prev is not None:
-                print("NEW 1")
-                print(prev, curr, method)
-                matches, match_distances, unmatched_2, unmatched_1 = compare_sessions(prev, curr, method)
+                matches, match_distances, unmatched_2, unmatched_1, agg_distances = compare_sessions(prev, curr, method, ses1_pca_feats=curr_pca, ses2_pca_feats=prev_pca)
                 print('Comparison ' + str(comparison_count))
                 print(matches, unmatched_1, unmatched_2)
                 session_mappings[comparison_count] = {}
@@ -68,6 +145,7 @@ def run_unit_matcher(paths=[], settings={}, method='JSD', study=None):
                 session_mappings[comparison_count]['unmatched_2'] = unmatched_2
                 session_mappings[comparison_count]['unmatched_1'] = unmatched_1
                 session_mappings[comparison_count]['pair'] = (prev, curr)
+                session_mappings[comparison_count]['agg_distances'] = agg_distances
 
                 if isFirstSession:
                     isFirstSession = False
@@ -78,6 +156,7 @@ def run_unit_matcher(paths=[], settings={}, method='JSD', study=None):
                 isFirstSession = True
 
             prev = curr
+            prev_pca = curr_pca
 
         cross_session_matches, session_mappings = format_mapping_dicts(session_mappings)
 
@@ -93,8 +172,51 @@ def run_unit_matcher(paths=[], settings={}, method='JSD', study=None):
             new_cut_file_path, new_cut_data, header_data = format_cut(map_dict['session'], map_dict['map_dict'])
             print('Writing mapping: ' + str(map_dict['map_dict']))
             write_cut(new_cut_file_path, new_cut_data, header_data)
+
+        # with xlsxwriter.Workbook(str(new_cut_file_path+'.xlsx')) as workbook:
+        #     worksheet = workbook.add_worksheet(name=animal_id)
+        #     for animal_id in animal_pca_results:
+        #         pca_res = animal_pca_results[animal_id]
+        #         for i, (key, val) in enumerate(pca_res.items()):
+        #             worksheet.write(0,i,key)
+
+        # old_path = session.session_metadata.file_paths['cut']
+        file_name = r"testing_output.xlsx"
+        writer = pd.ExcelWriter(file_name, engine='xlsxwriter')
+        for animal_id in animal_pca_results:
+            df = pd.DataFrame(animal_pca_results[animal_id])
+            df.to_excel(writer, sheet_name=animal_id)
+        writer.save()
+
+        with open('testing_output.pickle', 'wb') as handle:
+            pickle.dump(session_mappings, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
     print("Unit Matcher Complete. Time Elapsed: " + str(time.time() - start_time))
     return study
+
+def format_pca_stats_file_name(old_path):
+    fp_split = old_path.split('.cut')
+    new_fp = fp_split[0] + r'_matched_pca.xlsx'
+    assert new_fp != old_path
+
+    return new_fp
+
+def split_agg_feature_array(agg_session_feats, agg_session_ids, agg_cell_ids):
+    assert len(agg_session_feats) == len(agg_session_ids)
+    unique_ses_ids = sorted(np.unique(agg_session_ids))
+    indiv_ses_feats = []
+
+    for ses_id in unique_ses_ids:
+        ses_idx = np.where(agg_session_ids == ses_id)[0]
+        session_cells = agg_cell_ids[int(ses_id - 1)]
+        cell_ids = sorted(np.unique(session_cells))
+        indiv_cell_feats = []
+        for cell in cell_ids:
+            cell_idx = np.where(session_cells == cell)[0]
+            indiv_cell_feats.append(agg_session_feats[ses_idx][cell_idx])
+        indiv_ses_feats.append(np.array(indiv_cell_feats))
+
+    return np.array(indiv_ses_feats), unique_ses_ids
 
 def reorder_unmatched_cells(cross_session_matches):
     new_ordering = []

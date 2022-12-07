@@ -23,7 +23,7 @@ def waveform_features(waveform, time_step, channel):
     ----------
     Caro-Martín, Carmen Rocío, José M. Delgado-García, Agnès Gruart, and R. Sánchez-Campusano. “Spike Sorting Based on Shape, Phase, and Distribution Features, and K-TOPS Clustering with Validity and Error Indices.” Scientific Reports 8, no. 1 (December 12, 2018): 17796. https://doi.org/10.1038/s41598-018-35491-4.
     """
-    # get domains
+    # get domains)
     t = time_index(waveform, time_step)
     d_waveform = derivative(waveform, time_step)
     d2_waveform = derivative2(waveform, time_step)
@@ -81,6 +81,7 @@ def waveform_features(waveform, time_step, channel):
         fd["f7"] = symmetric_logarithm((p6.dv - p2.dv) / (p6.t - p2.t))
     except:
         fd["f7"] = 0
+
     # root mean square of the pre-event amplitude of the FD of the AP
     # NOTE: This feature is MODIFIED from the original paper
     # in the original paper, f8 is the root mean square of the pre-event amplitude of the FD of the AP
@@ -151,6 +152,7 @@ def waveform_features(waveform, time_step, channel):
         fd[f"{channel}f19"] = p5.d2v
     except:
         fd[f"{channel}f19"] = 0
+
     # inter-quartile range of the FD of the AP
     fd[f"{channel}f20"] = inter_quartile_range(d_waveform)
     # inter-quartile range of the SD of the AP
@@ -165,6 +167,7 @@ def waveform_features(waveform, time_step, channel):
     for key, value in fd.items():
         if value == np.inf or value == -np.inf or np.isnan(value):
             fd[key] = 0
+
     return fd
 
 def morphological_points(time_index, waveform, d_waveform, d2_waveform, time_step):

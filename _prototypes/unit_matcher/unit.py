@@ -1,4 +1,4 @@
-import numpy as np
+
 
 """
 This module contains functions for extracting waveform features for each unit.
@@ -8,6 +8,8 @@ This module contains functions for extracting waveform features for each unit.
 """
 
 import numpy as np
+from scipy.stats import norm
+from sklearn.neighbors import KernelDensity
 
 from _prototypes.unit_matcher.spike import (
     spike_features
@@ -25,7 +27,7 @@ def jensen_shannon_distance(P:np.array, Q:np.array):
     P, Q : 2D arrays (sample_size, dimensions)
         Probability distributions of equal length that sum to 1
     """
-    print(P.shape, Q.shape)
+    # print(P.shape, Q.shape)
     P_sample_size, P_dimensions = P.shape
     Q_sample_size, Q_dimensions = Q.shape
     assert P_dimensions == Q_dimensions, f"Dimensionality of P ({P_dimensions}) and Q ({Q_dimensions}) must be equal"
@@ -34,14 +36,47 @@ def jensen_shannon_distance(P:np.array, Q:np.array):
     M = compute_mixture(P, Q)
 
     if dimensions == 1:
-        _kldiv = lambda A, B: np.sum([v for v in A * np.log(A/B) if not np.isnan(v)])
-    if dimensions > 1:
+        # samples = [P_sample_size, Q_sample_size]
+        # arg_largest = np.argmax(samples)
+        # max_sample_size = np.min(samples)
+        # to_shuffle = np.copy(samples[arg_largest])
+        # np.shuffle(to_shuffle)
+
+        # bin_count
+        n = 1000
+
+        # # pdf
+        # pdf_P = norm.pdf(P)
+        # pdf_Q = norm.pdf(Q)
+
+        # kernel density 
+        # kde_P = KernelDensity(kernel='gaussian', bandwidth=0.2).fit(P)
+        # pdf_P = kde_P.score_samples(P)
+        # kde_Q = KernelDensity(kernel='gaussian', bandwidth=0.2).fit(Q)
+        # pdf_Q = kde_P.score_samples(Q)
+
+        # histo
+        cts_P, bins_P = np.histogram(P, bins=n)
+        cts_Q, bins_Q = np.histogram(Q, bins=n)
+
+        pdf_P = cts_P / sum(cts_P)
+        pdf_Q = cts_Q / sum(cts_Q)
+
+        M = pdf_P + pdf_Q
+        M = M / sum(M)
+
+        _kldiv = lambda A, B: np.sum([v for v in A * np.log(A/B) if not np.isnan(v).any()])
+    elif dimensions > 1:
+        M = compute_mixture(P, Q)
         _kldiv = lambda A, B: multivariate_kullback_leibler_divergence(A, B)
     else:
         raise ValueError(f"Dimensionality of P ({P_dimensions}) and Q ({Q_dimensions}) must be greater than 0")
 
+    # print(M.shape, P.shape, Q.shape)
     kl_pm = _kldiv(P, M)
+    # print(kl_pm)
     kl_qm = _kldiv(Q, M)
+    # print(kl_qm)
 
     jensen_shannen_divergence = (kl_pm + kl_qm)/2
 
@@ -68,13 +103,13 @@ def compute_mixture(P:np.array, Q:np.array):
         Q_sample_index = np.random.choice(list(range(Q_sample_size)), size=half_sample_size, replace=False)
         Q_sample = Q[Q_sample_index]
     elif i == 1:
-        P_sample+_index = np.random.choice(list(range(P_sample_size)), size=half_sample_size, replace=False)
+        P_sample_index = np.random.choice(list(range(P_sample_size)), size=half_sample_size, replace=False)
         P_sample = P[P_sample_index]
         Q_sample = Q
+    print(P_sample.shape, Q_sample.shape)
     M_sample = np.concatenate((P_sample, Q_sample), axis=0)
 
     return list(M_sample.flatten())
-
 
 
 def kullback_leibler_divergence(P, Q):
@@ -163,8 +198,21 @@ def spike_level_feature_array(unit: SpikeCluster, time_step):
             #spike.features = spike_features(spike, time_step)
             feature_vector = list(features.values())
             feature_array.append(feature_vector)
+    # def get_spike_feature(i):
+    #     spike = spikes[i]
+    #     features = spike_features(spike, time_step)
+    #     if features is not None:
+    #         #spike.features = spike_features(spike, time_step)
+    #         feature_vector = list(features.values())
+    #         # feature_array.append(feature_vector)
+    #         return feature_vector
 
-    return np.array(feature_array)
+
+    # feature_array = list(map(get_spike_feature, range(len(spikes))))
+    # print(feature_array)
+    feature_array = np.array(feature_array)
+    # print('done casting')
+    return feature_array
 
 
 """

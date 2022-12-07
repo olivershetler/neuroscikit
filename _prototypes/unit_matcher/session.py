@@ -10,8 +10,9 @@ from _prototypes.unit_matcher.unit import jensen_shannon_distance, spike_level_f
 from _prototypes.unit_matcher.unit_mean import mean_squared_difference_of_unit_means
 from core.spikes import SpikeCluster
 from library.batch_space import SpikeClusterBatch
+from scipy.spatial import distance as sd
 
-def compute_distances(session1_cluster, session2_cluster, method='JSD'):
+def compute_distances(session1_cluster, session2_cluster, method='JSD', ses1_pca_feats=None, ses2_pca_feats=None):
     """
     Compute the distances between two sessions' units.
     Parameters
@@ -22,8 +23,10 @@ def compute_distances(session1_cluster, session2_cluster, method='JSD'):
         The method of distance computation to use
     """
     if method == 'JSD':
-        return compute_JSD_distances(session1_cluster, session2_cluster)
+        return compute_JSD_distances(session1_cluster, session2_cluster, ses1_pca_feats=ses1_pca_feats, ses2_pca_feats=ses2_pca_feats)
     elif method == 'MSD':
+        if ses1_pca_feats is not None:
+            print('Cannot use PCA with MSD, proceeding without PCA feature array')
         return compute_MSD_distances(session1_cluster, session2_cluster)
     else:
         raise ValueError('Invalid distance computation method')
@@ -55,9 +58,9 @@ def compute_MSD_distances(session1_cluster: SpikeClusterBatch, session2_cluster:
             distances[i,j] = distance
             pairs[i,j] = [session1_unit_clusters[i].cluster_label, session2_unit_clusters[j].cluster_label]
 
-    return distances, pairs
+    return distances, pairs, None
 
-def compute_JSD_distances(session1_cluster: SpikeClusterBatch, session2_cluster: SpikeClusterBatch): # change to feature vector array
+def compute_JSD_distances(session1_cluster: SpikeClusterBatch, session2_cluster: SpikeClusterBatch, ses1_pca_feats=None, ses2_pca_feats=None): # change to feature vector array
     """
     Iterates through all the across-session unit pairings and computing their respective Jensen-Shannon distances
     Parameters
@@ -76,18 +79,45 @@ def compute_JSD_distances(session1_cluster: SpikeClusterBatch, session2_cluster:
     distances = np.zeros((len(session1_unit_clusters), len(session2_unit_clusters)))
     pairs = np.zeros((len(session1_unit_clusters), len(session2_unit_clusters), 2))
 
-    session1_feature_arrays = []
-    session2_feature_arrays = []
-    for i in range(len(session1_unit_clusters)):
-        session1_feature_arrays.append(spike_level_feature_array(session1_unit_clusters[i], 1/session1_cluster.sample_rate))
-    for j in range(len(session2_unit_clusters)):
-        session2_feature_arrays.append(spike_level_feature_array(session2_unit_clusters[j], 1/session2_cluster.sample_rate))
+    if ses1_pca_feats is None:
+        session1_feature_arrays = []
+        session2_feature_arrays = []
+        # session1_feature_arrays_pca = []
+        # session2_feature_arrays_pca = []
+        for i in range(len(session1_unit_clusters)):
+            feature_array = spike_level_feature_array(session1_unit_clusters[i], 1/session1_cluster.sample_rate)
+            session1_feature_arrays.append(feature_array)
+            # feature_array_pca = 
+            # session1_feature_arrays_pca(feature_array_pca)
+        for j in range(len(session2_unit_clusters)):
+            feature_array = spike_level_feature_array(session2_unit_clusters[j], 1/session2_cluster.sample_rate)
+            session2_feature_arrays.append(feature_array)
+    else:
+        session1_feature_arrays = ses1_pca_feats
+        session2_feature_arrays = ses2_pca_feats
+        print('Using post PCA feature array')
+
+    # assert session1_unit_clusters.shape[1] == session2_unit_clusters.shape[1], 'Session 1 & 2 have different numbers of features'
+    agg_distances = np.zeros((len(session1_unit_clusters), len(session2_unit_clusters), session1_feature_arrays[0].shape[1]))
 
     for i in range(len(session1_feature_arrays)):
         for j in range(len(session2_feature_arrays)):
-
-            distance = jensen_shannon_distance(session1_feature_arrays[i], session2_feature_arrays[j])
-            print('JSD: ' + str(distance))
+           
+            if ses1_pca_feats is not None:
+                dists = []
+                # axis=0 return dist array of size (n_feats) from feats arrays which are (n_samples, n_feats)
+                for k in range(session1_feature_arrays[i].shape[1]):
+                    # dist = sd.jensenshannon(session1_feature_arrays[i][:,k].reshape((-1,1)), session2_feature_arrays[j][:,k].reshape((-1,1)), axis=0)
+                    dist = jensen_shannon_distance(session1_feature_arrays[i][:,k].reshape((-1,1)), session2_feature_arrays[j][:,k].reshape((-1,1)))
+                    dists.append(dist)
+                agg_distances[i,j] = dists
+                print('FEAT JSD HERE')
+                print(dists)
+                distance = np.mean(dists)
+            else:
+                distance = jensen_shannon_distance(session1_feature_arrays[i], session2_feature_arrays[j])
+            
+            print('JSD: ' + str(distance))    
 
             if 'JSD' not in session1_unit_clusters[i].stats_dict:
                 session1_unit_clusters[i].stats_dict['JSD'] = []
@@ -100,7 +130,24 @@ def compute_JSD_distances(session1_cluster: SpikeClusterBatch, session2_cluster:
             distances[i,j] = distance
             pairs[i,j] = [session1_unit_clusters[i].cluster_label, session2_unit_clusters[j].cluster_label]
 
-    return distances, pairs
+    # for i in range(len(session1_feature_arrays)):
+    #     for j in range(len(session2_feature_arrays)):
+
+    #         distance = jensen_shannon_distance(session1_feature_arrays[i], session2_feature_arrays[j])
+    #         print('JSD: ' + str(distance))
+
+    #         if 'JSD' not in session1_unit_clusters[i].stats_dict:
+    #             session1_unit_clusters[i].stats_dict['JSD'] = []
+    #         session1_unit_clusters[i].stats_dict['JSD'] = distance
+
+    #         if 'JSD' not in session2_unit_clusters[j].stats_dict:
+    #             session2_unit_clusters[j].stats_dict['JSD'] = []
+    #         session2_unit_clusters[j].stats_dict['JSD'] = distance
+
+    #         distances[i,j] = distance
+    #         pairs[i,j] = [session1_unit_clusters[i].cluster_label, session2_unit_clusters[j].cluster_label]
+
+    return distances, pairs, agg_distances
 
 def extract_full_matches(distances, pairs):
     full_matches = []
@@ -166,7 +213,7 @@ def guess_remaining_matches(distances, pairs):
 
     return remaining_matches, remaining_match_distances, unmatched_2, unmatched_1
 
-def compare_sessions(session1: Session, session2: Session, method='JSD'):
+def compare_sessions(session1: Session, session2: Session, method='JSD', ses1_pca_feats=None, ses2_pca_feats=None):
     """
     FD = feature dict
     1 & 2 = sessions 1 & 2 (session 2 follows session 1)
@@ -174,7 +221,8 @@ def compare_sessions(session1: Session, session2: Session, method='JSD'):
     # compare output of extract features from session1 and session2
     # return mapping dict from session2 old label to new matched label based on session1 cell labels
 
-    distances, pairs = compute_distances(session1.get_spike_data()['spike_cluster'], session2.get_spike_data()['spike_cluster'], method)
+    distances, pairs, agg_distances = compute_distances(session1.get_spike_data()['spike_cluster'], session2.get_spike_data()['spike_cluster'], method, ses1_pca_feats=ses1_pca_feats, ses2_pca_feats=ses2_pca_feats)
+
     full_matches, full_match_distances, remaining_distances, remaining_pairs = extract_full_matches(distances, pairs)
 
     remaining_matches, remaining_match_distances, unmatched_2, unmatched_1 = guess_remaining_matches(remaining_distances, remaining_pairs)
@@ -201,7 +249,7 @@ def compare_sessions(session1: Session, session2: Session, method='JSD'):
     # matches = np.vstack((full_matches, remaining_matches))
     # matches = np.vstack((matches, unmatched))
 
-    return matches, match_distances, unmatched_2, unmatched_1
+    return matches, match_distances, unmatched_2, unmatched_1, agg_distances
 
 
 

@@ -87,11 +87,14 @@ def waveform_level_features(spike: Spike, time_step):
         A dictionary of the waveform level features of the form {feature_name: value,...}
     """
     spike_features = dict()
+
     for channel, waveform in spike.waveforms.items():
         wave_features = waveform_features(waveform, time_step, channel)
         if wave_features is not None:
             spike_features.update(wave_features)
         else:
             return None
+            
+
     return spike_features
 
