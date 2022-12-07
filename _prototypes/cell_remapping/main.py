@@ -110,10 +110,10 @@ def batch_remapping(paths=[], settings={}, study=None):
 
                         remapping_session_ids[cell_label-1].append([i-1,i])
 
-                        toplot = _interpolate_matrix(prev, new_size=(256,256), cv2_interpolation_method=cv2.INTER_NEAREST)
-                        colored_ratemap = Image.fromarray(np.uint8(cm.jet(toplot)*255))
+                        # toplot = _interpolate_matrix(prev, new_size=(256,256), cv2_interpolation_method=cv2.INTER_NEAREST)
+                        # colored_ratemap = Image.fromarray(np.uint8(cm.jet(toplot)*255))
 
-                        colored_ratemap.save('ratemap_cell_' + str(c) + '.png')
+                        # colored_ratemap.save('ratemap_cell_' + str(c) + '.png')
                         c += 1
 
                     prev = np.copy(curr)
