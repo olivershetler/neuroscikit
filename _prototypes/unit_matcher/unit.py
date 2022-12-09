@@ -19,21 +19,23 @@ from core.spikes import SpikeCluster
 # Utility functions for comparing distributions
 
 #TODO test
-def jensen_shannon_distance(P:np.array, Q:np.array):
+def jensen_shannon_distance(X:np.array, Y:np.array):
     """Compute the Jensen-Shannon distance between two probability distributions.
 
     Input
     -----
-    P, Q : 2D arrays (sample_size, dimensions)
+    X, Y : 2D arrays (sample_size, dimensions)
         Probability distributions of equal length that sum to 1
+
+    Output
+    ------
+    jensen_shannen_distance : float
     """
     # print(P.shape, Q.shape)
-    P_sample_size, P_dimensions = P.shape
-    Q_sample_size, Q_dimensions = Q.shape
-    assert P_dimensions == Q_dimensions, f"Dimensionality of P ({P_dimensions}) and Q ({Q_dimensions}) must be equal"
-    dimensions = P_dimensions
-
-    M = compute_mixture(P, Q)
+    X_sample_size, X_dimensions = X.shape
+    Y_sample_size, Y_dimensions = Y.shape
+    assert X_dimensions == Y_dimensions, f"Dimensionality of X ({X_dimensions}) and Y ({Y_dimensions}) must be equal"
+    dimensions = X_dimensions
 
     if dimensions == 1:
         # samples = [P_sample_size, Q_sample_size]
@@ -43,34 +45,31 @@ def jensen_shannon_distance(P:np.array, Q:np.array):
         # np.shuffle(to_shuffle)
 
         # bin_count
-        n = 1000
+        n = 100
 
-        # # pdf
-        # pdf_P = norm.pdf(P)
-        # pdf_Q = norm.pdf(Q)
-
-        # kernel density 
-        # kde_P = KernelDensity(kernel='gaussian', bandwidth=0.2).fit(P)
-        # pdf_P = kde_P.score_samples(P)
-        # kde_Q = KernelDensity(kernel='gaussian', bandwidth=0.2).fit(Q)
-        # pdf_Q = kde_P.score_samples(Q)
+        # kernel density
+        # kde_P = KernelDensity(kernel='gaussian', bandwidth=0.2).fit(X)
+        # pdf_P = kde_P.score_samples(X)
+        # kde_Q = KernelDensity(kernel='gaussian', bandwidth=0.2).fit(Y)
+        # pdf_Q = kde_P.score_samples(Y)
 
         # histo
-        cts_P, bins_P = np.histogram(P, bins=n)
-        cts_Q, bins_Q = np.histogram(Q, bins=n)
+        cts_P, bins_P = np.histogram(X, bins=n) # will these be the same bins?
+        cts_Q, bins_Q = np.histogram(Y, bins=n) # will these be the same bins?
 
-        pdf_P = cts_P / sum(cts_P)
-        pdf_Q = cts_Q / sum(cts_Q)
+        P = cts_P / sum(cts_P)
+        Q = cts_Q / sum(cts_Q)
 
-        M = pdf_P + pdf_Q
-        M = M / sum(M)
+        M = (cts_P + cts_Q) / sum(cts_P + cts_Q)
 
         _kldiv = lambda A, B: np.sum([v for v in A * np.log(A/B) if not np.isnan(v).any()])
     elif dimensions > 1:
-        M = compute_mixture(P, Q)
+        M = compute_mixture(X, Y)
+        P = X
+        Q = Y
         _kldiv = lambda A, B: multivariate_kullback_leibler_divergence(A, B)
     else:
-        raise ValueError(f"Dimensionality of P ({P_dimensions}) and Q ({Q_dimensions}) must be greater than 0")
+        raise ValueError(f"Dimensionality of X ({X_dimensions}) and Y ({Y_dimensions}) must be greater than 0")
 
     # print(M.shape, P.shape, Q.shape)
     kl_pm = _kldiv(P, M)
