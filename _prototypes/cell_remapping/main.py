@@ -88,14 +88,13 @@ def batch_remapping(paths=[], settings={}, study=None):
                     rate_map_obj = spatial_spike_train.get_map('rate')
                     rate_map, _ = rate_map_obj.get_rate_map()
                     if cylinder:
-                        masked_rate_map = disk_mask(rate_map)
-                        masked_rate_map.data[masked_rate_map.mask] = 0
-                        curr = masked_rate_map.data
+                        curr = flat_disk_mask(rate_map)
                     else:
                         curr = rate_map
 
                     if prev is not None:
-                        # distance = wasserstein_distance(prev.squeeze(), curr.squeeze())
+                        #if cylender:
+                        #    prev = flat_disk_mask(prev)
                         wass, _, _ = compute_wasserstein_distance(prev, curr)
 
                         output['animal_id'].append(animal.animal_id)
@@ -171,6 +170,11 @@ def batch_remapping(paths=[], settings={}, study=None):
 #             agg_session_wass['session_ids'] = ['session_' + str(k+1),'session_' + str(k+2)]
 #         prevAvg = currAvg
 #     return agg_session_wass
+
+def flat_disk_mask(rate_map):
+    masked_rate_map = disk_mask(rate_map)
+    masked_rate_map.data[masked_rate_map.mask] = 0
+    return  masked_rate_map.data
 
 def compute_dist_from_point(xcoord, ycoord):
     pass
