@@ -16,7 +16,7 @@ from scipy.spatial.distance import cdist
 from scipy.optimize import linear_sum_assignment
 from PIL import Image
 from matplotlib import cm
-from library.map_utils import _interpolate_matrix
+from library.map_utils import _interpolate_matrix, disk_mask
 import cv2
 import openpyxl as xl
 from openpyxl.utils.cell import get_column_letter
@@ -87,9 +87,12 @@ def batch_remapping(paths=[], settings={}, study=None):
 
                     rate_map_obj = spatial_spike_train.get_map('rate')
                     rate_map, _ = rate_map_obj.get_rate_map()
-                    curr = np.copy(rate_map)
-                    # agg_ratemaps[i] = curr
-
+                    if cylinder:
+                        masked_rate_map = disk_mask(rate_map)
+                        masked_rate_map.data[masked_rate_map.mask] = 0
+                        curr = masked_rate_map.data
+                    else:
+                        curr = rate_map
 
                     if prev is not None:
                         # distance = wasserstein_distance(prev.squeeze(), curr.squeeze())
@@ -120,8 +123,8 @@ def batch_remapping(paths=[], settings={}, study=None):
 
                         # colored_ratemap.save('ratemap_cell_' + str(c) + '.png')
                         c += 1
-
-                    prev = np.copy(curr)
+                    else:
+                        prev = np.copy(curr)
 
             if 'rate_remapping' not in animal.stats_dict:
                 animal.stats_dict['rate_remapping'] = {}
