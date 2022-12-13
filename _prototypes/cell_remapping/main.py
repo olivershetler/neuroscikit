@@ -16,7 +16,7 @@ from scipy.spatial.distance import cdist
 from scipy.optimize import linear_sum_assignment
 from PIL import Image
 from matplotlib import cm
-from library.map_utils import _interpolate_matrix, disk_mask
+from library.maps.map_utils import _interpolate_matrix, disk_mask
 import cv2
 import openpyxl as xl
 from openpyxl.utils.cell import get_column_letter
@@ -61,8 +61,18 @@ def batch_remapping(paths=[], settings={}, study=None):
             for i in range(len(list(animal.sessions.keys()))):
                 seskey = 'session_' + str(i+1)
                 ses = animal.sessions[seskey]
-                path = ses.session_metadata.file_paths['set'].lower()
-                if re.search(r'cylinder', path) is not None:
+                path = ses.session_metadata.file_paths['tet'].lower()
+
+                variations = [r'cylinder', r'round', r'circle']
+                var_bool = []
+                for var in variations:
+                    if re.search(var, path) is not None:
+                        var_bool.append(True)
+                    else:
+                        var_bool.append(False)
+                # if re.search(r'cylinder', path) is not None or re.search(r'round', path) is not None:
+
+                if np.array(var_bool).any() == True:
                     cylinder = True
                 else:
                     cylinder = False

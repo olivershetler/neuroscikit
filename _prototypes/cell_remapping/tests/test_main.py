@@ -8,7 +8,7 @@ parent_dir = os.path.dirname(prototype_dir)
 
 from _prototypes.cell_remapping.main import batch_remapping
 
-data_dir = parent_dir + r'\neuroscikit_test_data\RadhaData\Data\highPHF'
+data_dir = parent_dir + r'\neuroscikit_test_data\RadhaData\Data\lowPHF'
 # data_dir = parent_dir + r'\neuroscikit_test_data\20180502-ROUND-3000_ONLY_TET_2'
 # data_dir = parent_dir + r'\neuroscikit_test_data\20180502-ROUND-3000'
 

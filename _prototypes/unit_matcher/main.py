@@ -100,6 +100,10 @@ def run_unit_matcher(paths=[], settings={}, method='JSD', dim_redux='PCA', study
             singular_values = pca.singular_values_
             explained_variance_ratio = pca.explained_variance_ratio_
 
+            print('New here')
+            print(components.shape, explained_variance.shape, singular_values.shape, explained_variance_ratio.shape, agg_session_feats.shape, agg_session_ids.shape, agg_cell_ids.shape)
+            print(agg_session_ids[0].shape, agg_cell_ids[0].shape)
+
             # animal_pca_results[animal.animal_id]['feature_names'] = feature_names
             animal_pca_results[animal.animal_id]['explained_variance_ratio'] = explained_variance_ratio
             animal_pca_results[animal.animal_id]['singular_values'] = singular_values
@@ -181,15 +185,19 @@ def run_unit_matcher(paths=[], settings={}, method='JSD', dim_redux='PCA', study
         #             worksheet.write(0,i,key)
 
         # old_path = session.session_metadata.file_paths['cut']
-        file_name = r"testing_output.xlsx"
-        writer = pd.ExcelWriter(file_name, engine='xlsxwriter')
-        for animal_id in animal_pca_results:
-            df = pd.DataFrame(animal_pca_results[animal_id])
-            df.to_excel(writer, sheet_name=animal_id)
-        writer.save()
 
-        with open('testing_output.pickle', 'wb') as handle:
+        with open(str(new_cut_file_path + '_pca.pickle'), 'wb') as handle:
+            pickle.dump(animal_pca_results, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+        with open(str(new_cut_file_path + '_mappings.pickle'), 'wb') as handle:
             pickle.dump(session_mappings, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+        # file_name = r"testing_output.xlsx"
+        # writer = pd.ExcelWriter(file_name, engine='xlsxwriter')
+        # for animal_id in animal_pca_results:
+        #     df = pd.DataFrame(animal_pca_results[animal_id])
+        #     df.to_excel(writer, sheet_name=animal_id)
+        # writer.save()
 
     print("Unit Matcher Complete. Time Elapsed: " + str(time.time() - start_time))
     return study

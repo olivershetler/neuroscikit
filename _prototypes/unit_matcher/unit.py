@@ -62,6 +62,10 @@ def jensen_shannon_distance(X:np.array, Y:np.array):
 
         M = (cts_P + cts_Q) / sum(cts_P + cts_Q)
 
+        print(M[:10])
+
+        print(M[:10])
+
         _kldiv = lambda A, B: np.sum([v for v in A * np.log(A/B) if not np.isnan(v).any()])
     elif dimensions > 1:
         M = compute_mixture(X, Y)
@@ -107,8 +111,9 @@ def compute_mixture(P:np.array, Q:np.array):
         Q_sample = Q
     print(P_sample.shape, Q_sample.shape)
     M_sample = np.concatenate((P_sample, Q_sample), axis=0)
-
-    return list(M_sample.flatten())
+    print(M_sample.shape)
+    # return list(M_sample.flatten())
+    return M_sample
 
 
 def kullback_leibler_divergence(P, Q):
