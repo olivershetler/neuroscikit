@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import ot
 import pandas as pd
+import regex as re
 
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
@@ -34,7 +35,7 @@ def batch_remapping(paths=[], settings={}, study=None):
 
     output = {}
     keys = ['animal_id','tetrode','unit_id','wasserstein', 'session_ids']
-    
+
     for key in keys:
         output[key] = []
 
@@ -53,15 +54,19 @@ def batch_remapping(paths=[], settings={}, study=None):
 
         for j in range(int(max_matched_cell_count)):
             cell_label = j + 1
-            
-            prev = None 
-            curr = None 
+
+            prev = None
+            curr = None
 
             for i in range(len(list(animal.sessions.keys()))):
                 seskey = 'session_' + str(i+1)
                 ses = animal.sessions[seskey]
+                path = ses.session_metadata.file_paths['set'].lower()
+                if re.search(r'cylinder', path) is not None:
+                    cylinder = True
+                else:
+                    cylinder = False
 
-                
                 if j == 0:
                     assert 'matched' in ses.session_metadata.file_paths['cut'], 'Matched cut file was not used for data loading, cannot proceed with non matched cut file as cluster/cell labels are not aligned'
 
@@ -101,7 +106,7 @@ def batch_remapping(paths=[], settings={}, study=None):
                         # global remapping ?
                         # centroids cdist
                         # nswe 4 direction distance
-                        # 
+                        #
                         # print(wass)
                         # print(prev[:10], curr[:10], wass)
                         remapping_distances[i-1,cell_label-1] = wass
@@ -117,10 +122,10 @@ def batch_remapping(paths=[], settings={}, study=None):
                         c += 1
 
                     prev = np.copy(curr)
-            
+
             if 'rate_remapping' not in animal.stats_dict:
                 animal.stats_dict['rate_remapping'] = {}
-                
+
             distances = np.asarray(remapping_distances[:, cell_label-1])[remapping_indices[cell_label-1]]
 
             session_pairs = np.asarray(remapping_session_ids[cell_label-1])
@@ -149,7 +154,7 @@ def batch_remapping(paths=[], settings={}, study=None):
 #     agg_session_wass = {}
 
 #     keys = ['animal_id','wasserstein', 'session_ids']
-    
+
 #     for key in keys:
 #         agg_session_wass[key] = []
 
