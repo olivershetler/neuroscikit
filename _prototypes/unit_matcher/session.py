@@ -97,27 +97,29 @@ def compute_JSD_distances(session1_cluster: SpikeClusterBatch, session2_cluster:
         session2_feature_arrays = ses2_pca_feats
         print('Using post PCA feature array')
 
+    print(np.array(session1_feature_arrays).shape, np.array(session2_feature_arrays).shape,  session1_feature_arrays[0].shape[1])
+    print(len(session1_unit_clusters), len(session2_unit_clusters))
     # assert session1_unit_clusters.shape[1] == session2_unit_clusters.shape[1], 'Session 1 & 2 have different numbers of features'
-    agg_distances = np.zeros((len(session1_unit_clusters), len(session2_unit_clusters), session1_feature_arrays[0].shape[1]))
+    agg_distances = np.zeros((len(session1_feature_arrays), len(session2_feature_arrays), session1_feature_arrays[0].shape[1]))
 
     for i in range(len(session1_feature_arrays)):
         for j in range(len(session2_feature_arrays)):
            
-            # if ses1_pca_feats is not None:
-            #     dists = []
-            #     # axis=0 return dist array of size (n_feats) from feats arrays which are (n_samples, n_feats)
-            #     for k in range(session1_feature_arrays[i].shape[1]):
-            #         # dist = sd.jensenshannon(session1_feature_arrays[i][:,k].reshape((-1,1)), session2_feature_arrays[j][:,k].reshape((-1,1)), axis=0)
-            #         dist = jensen_shannon_distance(session1_feature_arrays[i][:,k].reshape((-1,1)), session2_feature_arrays[j][:,k].reshape((-1,1)))
-            #         dists.append(dist)
-            #     agg_distances[i,j] = dists
-            #     print('FEAT JSD HERE')
-            #     print(dists)
-            #     distance = np.mean(dists)
-            # else:
-            #     distance = jensen_shannon_distance(session1_feature_arrays[i], session2_feature_arrays[j])
+            if ses1_pca_feats is not None:
+                dists = []
+                # axis=0 return dist array of size (n_feats) from feats arrays which are (n_samples, n_feats)
+                for k in range(session1_feature_arrays[i].shape[1]):
+                    # dist = sd.jensenshannon(session1_feature_arrays[i][:,k].reshape((-1,1)), session2_feature_arrays[j][:,k].reshape((-1,1)), axis=0)
+                    dist = jensen_shannon_distance(session1_feature_arrays[i][:,k].reshape((-1,1)), session2_feature_arrays[j][:,k].reshape((-1,1)))
+                    dists.append(dist)
+                agg_distances[i,j] = dists
+                # print('FEAT JSD HERE')
+                # print(dists)
+                distance = np.mean(dists)
+            else:
+                distance = jensen_shannon_distance(session1_feature_arrays[i], session2_feature_arrays[j])
 
-            distance = jensen_shannon_distance(session1_feature_arrays[i], session2_feature_arrays[j])
+            # distance = jensen_shannon_distance(session1_feature_arrays[i], session2_feature_arrays[j])
             
             print('JSD: ' + str(distance))    
 
