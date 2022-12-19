@@ -60,17 +60,20 @@ def batch_remapping(paths=[], settings={}, study=None):
 
         # agg_ratemaps = [[] for k in range(len(list(animal.sessions.keys()))-1)]
 
+        # for every existing cell id across all sessions
         for j in range(int(max_matched_cell_count)):
             cell_label = j + 1
 
             prev = None
             curr = None
 
+            # for every session
             for i in range(len(list(animal.sessions.keys()))):
                 seskey = 'session_' + str(i+1)
                 ses = animal.sessions[seskey]
                 path = ses.session_metadata.file_paths['tet'].lower()
 
+                # Check if cylinder
                 cylinder = check_disk_arena(path)
 
                 ### TEMPORARY WAY TO READ OBJ LOC FROM FILE NAME ###
@@ -101,7 +104,8 @@ def batch_remapping(paths=[], settings={}, study=None):
 
                     rate_map_obj = spatial_spike_train.get_map('rate')
                     rate_map, _ = rate_map_obj.get_rate_map()
-
+                    
+                    # Disk mask ratemap
                     if cylinder:
                         curr = flat_disk_mask(rate_map)
                     else:
@@ -117,6 +121,7 @@ def batch_remapping(paths=[], settings={}, study=None):
 
                             object_ratemap, object_pos = make_object_ratemap(var, rate_map_obj)
 
+                            # disk mask fake object ratemap
                             if cylinder:
                                 object_ratemap = flat_disk_mask(object_ratemap)
 
@@ -129,12 +134,12 @@ def batch_remapping(paths=[], settings={}, study=None):
                         # Store true obj location
                         obj_output['obj_loc'].append(object_location)
 
-                        if object_pos is not None:
-                            obj_output['obj_x_pos'].append(object_pos[0])
-                            obj_output['obj_y_pos'].append(object_pos[1])
-                        else:
-                            obj_output['obj_x_pos'].append(None)
-                            obj_output['obj_y_pos'].append(None)
+                        # if object_pos is not None:
+                        obj_output['obj_x_pos'].append(object_pos[0])
+                        obj_output['obj_y_pos'].append(object_pos[1])
+                        # else:
+                        #     obj_output['obj_x_pos'].append(None)
+                        #     obj_output['obj_y_pos'].append(None)
 
                         obj_output['animal_id'].append(animal.animal_id)
                         obj_output['unit_id'].append(cell_label)
