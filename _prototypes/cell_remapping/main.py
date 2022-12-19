@@ -207,16 +207,21 @@ def make_object_ratemap(object_location, rate_map_obj):
 
     rate_map, _ = rate_map_obj.get_rate_map()
 
+    # (64, 64)
     x, y = rate_map.shape
 
+    # convert height/width to arrayswith 64 bins
     height = np.arange(0,arena_height, arena_height/x)
     width = np.arange(0,arena_width, arena_width/y)
 
+    # make zero array same shape as true ratemap == fake ratemap
     arena = np.zeros((len(height),len(width)))
 
+    # if no object, zero across all ratemap
     if object_location == 'no': 
         return arena, [0, 0]
 
+    # if object, pass into dictionary to get x/y coordinates of object location
     object_location_dict = {
         0: [arena_height, arena_width/2],
         90: [arena_height/2, arena_width],
@@ -226,12 +231,12 @@ def make_object_ratemap(object_location, rate_map_obj):
 
     object_pos = object_location_dict[object_location]
 
-    # print(np.where(height <= object_pos[0])[0])
-    # print(np.where(width <= object_pos[1])[0])
+    # get x and y ids for the first bin that the object location coordinates fall into
     id_x = np.where(height <= object_pos[0])[0][-1]
+    id_y = np.where(width <= object_pos[1])[0][-1]
     # id_x_small = np.where(height < object_pos[0])[0][0]
 
-    id_y = np.where(width <= object_pos[1])[0][-1]
+
 
     # cts_x, _ = np.histogram(object_pos[0], bins=height)
     # cts_y, _ = np.histogram(object_pos[1], bins=width)
@@ -239,6 +244,8 @@ def make_object_ratemap(object_location, rate_map_obj):
     # id_x = np.where(cts_x != 0)[0]
     # id_y = np.where(cts_y != 0)[0]
     # print(arena_height, arena_width, height, width, object_pos, id_x, id_y)
+
+    # set that bin equal to 1
     arena[id_x, id_y] = 1
 
     return arena, object_pos
