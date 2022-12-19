@@ -16,7 +16,7 @@ from scipy.spatial.distance import cdist
 from scipy.optimize import linear_sum_assignment
 from PIL import Image
 from matplotlib import cm
-from library.map_utils import _interpolate_matrix, disk_mask
+from library.maps.map_utils import _interpolate_matrix, disk_mask
 import cv2
 import openpyxl as xl
 from openpyxl.utils.cell import get_column_letter
@@ -34,21 +34,29 @@ def batch_remapping(paths=[], settings={}, study=None):
         study.make_animals()
 
     output = {}
-    keys = ['animal_id','tetrode','unit_id','wasserstein', 'session_ids']
+    obj_output = {}
+    keys = ['animal_id','tetrode','unit_id','wass', 'session_ids']
+    obj_keys = ['animal_id','tetrode','unit_id','session_id','wass_0', 'wass_90', 'wass_180', 'wass_270', 'wass_no', 'obj_loc', 'obj_x_pos', 'obj_y_pos']
 
     for key in keys:
         output[key] = []
+    for key in obj_keys:
+        obj_output[key] = []
 
     c = 0
 
     for animal in study.animals:
-
+        
+        # get largest possible cell id
         max_matched_cell_count = len(animal.sessions[sorted(list(animal.sessions.keys()))[-1]].get_cell_data()['cell_ensemble'].cells)
 
         # len(session) - 1 bcs thats number of comparisons. e.g. 3 session: ses1-ses2, ses2-ses3 so 2 distances will be given for remapping
         remapping_distances = np.zeros((len(list(animal.sessions.keys()))-1, max_matched_cell_count))
         remapping_indices = [[] for k in range(max_matched_cell_count)]
         remapping_session_ids = [[] for k in range(max_matched_cell_count)]
+
+        remapping_object_distances = np.zeros((len(list(animal.sessions.keys()))-1, max_matched_cell_count, 4))
+        remapping_object_indices = [[[] for k in range(4)] for k in range(max_matched_cell_count)]
 
         # agg_ratemaps = [[] for k in range(len(list(animal.sessions.keys()))-1)]
 
@@ -61,11 +69,22 @@ def batch_remapping(paths=[], settings={}, study=None):
             for i in range(len(list(animal.sessions.keys()))):
                 seskey = 'session_' + str(i+1)
                 ses = animal.sessions[seskey]
-                path = ses.session_metadata.file_paths['set'].lower()
-                if re.search(r'cylinder', path) is not None:
-                    cylinder = True
-                else:
-                    cylinder = False
+                path = ses.session_metadata.file_paths['tet'].lower()
+
+                cylinder = check_disk_arena(path)
+
+                ### TEMPORARY WAY TO READ OBJ LOC FROM FILE NAME ###
+                if settings['hasObject']:
+                    object_location = path.split('/')[-1].split('-')[3].split('.')[0]
+                    object_present = True
+                    if str(object_location) == 'no':
+                        object_present == False
+                        object_location = 'no'
+                    elif str(object_location) == 'zero':
+                        object_location = 0
+                    else:
+                        object_location = int(object_location)
+                        assert int(object_location) in [0,90,180,270]
 
                 if j == 0:
                     assert 'matched' in ses.session_metadata.file_paths['cut'], 'Matched cut file was not used for data loading, cannot proceed with non matched cut file as cluster/cell labels are not aligned'
@@ -74,43 +93,71 @@ def batch_remapping(paths=[], settings={}, study=None):
 
                 ensemble = ses.get_cell_data()['cell_ensemble']
 
+                # Check if cell id we're iterating through is present in the ensemble of this sessions
                 if cell_label in ensemble.get_cell_label_dict():
                     cell = ensemble.get_cell_by_id(cell_label)
-                    # print(cell, print(cell.event_times))
-
-                    # if 'spatial_spike_train' not in ses.get_spike_data():
-                    #     spatial_spike_train = ses.make_class(SpatialSpikeTrain2D, {'cell': cell, 'position': pos_obj})
-                    # else:
-                    #     spatial_spike_train = ses.get_spike_data()['spatial_spike_train']
 
                     spatial_spike_train = ses.make_class(SpatialSpikeTrain2D, {'cell': cell, 'position': pos_obj})
 
                     rate_map_obj = spatial_spike_train.get_map('rate')
                     rate_map, _ = rate_map_obj.get_rate_map()
+
                     if cylinder:
                         curr = flat_disk_mask(rate_map)
                     else:
                         curr = rate_map
 
+                    if settings['hasObject']:
+
+                        variations = [0,90,180,270,'no']
+
+                        # compute object remapping for every object position, actual object location is store alongside wass for each object ratemap
+                        for var in variations:
+                            key = 'wass_' + str(var)
+
+                            object_ratemap, object_pos = make_object_ratemap(var, rate_map_obj)
+
+                            if cylinder:
+                                object_ratemap = flat_disk_mask(object_ratemap)
+
+                            # print(object_ratemap.shape)
+
+                            wass, _, _ = compute_wasserstein_distance(object_ratemap, curr)
+
+                            obj_output[key].append(wass)
+
+                        # Store true obj location
+                        obj_output['obj_loc'].append(object_location)
+
+                        if object_pos is not None:
+                            obj_output['obj_x_pos'].append(object_pos[0])
+                            obj_output['obj_y_pos'].append(object_pos[1])
+                        else:
+                            obj_output['obj_x_pos'].append(None)
+                            obj_output['obj_y_pos'].append(None)
+
+                        obj_output['animal_id'].append(animal.animal_id)
+                        obj_output['unit_id'].append(cell_label)
+                        obj_output['tetrode'].append(animal.animal_id.split('tet')[-1])
+                        obj_output['session_id'].append(seskey)
+
                     if prev is not None:
-                        #if cylender:
-                        #    prev = flat_disk_mask(prev)
+ 
                         wass, _, _ = compute_wasserstein_distance(prev, curr)
 
                         output['animal_id'].append(animal.animal_id)
                         output['unit_id'].append(cell_label)
                         output['tetrode'].append(animal.animal_id.split('tet')[-1])
                         output['session_ids'].append(['session_' + str(i), 'session_' + str(i+1)])
-                        output['wasserstein'].append(wass)
+                        output['wass'].append(wass)
+
 
                         # point_dist = compute_dist_from_point()
 
                         # global remapping ?
                         # centroids cdist
                         # nswe 4 direction distance
-                        #
-                        # print(wass)
-                        # print(prev[:10], curr[:10], wass)
+
                         remapping_distances[i-1,cell_label-1] = wass
 
                         remapping_indices[cell_label-1].append(i-1)
@@ -149,27 +196,77 @@ def batch_remapping(paths=[], settings={}, study=None):
     df = pd.DataFrame(output)
     df.to_csv(PROJECT_PATH + '/_prototypes/cell_remapping' + '/rate_remapping.csv')
 
+    df = pd.DataFrame(obj_output)
+    df.to_csv(PROJECT_PATH + '/_prototypes/cell_remapping' + '/obj_remapping.csv')
 
-# def compute_global_remapping(agg_ratemaps, animal):
-#     prevAvg = None
-#     currAvg = None
-#     agg_session_wass = {}
 
-#     keys = ['animal_id','wasserstein', 'session_ids']
+def make_object_ratemap(object_location, rate_map_obj):
+    arena_height, arena_width = rate_map_obj.arena_size
+    arena_height = arena_height[0]
+    arena_width = arena_width[0]
 
-#     for key in keys:
-#         agg_session_wass[key] = []
+    rate_map, _ = rate_map_obj.get_rate_map()
 
-#     for k in range(len(agg_ratemaps)):
-#         avg_ratemap = avg_session_ratemaps(agg_ratemaps[k])
-#         currAvg = avg_ratemap
-#         if prevAvg is not None:
-#             session_wass = compute_wasserstein_distance(prevAvg, currAvg)
-#             agg_session_wass['animal_id'] = animal.animal_id
-#             agg_session_wass['wasserstein'] = session_wass
-#             agg_session_wass['session_ids'] = ['session_' + str(k+1),'session_' + str(k+2)]
-#         prevAvg = currAvg
-#     return agg_session_wass
+    # (64, 64)
+    x, y = rate_map.shape
+
+    # convert height/width to arrayswith 64 bins
+    height = np.arange(0,arena_height, arena_height/x)
+    width = np.arange(0,arena_width, arena_width/y)
+
+    # make zero array same shape as true ratemap == fake ratemap
+    arena = np.zeros((len(height),len(width)))
+
+    # if no object, zero across all ratemap
+    if object_location == 'no': 
+        return arena, [0, 0]
+
+    # if object, pass into dictionary to get x/y coordinates of object location
+    object_location_dict = {
+        0: [arena_height, arena_width/2],
+        90: [arena_height/2, arena_width],
+        180: [0, arena_width/2],
+        270: [arena_height/2, 0]
+    }
+
+    object_pos = object_location_dict[object_location]
+
+    # get x and y ids for the first bin that the object location coordinates fall into
+    id_x = np.where(height <= object_pos[0])[0][-1]
+    id_y = np.where(width <= object_pos[1])[0][-1]
+    # id_x_small = np.where(height < object_pos[0])[0][0]
+
+
+
+    # cts_x, _ = np.histogram(object_pos[0], bins=height)
+    # cts_y, _ = np.histogram(object_pos[1], bins=width)
+
+    # id_x = np.where(cts_x != 0)[0]
+    # id_y = np.where(cts_y != 0)[0]
+    # print(arena_height, arena_width, height, width, object_pos, id_x, id_y)
+
+    # set that bin equal to 1
+    arena[id_x, id_y] = 1
+
+    return arena, object_pos
+
+
+def check_disk_arena(path):
+    variations = [r'cylinder', r'round', r'circle']
+    var_bool = []
+    for var in variations:
+        if re.search(var, path) is not None:
+            var_bool.append(True)
+        else:
+            var_bool.append(False)
+    # if re.search(r'cylinder', path) is not None or re.search(r'round', path) is not None:
+    if np.array(var_bool).any() == True:
+        cylinder = True
+    else:
+        cylinder = False
+
+    return cylinder
+
 
 def flat_disk_mask(rate_map):
     masked_rate_map = disk_mask(rate_map)
@@ -202,16 +299,4 @@ def compute_wasserstein_distance(X, Y):
 
     return wass, l2dist, I
 
-# def avg_session_ratemaps(ratemaps):
-#     avg_ratemap = []
-
-#     for i in range(len(ratemaps)):
-#         if i == 0:
-#             avg_ratemap = ratemaps[i]
-#         else:
-#             avg_ratemap = avg_ratemap + ratemaps[i]
-
-#     avg_ratemap = avg_ratemap / len(ratemaps)
-
-#     return avg_ratemap
 

@@ -91,7 +91,8 @@ def run_unit_matcher(paths=[], settings={}, method='JSD', dim_redux='PCA', study
             agg_cell_ids = np.array(agg_cell_ids)
 
             # is in shape (samples, features)
-            pca = PCA(n_components=agg_session_feats.shape[1])
+            # pca = PCA(n_components=agg_session_feats.shape[1])
+            pca = PCA(n_components=0.95)
             # pass in (features, samples) with components = features so output is (features, samples)
             pca.fit(agg_session_feats.T)
 
@@ -99,6 +100,10 @@ def run_unit_matcher(paths=[], settings={}, method='JSD', dim_redux='PCA', study
             explained_variance = pca.explained_variance_
             singular_values = pca.singular_values_
             explained_variance_ratio = pca.explained_variance_ratio_
+
+            # print('New here')
+            # print(components.shape, explained_variance.shape, singular_values.shape, explained_variance_ratio.shape, agg_session_feats.shape, agg_session_ids.shape, agg_cell_ids.shape)
+            # print(agg_session_ids[0].shape, agg_cell_ids[0].shape)
 
             # animal_pca_results[animal.animal_id]['feature_names'] = feature_names
             animal_pca_results[animal.animal_id]['explained_variance_ratio'] = explained_variance_ratio
@@ -131,13 +136,14 @@ def run_unit_matcher(paths=[], settings={}, method='JSD', dim_redux='PCA', study
             curr = animal.sessions[session]
 
             if dim_redux is not None:
+                assert int(session[-1]) != 0
                 curr_pca = indiv_ses_feats[int(session[-1]) - 1]
         
             # if first session of sequence there is no prev session
             if prev is not None:
-                matches, match_distances, unmatched_2, unmatched_1, agg_distances = compare_sessions(prev, curr, method, ses1_pca_feats=curr_pca, ses2_pca_feats=prev_pca)
-                print('Comparison ' + str(comparison_count))
-                print(matches, unmatched_1, unmatched_2)
+                matches, match_distances, unmatched_2, unmatched_1, agg_distances = compare_sessions(prev, curr, method, ses1_pca_feats=prev_pca, ses2_pca_feats=curr_pca)
+                # print('Comparison ' + str(comparison_count))
+                # print(matches, unmatched_1, unmatched_2)
                 session_mappings[comparison_count] = {}
                 session_mappings[comparison_count]['isFirstSession'] = isFirstSession
                 session_mappings[comparison_count]['matches'] = matches
@@ -181,15 +187,19 @@ def run_unit_matcher(paths=[], settings={}, method='JSD', dim_redux='PCA', study
         #             worksheet.write(0,i,key)
 
         # old_path = session.session_metadata.file_paths['cut']
-        file_name = r"testing_output.xlsx"
-        writer = pd.ExcelWriter(file_name, engine='xlsxwriter')
-        for animal_id in animal_pca_results:
-            df = pd.DataFrame(animal_pca_results[animal_id])
-            df.to_excel(writer, sheet_name=animal_id)
-        writer.save()
 
-        with open('testing_output.pickle', 'wb') as handle:
+        with open(str(new_cut_file_path + '_pca.pickle'), 'wb') as handle:
+            pickle.dump(animal_pca_results, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+        with open(str(new_cut_file_path + '_mappings.pickle'), 'wb') as handle:
             pickle.dump(session_mappings, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+        # file_name = r"testing_output.xlsx"
+        # writer = pd.ExcelWriter(file_name, engine='xlsxwriter')
+        # for animal_id in animal_pca_results:
+        #     df = pd.DataFrame(animal_pca_results[animal_id])
+        #     df.to_excel(writer, sheet_name=animal_id)
+        # writer.save()
 
     print("Unit Matcher Complete. Time Elapsed: " + str(time.time() - start_time))
     return study
