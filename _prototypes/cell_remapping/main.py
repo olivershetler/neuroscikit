@@ -46,7 +46,7 @@ def batch_remapping(paths=[], settings={}, study=None):
     c = 0
 
     for animal in study.animals:
-        
+
         # get largest possible cell id
         max_matched_cell_count = len(animal.sessions[sorted(list(animal.sessions.keys()))[-1]].get_cell_data()['cell_ensemble'].cells)
 
@@ -142,7 +142,7 @@ def batch_remapping(paths=[], settings={}, study=None):
                         obj_output['session_id'].append(seskey)
 
                     if prev is not None:
- 
+
                         wass, _, _ = compute_wasserstein_distance(prev, curr)
 
                         output['animal_id'].append(animal.animal_id)
@@ -201,39 +201,39 @@ def batch_remapping(paths=[], settings={}, study=None):
 
 
 def make_object_ratemap(object_location, rate_map_obj):
-    arena_height, arena_width = rate_map_obj.arena_size
-    arena_height = arena_height[0]
-    arena_width = arena_width[0]
+    #arena_height, arena_width = rate_map_obj.arena_size
+    #arena_height = arena_height[0]
+    #arena_width = arena_width[0]
 
     rate_map, _ = rate_map_obj.get_rate_map()
 
     # (64, 64)
-    x, y = rate_map.shape
+    y, x = rate_map.shape
 
     # convert height/width to arrayswith 64 bins
-    height = np.arange(0,arena_height, arena_height/x)
-    width = np.arange(0,arena_width, arena_width/y)
+    #height = np.arange(0,arena_height, arena_height/x)
+    #width = np.arange(0,arena_width, arena_width/y)
 
     # make zero array same shape as true ratemap == fake ratemap
-    arena = np.zeros((len(height),len(width)))
+    arena = np.zeros((y,x))
 
     # if no object, zero across all ratemap
-    if object_location == 'no': 
+    if object_location == 'no':
         return arena, [0, 0]
 
     # if object, pass into dictionary to get x/y coordinates of object location
     object_location_dict = {
-        0: [arena_height, arena_width/2],
-        90: [arena_height/2, arena_width],
-        180: [0, arena_width/2],
-        270: [arena_height/2, 0]
+        0: (y, int(round(x/2))),
+        90: (int(round(y/2)), x),
+        180: (0, int(round(x/2))),
+        270: (int(round(y/2)), 0)
     }
 
-    object_pos = object_location_dict[object_location]
+    id_y, id_x = object_location_dict[object_location]
 
     # get x and y ids for the first bin that the object location coordinates fall into
-    id_x = np.where(height <= object_pos[0])[0][-1]
-    id_y = np.where(width <= object_pos[1])[0][-1]
+    #id_x = np.where(height <= object_pos[0])[0][-1]
+    #id_y = np.where(width <= object_pos[1])[0][-1]
     # id_x_small = np.where(height < object_pos[0])[0][0]
 
 
@@ -248,7 +248,9 @@ def make_object_ratemap(object_location, rate_map_obj):
     # set that bin equal to 1
     arena[id_x, id_y] = 1
 
-    return arena, object_pos
+    print(arena)
+
+    return arena, {'x':id_x, 'y':id_y}
 
 
 def check_disk_arena(path):
