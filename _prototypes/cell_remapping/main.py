@@ -36,7 +36,7 @@ def batch_remapping(paths=[], settings={}, study=None):
     output = {}
     obj_output = {}
     keys = ['animal_id','tetrode','unit_id','wass', 'session_ids']
-    obj_keys = ['animal_id','tetrode','unit_id','session_id','wass_0', 'wass_90', 'wass_180', 'wass_270', 'wass_no', 'obj_loc', 'obj_x_pos', 'obj_y_pos']
+    obj_keys = ['animal_id','tetrode','unit_id','session_id','wass_0', 'wass_90', 'wass_180', 'wass_270', 'wass_no', 'obj_pos_x', 'obj_pos_y', 'object_location']
 
     for key in keys:
         output[key] = []
@@ -132,11 +132,11 @@ def batch_remapping(paths=[], settings={}, study=None):
                             obj_output[key].append(wass)
 
                         # Store true obj location
-                        obj_output['obj_loc'].append(object_location)
+                        obj_output['object_location'].append(object_location)
 
                         # if object_pos is not None:
-                        obj_output['obj_x_pos'].append(object_pos[0])
-                        obj_output['obj_y_pos'].append(object_pos[1])
+                        obj_output['obj_pos_x'].append(object_pos['x'])
+                        obj_output['obj_pos_y'].append(object_pos['y'])
                         # else:
                         #     obj_output['obj_x_pos'].append(None)
                         #     obj_output['obj_y_pos'].append(None)
@@ -224,12 +224,12 @@ def make_object_ratemap(object_location, rate_map_obj):
 
     # if no object, zero across all ratemap
     if object_location == 'no':
-        return arena, [0, 0]
+        return arena, {'x':0, 'y':0}
 
     # if object, pass into dictionary to get x/y coordinates of object location
     object_location_dict = {
-        0: (y, int(round(x/2))),
-        90: (int(round(y/2)), x),
+        0: (y-1, int(round(x/2))),
+        90: (int(round(y/2)), x-1),
         180: (0, int(round(x/2))),
         270: (int(round(y/2)), 0)
     }
@@ -253,7 +253,7 @@ def make_object_ratemap(object_location, rate_map_obj):
     # set that bin equal to 1
     arena[id_x, id_y] = 1
 
-    print(arena)
+    # print(arena)
 
     return arena, {'x':id_x, 'y':id_y}
 
