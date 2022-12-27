@@ -31,7 +31,7 @@ def plot_rate_remapping(prev, curr, plot_settings):
     save_dir = PROJECT_PATH + '/_prototypes/cell_remapping/output/rate'
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
-    fprefix = 'ratemap_cell_A{}_S{}_S{}_C{}'.format(animal_id, prev_key, curr_key, unit_id)
+    fprefix = 'ratemap_cell_{}_{}_{}_{}'.format(animal_id, prev_key, curr_key, unit_id)
 
     ftemplate_short = "{}.{}"
     fshort = ftemplate_short.format(fprefix, 'pdf')
@@ -63,7 +63,7 @@ def plot_obj_remapping(obj_rate_map, ses_rate_map, plot_settings):
     save_dir = PROJECT_PATH + '/_prototypes/cell_remapping/output/object'
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
-    fprefix = 'ratemap_cell_A{}_S{}_O{}_C{}'.format(animal_id, ses_key, object_location, unit_id)
+    fprefix = 'ratemap_cell_{}_{}_{}_{}'.format(animal_id, ses_key, object_location, unit_id)
 
     ftemplate_short = "{}.{}"
     fshort = ftemplate_short.format(fprefix, 'pdf')
