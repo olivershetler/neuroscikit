@@ -8,7 +8,8 @@ from _prototypes.cell_remapping.src.settings import rate_output, obj_output
 from library.hafting_spatial_maps import SpatialSpikeTrain2D
 from _prototypes.cell_remapping.src.rate_map_plots import plot_obj_remapping, plot_rate_remapping
 from _prototypes.cell_remapping.src.wasserstein_distance import sliced_wasserstein, compute_wasserstein_distance
-from _prototypes.cell_remapping.src.masks import make_object_ratemap, flat_disk_mask, check_disk_arena
+from _prototypes.cell_remapping.src.masks import make_object_ratemap, check_disk_arena, flat_disk_mask
+# from library.maps.map_utils import disk_mask
 
 
 def compute_remapping(study, settings):
@@ -49,6 +50,8 @@ def compute_remapping(study, settings):
 
                 # Check if cylinder
                 cylinder = check_disk_arena(path)
+                ###### TEMPORARILY FORCING TO TRUE PLEASE REMOVE THIS AFTER DONE TESTING
+                # cylinder = True
 
                 ### TEMPORARY WAY TO READ OBJ LOC FROM FILE NAME ###
                 if settings['hasObject']:
@@ -68,7 +71,7 @@ def compute_remapping(study, settings):
                     spatial_spike_train = ses.make_class(SpatialSpikeTrain2D, {'cell': cell, 'position': pos_obj})
 
                     rate_map_obj = spatial_spike_train.get_map('rate')
-                    rate_map, _ = rate_map_obj.get_rate_map(new_size=3)
+                    rate_map, _ = rate_map_obj.get_rate_map()
                     
                     # Disk mask ratemap
                     if cylinder:
@@ -89,12 +92,14 @@ def compute_remapping(study, settings):
 
                             if var == object_location:
                                 true_object_pos = object_pos
+                                true_object_ratemap = object_ratemap
                             
                             # disk mask fake object ratemap
+                            ###### TEMPORARILY TESTING THIS, LIKELY DONT NEED TO DISK MASK THE ARTIFICAL OBJECT RATEMAP
                             if cylinder:
                                 object_ratemap = flat_disk_mask(object_ratemap)
 
-                            print(object_ratemap)
+                            # print(object_ratemap)
                             num_proj = 100
                             sliced_wass = sliced_wasserstein(object_ratemap, curr, num_proj)
                             wass, _, _ = compute_wasserstein_distance(object_ratemap, curr)
@@ -117,7 +122,7 @@ def compute_remapping(study, settings):
                         obj_output['tetrode'].append(animal.animal_id.split('tet')[-1])
                         obj_output['session_id'].append(seskey)
 
-                        plot_obj_remapping(object_ratemap, curr, obj_output)
+                        plot_obj_remapping(true_object_ratemap, curr, obj_output)
 
                     if prev is not None:
                         num_proj = 100

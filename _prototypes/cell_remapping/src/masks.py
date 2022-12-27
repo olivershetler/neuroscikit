@@ -13,7 +13,7 @@ def make_object_ratemap(object_location, rate_map_obj):
     #arena_height = arena_height[0]
     #arena_width = arena_width[0]
 
-    rate_map, _ = rate_map_obj.get_rate_map(new_size=3)
+    rate_map, _ = rate_map_obj.get_rate_map()
 
     # (64, 64)
     y, x = rate_map.shape
@@ -31,11 +31,18 @@ def make_object_ratemap(object_location, rate_map_obj):
 
     else:
         # if object, pass into dictionary to get x/y coordinates of object location
+        # object_location_dict = {
+        #     0: (y-1, int(np.floor(x/2))),
+        #     90: (int(np.floor(y/2)), x-1),
+        #     180: (0, int(np.floor(x/2))),
+        #     270: (int(np.floor(y/2)), 0)
+        # }
+
         object_location_dict = {
-            0: (y-1, int(np.floor(x/2))),
-            90: (int(np.floor(y/2)), x-1),
-            180: (0, int(np.floor(x/2))),
-            270: (int(np.floor(y/2)), 0)
+            0: (int(np.floor(y/2)), 0),
+            90: (y-1, int(np.floor(x/2))),
+            180: (int(np.floor(y/2)), x-1),
+            270:  (0, int(np.floor(x/2)))
         }
 
         id_y, id_x = object_location_dict[object_location]
@@ -55,11 +62,9 @@ def make_object_ratemap(object_location, rate_map_obj):
         # print(arena_height, arena_width, height, width, object_pos, id_x, id_y)
 
         # set that bin equal to 1
-        print('pre')
-        print(arena, id_x, id_y)
+
         arena[id_x, id_y] = 1
-        print(arena)
-        print('post')
+
         # print(np.max(rate_map), np.max(rate_map)-np.min(rate_map), np.min(rate_map), np.sum(rate_map))
         # arena[id_x, id_y] = np.sum(rate_map)
 
