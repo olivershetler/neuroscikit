@@ -12,7 +12,7 @@ from library.hafting_spatial_maps import HaftingRateMap, SpatialSpikeTrain2D
 # from library.spatial_spike_train import SpatialSpikeTrain2D
 
 
-def binary_map(spatial_map: HaftingRateMap | SpatialSpikeTrain2D, percentile=.75 **kwargs):
+def binary_map(spatial_map: HaftingRateMap | SpatialSpikeTrain2D, percentile=.75, **kwargs):
 
     '''
         Computes a binary map of the ratemap where only areas of moderate to
