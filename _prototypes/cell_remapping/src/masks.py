@@ -76,9 +76,11 @@ def make_object_ratemap(object_location, rate_map_obj):
 def check_disk_arena(path):
     variations = [r'cylinder', r'round', r'circle']
     var_bool = []
+    true_var = None
     for var in variations:
         if re.search(var, path) is not None:
             var_bool.append(True)
+            true_var = var
         else:
             var_bool.append(False)
     # if re.search(r'cylinder', path) is not None or re.search(r'round', path) is not None:
@@ -87,7 +89,7 @@ def check_disk_arena(path):
     else:
         cylinder = False
 
-    return cylinder
+    return cylinder, true_var
 
 
 def flat_disk_mask(rate_map):

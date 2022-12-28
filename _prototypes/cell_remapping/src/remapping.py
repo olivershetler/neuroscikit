@@ -7,7 +7,7 @@ sys.path.append(PROJECT_PATH)
 from _prototypes.cell_remapping.src.settings import rate_output, obj_output
 from library.hafting_spatial_maps import SpatialSpikeTrain2D
 from _prototypes.cell_remapping.src.rate_map_plots import plot_obj_remapping, plot_rate_remapping
-from _prototypes.cell_remapping.src.wasserstein_distance import sliced_wasserstein, compute_wasserstein_distance
+from _prototypes.cell_remapping.src.wasserstein_distance import sliced_wasserstein, compute_wasserstein_distance, single_point_wasserstein
 from _prototypes.cell_remapping.src.masks import make_object_ratemap, check_disk_arena, flat_disk_mask
 # from library.maps.map_utils import disk_mask
 
@@ -49,13 +49,13 @@ def compute_remapping(study, settings):
                 path = ses.session_metadata.file_paths['tet'].lower()
 
                 # Check if cylinder
-                cylinder = check_disk_arena(path)
+                cylinder, true_var = check_disk_arena(path)
                 ###### TEMPORARILY FORCING TO TRUE PLEASE REMOVE THIS AFTER DONE TESTING
                 # cylinder = True
 
                 ### TEMPORARY WAY TO READ OBJ LOC FROM FILE NAME ###
                 if settings['hasObject']:
-                    object_location = _read_location_from_file(path)
+                    object_location = _read_location_from_file(path, true_var)
 
                 if j == 0:
                     assert 'matched' in ses.session_metadata.file_paths['cut'], 'Matched cut file was not used for data loading, cannot proceed with non matched cut file as cluster/cell labels are not aligned'
@@ -87,6 +87,7 @@ def compute_remapping(study, settings):
                         for var in variations:
                             key = 'wass_' + str(var)
                             sliced_key = 'sliced_wass_' + str(var)
+                            obj_wass_key = 'obj_wass_' + str(var)
 
                             object_ratemap, object_pos = make_object_ratemap(var, rate_map_obj)
 
@@ -101,11 +102,13 @@ def compute_remapping(study, settings):
 
                             # print(object_ratemap)
                             num_proj = 100
-                            sliced_wass = sliced_wasserstein(object_ratemap, curr, num_proj)
-                            wass, _, _ = compute_wasserstein_distance(object_ratemap, curr)
+                            # sliced_wass = sliced_wasserstein(object_ratemap, curr, num_proj)
+                            # wass, _, _ = compute_wasserstein_distance(object_ratemap, curr)
+                            obj_wass = single_point_wasserstein(object_pos, rate_map_obj)
 
-                            obj_output[key].append(wass)
-                            obj_output[sliced_key].append(sliced_wass)
+                            # obj_output[key].append(wass)
+                            # obj_output[sliced_key].append(sliced_wass)
+                            obj_output[obj_wass_key].append(obj_wass)
 
                         # Store true obj location
                         obj_output['object_location'].append(object_location)
@@ -182,8 +185,12 @@ def compute_remapping(study, settings):
 
 
 
-def _read_location_from_file(path):
-    object_location = path.split('/')[-1].split('-')[3].split('.')[0]
+def _read_location_from_file(path, true_var):
+    # object_location = path.split('/')[-1].split('-')[3].split('.')[0]
+    items = path.split('/')[-1].split('-')
+    idx = items.index(str(true_var)) + 2 # the object location is always 2 positions away from word denoting arena hape (e.g round/cylinder) defined by true_var
+    # e.g. ROUND-3050-90_2.clu
+    object_location = items[idx].split('.')[0].split('_')[0]
     object_present = True
     if str(object_location) == 'no':
         object_present == False

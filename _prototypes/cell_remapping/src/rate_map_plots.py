@@ -49,7 +49,7 @@ def plot_obj_remapping(obj_rate_map, ses_rate_map, plot_settings):
     ses_key = plot_settings['session_id'][-1]
     object_location = plot_settings['object_location'][-1]
     # print(object_location, obj_rate_map)
-    sliced_wass = plot_settings['sliced_wass_'+str(object_location)][-1]
+    sliced_wass = plot_settings['obj_wass_'+str(object_location)][-1]
     unit_id = plot_settings['unit_id'][-1]
     animal_id = plot_settings['animal_id'][-1]
 

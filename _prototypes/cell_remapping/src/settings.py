@@ -12,7 +12,7 @@ settings_dict = {'ppm': 511, 'session': session_settings, 'smoothing_factor': 3,
 rate_output = {}
 obj_output = {}
 keys = ['animal_id','tetrode','unit_id','wass', 'session_ids', 'sliced_wass']
-obj_keys = ['animal_id','tetrode','unit_id','session_id','wass_0', 'wass_90', 'wass_180', 'wass_270', 'wass_no', 'obj_pos_x', 'obj_pos_y', 'object_location', 'sliced_wass_0', 'sliced_wass_90', 'sliced_wass_180', 'sliced_wass_270', 'sliced_wass_no']
+obj_keys = ['animal_id','tetrode','unit_id','session_id', 'obj_pos_x', 'obj_pos_y', 'object_location', 'obj_wass_0', 'obj_wass_90', 'obj_wass_180', 'obj_wass_270', 'obj_wass_no']
 for key in keys:
     rate_output[key] = []
 for key in obj_keys:

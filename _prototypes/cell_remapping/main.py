@@ -13,16 +13,6 @@ from _prototypes.cell_remapping.src.settings import settings_dict
 from x_io.rw.axona.batch_read import make_study
 from _prototypes.cell_remapping.src.remapping import compute_remapping
 
-""" 
-
-TO DO :
-
-- make folder for every animal and cell, for every cell put ratemap for each sesesion comparison (e.g. ses1-ses2 + distance in title, then ses2-ses3 ratemaps side by side + distance) DOING
-- make plots with activity bar next to ratemap DOING
-- CHANGE SIZE OF OBJECT RATEMAP, make it 3 by 3 (9 squares) and make sure your code puts the middle square with all the density 
-- DOUBLE CHECK what values you need to use when putting all density in the pobject location, 1 is incorrect, maybe use average Hz ratemap value? Or use np.max? Double check this
-
-"""
 
 def main():
     start_time = time.time()
