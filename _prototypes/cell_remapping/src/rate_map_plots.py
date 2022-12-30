@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from matplotlib import cm
+import matplotlib as mpl
 import cv2
 
 PROJECT_PATH = os.getcwd()
@@ -24,14 +25,14 @@ def plot_rate_remapping(prev, curr, plot_settings):
 
     title = prev_key + ' & ' + curr_key + ' : ' + str(sliced_wass)
 
-    fig.f.suptitle(title, ha='center', fontweight='bold', fontsize='xx-large')
+    fig.f.suptitle(title, ha='center', fontweight='bold')
 
     """ save """
     # create a dsave and an fprefix
     save_dir = PROJECT_PATH + '/_prototypes/cell_remapping/output/rate'
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
-    fprefix = 'ratemap_cell_{}_{}_{}_{}'.format(animal_id, prev_key, curr_key, unit_id)
+    fprefix = 'ratemap_cell_{}_{}_{}_unit_{}'.format(animal_id, prev_key, curr_key, unit_id)
 
     ftemplate_short = "{}.{}"
     fshort = ftemplate_short.format(fprefix, 'pdf')
@@ -48,22 +49,21 @@ def plot_obj_remapping(obj_rate_map, ses_rate_map, plot_settings):
 
     ses_key = plot_settings['session_id'][-1]
     object_location = plot_settings['object_location'][-1]
-    # print(object_location, obj_rate_map)
     sliced_wass = plot_settings['obj_wass_'+str(object_location)][-1]
     unit_id = plot_settings['unit_id'][-1]
     animal_id = plot_settings['animal_id'][-1]
 
-    title = ses_key + ' & object ' + str(object_location) + ' : ' + str(sliced_wass)
+    title = ses_key + ' & object ' + str(object_location) + ' : ' + str(round(sliced_wass, 2))
     # print(title)
 
-    fig.f.suptitle(title, ha='center', fontweight='bold', fontsize='xx-large')
+    fig.f.suptitle(title, ha='center', fontweight='bold', fontsize='large')
 
     """ save """
     # create a dsave and an fprefix
     save_dir = PROJECT_PATH + '/_prototypes/cell_remapping/output/object'
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
-    fprefix = 'ratemap_cell_{}_{}_{}_{}'.format(animal_id, ses_key, object_location, unit_id)
+    fprefix = 'ratemap_cell_{}_{}_{}_unit_{}'.format(animal_id, ses_key, object_location, unit_id)
 
     ftemplate_short = "{}.{}"
     fshort = ftemplate_short.format(fprefix, 'pdf')
@@ -77,12 +77,12 @@ class TemplateFig():
     Template class for mvmt figures with 4 subplots
     """
     def __init__(self):
-        self.f = plt.figure(figsize=(8, 8))
-        # self.set_font_size(9.)
-        self.window = 0.375
+        self.f = plt.figure(figsize=(10, 4))
+        # mpl.rc('font', **{'size': 20})
+
 
         self.gs = {
-            'all': gridspec.GridSpec(1, 2, left=0.05, right=0.95, bottom=0.12, top=0.95, figure=self.f),
+            'all': gridspec.GridSpec(1, 2, left=0.05, right=0.95, bottom=0.05, top=0.95, figure=self.f),
         }
 
         self.ax = {

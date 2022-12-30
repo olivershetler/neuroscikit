@@ -11,17 +11,31 @@ from _prototypes.cell_remapping.src.wasserstein_distance import sliced_wasserste
 from _prototypes.cell_remapping.src.masks import make_object_ratemap, check_disk_arena, flat_disk_mask
 # from library.maps.map_utils import disk_mask
 
+"""
+
+TODO (in order of priority)
+
+- Pull out POT dependecies for sliced wass
+- take all spikes in cell, get (x,y) position, make sure they are scaled properly (i.e. in cm/inches) at file loading part
+- read ppm from position file ('pixels_per_meter' word search) and NOT settings.py file
+- check ppm can bet set at file loading, you likely gave that option if 'ppm' not present in settings
+
+- Use map blobs to get fields
+- get idx in fields and calculate euclidean distance for all permutations of possible field combinations
+- can start with only highest density fields
+- MUST revisit map blobs and how the 90th percentile is being done
+- Reconcile definition of fields with papers Abid shared in #code to make field definition for our case concrete
+- visualize selected fields (plot ratemap + circle/highlight in diff color idx of each field, can plot binary + ratemap below to show true density in field)
+
+- Implement rotation remapping, get ready for case where from session to session field map is rotated by 0/90/180 etc instead of object location
+- Will have to do the same as object case where you do every rotation permutation and store the 'true' rotation angle to look at wass distances 
+
+- Implement globabl remapping? Just average ratemaps across all cells in session and use 'average' ratemap of each sessionn in sliced wass
+
+"""
+
 
 def compute_remapping(study, settings):
-
-    # if study is None:
-    #     assert len(paths) > 0 and len(settings) > 0
-    #     # make study --> will load + sort data: SpikeClusterBatch (many units) --> SpikeCluster (a unit) --> Spike (an event)
-    #     study = make_study(paths, settings)
-    #     # make animals
-    #     study.make_animals()
-    # elif isinstance(study, Study):
-    #     study.make_animals()
 
     c = 0
 
@@ -55,7 +69,7 @@ def compute_remapping(study, settings):
 
                 ### TEMPORARY WAY TO READ OBJ LOC FROM FILE NAME ###
                 if settings['hasObject']:
-                    object_location = _read_location_from_file(path, true_var)
+                    object_location = _read_location_from_file(path, cylinder, true_var)
 
                 if j == 0:
                     assert 'matched' in ses.session_metadata.file_paths['cut'], 'Matched cut file was not used for data loading, cannot proceed with non matched cut file as cluster/cell labels are not aligned'
@@ -102,12 +116,9 @@ def compute_remapping(study, settings):
 
                             # print(object_ratemap)
                             num_proj = 100
-                            # sliced_wass = sliced_wasserstein(object_ratemap, curr, num_proj)
-                            # wass, _, _ = compute_wasserstein_distance(object_ratemap, curr)
+
                             obj_wass = single_point_wasserstein(object_pos, rate_map_obj)
 
-                            # obj_output[key].append(wass)
-                            # obj_output[sliced_key].append(sliced_wass)
                             obj_output[obj_wass_key].append(obj_wass)
 
                         # Store true obj location
@@ -116,9 +127,6 @@ def compute_remapping(study, settings):
                         # if object_pos is not None:
                         obj_output['obj_pos_x'].append(true_object_pos['x'])
                         obj_output['obj_pos_y'].append(true_object_pos['y'])
-                        # else:
-                        #     obj_output['obj_x_pos'].append(None)
-                        #     obj_output['obj_y_pos'].append(None)
 
                         obj_output['animal_id'].append(animal.animal_id)
                         obj_output['unit_id'].append(cell_label)
@@ -141,9 +149,6 @@ def compute_remapping(study, settings):
 
                         plot_rate_remapping(prev, curr, rate_output)
 
-
-                        # point_dist = compute_dist_from_point()
-
                         # global remapping ?
                         # centroids cdist
                         # nswe 4 direction distance
@@ -154,10 +159,6 @@ def compute_remapping(study, settings):
 
                         remapping_session_ids[cell_label-1].append([i-1,i])
 
-                        # toplot = _interpolate_matrix(prev, new_size=(256,256), cv2_interpolation_method=cv2.INTER_NEAREST)
-                        # colored_ratemap = Image.fromarray(np.uint8(cm.jet(toplot)*255))
-
-                        # colored_ratemap.save('ratemap_cell_' + str(c) + '.png')
                         c += 1
                     else:
                         prev = np.copy(curr)
@@ -173,24 +174,22 @@ def compute_remapping(study, settings):
             animal.stats_dict['rate_remapping']['cell_' + str(cell_label)]['distances'] = distances
             animal.stats_dict['rate_remapping']['cell_' + str(cell_label)]['session_pairs'] = session_pairs
 
-
-
-            # toplot = _interpolate_matrix(curr, new_size=(256,256), cv2_interpolation_method=cv2.INTER_NEAREST)
-            # colored_ratemap = Image.fromarray(np.uint8(cm.jet(toplot)*255))
-            # print(i, j)
-            # colored_ratemap.save('ratemap_cell_' + str(c) + '.png')
             c += 1
 
     return {'rate': rate_output, 'object': obj_output}
 
 
 
-def _read_location_from_file(path, true_var):
-    # object_location = path.split('/')[-1].split('-')[3].split('.')[0]
-    items = path.split('/')[-1].split('-')
-    idx = items.index(str(true_var)) + 2 # the object location is always 2 positions away from word denoting arena hape (e.g round/cylinder) defined by true_var
-    # e.g. ROUND-3050-90_2.clu
-    object_location = items[idx].split('.')[0].split('_')[0]
+def _read_location_from_file(path, cylinder, true_var):
+
+    if not cylinder:
+        object_location = path.split('/')[-1].split('-')[3].split('.')[0]
+    else:
+        items = path.split('/')[-1].split('-')
+        idx = items.index(str(true_var)) + 2 # the object location is always 2 positions away from word denoting arena hape (e.g round/cylinder) defined by true_var
+        # e.g. ROUND-3050-90_2.clu
+        object_location = items[idx].split('.')[0].split('_')[0]
+
     object_present = True
     if str(object_location) == 'no':
         object_present == False
