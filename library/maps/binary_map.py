@@ -15,8 +15,12 @@ from library.hafting_spatial_maps import HaftingRateMap, SpatialSpikeTrain2D
 def binary_map(spatial_map: HaftingRateMap | SpatialSpikeTrain2D, percentile=.75, **kwargs):
 
     '''
-        Computes a binary map of the ratemap where only areas of moderate to
-            high ratemap activity are captured.
+        Produces a binary map of place fields from a ratemap based on [1].
+
+        "A place field was defined as an area of nine or more (5 × 5 cm) adjacent bins with firing rates exceeding 20% of the peak firing rate of the rate map." (p 1843)
+
+        [1] C. B. Alme, C. Miao, K. Jezek, A. Treves, E. I. Moser, and M.-B. Moser, “Place cells in the hippocampus: Eleven maps for eleven rooms,” Proceedings of the National Academy of Sciences, vol. 111, no. 52, pp. 18428–18435, Dec. 2014, doi: 10.1073/pnas.1421056111.
+
 
         Params:
             ratemap (np.ndarray):
