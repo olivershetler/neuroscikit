@@ -221,6 +221,7 @@ def batch_sessions(sorted_files, settings_dict, indiv_session_settings):
 
 
         pos_file = sorted_files[i]['pos']
+        # print(pos_file)
         assert len(pos_file) <= 1, 'Cannot have more than one pos_file in a session'
         if len(pos_file) == 1:
             pos_file = pos_file[0]

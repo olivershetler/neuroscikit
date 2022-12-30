@@ -186,7 +186,7 @@ class HaftingOccupancyMap():
             print('overriding session smoothing factor for input smoothing facator')
 
     def get_occupancy_map(self, smoothing_factor=None, new_size=None):
-        if self.map_data is None:
+        if self.map_data is None or (self.map_data is not None and new_size != self.map_data.shape[0]) == True:
             if self.smoothing_factor != None:
                 smoothing_factor = self.smoothing_factor
                 assert smoothing_factor != None, 'Need to add smoothing factor to function inputs'
@@ -277,7 +277,7 @@ class HaftingSpikeMap():
     #     return spatial_spike_train
 
     def get_spike_map(self, smoothing_factor=None, new_size=None):
-        if self.map_data is None:
+        if self.map_data is None or (self.map_data is not None and new_size != self.map_data.shape[0]) == True:
             if self.smoothing_factor != None:
                 smoothing_factor = self.smoothing_factor
                 assert smoothing_factor != None, 'Need to add smoothing factor to function inputs'
@@ -361,7 +361,7 @@ class HaftingRateMap():
             print('overriding session smoothing factor for input smoothing facator')
 
     def get_rate_map(self, smoothing_factor=None, new_size=None):
-        if self.map_data is None:
+        if self.map_data is None or (self.map_data is not None and new_size != self.map_data.shape[0]) == True:
             if self.smoothing_factor == None:
                 self.smoothing_factor = smoothing_factor
                 assert smoothing_factor != None, 'Need to add smoothing factor to function inputs'
@@ -372,6 +372,8 @@ class HaftingRateMap():
                 self.map_data, self.raw_map_data = self.compute_rate_map(self.occ_map, self.spike_map)
 
             self.spatial_spike_train.add_map_to_stats('rate', self)
+        # elif self.map_data is not None and new_size != self.map_data.shape[0]:
+
         return self.map_data, self.raw_map_data
 
     def compute_rate_map(self, occupancy_map, spike_map, new_size=None):

@@ -81,7 +81,7 @@ class CellEnsemble(Workspace):
     def get_cell_by_id(self, id):
         if self.cell_label_dict is None:
             self.get_cell_label_dict()
-        print(self.cell_label_dict)
+        # print(self.cell_label_dict)
         return self.cell_label_dict[int(id)]
 
 

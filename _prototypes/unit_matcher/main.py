@@ -131,7 +131,6 @@ def run_unit_matcher(paths=[], settings={}, method='JSD', dim_redux='PCA', study
             curr_pca = None
             prev_pca = None
 
-
         for session in animal.sessions:
             curr = animal.sessions[session]
 
@@ -188,10 +187,12 @@ def run_unit_matcher(paths=[], settings={}, method='JSD', dim_redux='PCA', study
 
         # old_path = session.session_metadata.file_paths['cut']
 
-        with open(str(new_cut_file_path + '_pca.pickle'), 'wb') as handle:
+        file_str = new_cut_file_path.split(r'_matched.cut' )[0]
+
+        with open(str(file_str + '_pca.pickle'), 'wb') as handle:
             pickle.dump(animal_pca_results, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-        with open(str(new_cut_file_path + '_mappings.pickle'), 'wb') as handle:
+        with open(str(file_str + '_mappings.pickle'), 'wb') as handle:
             pickle.dump(session_mappings, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
         # file_name = r"testing_output.xlsx"

@@ -19,7 +19,7 @@ implant = {'implant_id': 'id', 'implant_type': 'tetrode', 'implant_geometry': 's
 
 session_settings = {'channel_count': 4, 'animal': animal, 'devices': devices, 'implant': implant}
 
-settings_dict = {'ppm': 511, 'session': session_settings, 'smoothing_factor': 3, 'useMatchedCut': True, 'hasObject':True}
+settings_dict = {'ppm': 511, 'session': session_settings, 'smoothing_factor': 3, 'useMatchedCut': True, 'hasObject': True}
 
 def test_batch_remapping():
     batch_remapping([data_dir], settings_dict)
