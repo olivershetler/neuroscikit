@@ -7,7 +7,7 @@ sys.path.append(PROJECT_PATH)
 from _prototypes.cell_remapping.src.settings import rate_output, obj_output
 from library.hafting_spatial_maps import SpatialSpikeTrain2D
 from _prototypes.cell_remapping.src.rate_map_plots import plot_obj_remapping, plot_rate_remapping
-from _prototypes.cell_remapping.src.wasserstein_distance import sliced_wasserstein, compute_wasserstein_distance, single_point_wasserstein
+from _prototypes.cell_remapping.src.wasserstein_distance import sliced_wasserstein, compute_wasserstein_distance, single_point_wasserstein, pot_sliced_wasserstein
 from _prototypes.cell_remapping.src.masks import make_object_ratemap, check_disk_arena, flat_disk_mask
 # from library.maps.map_utils import disk_mask
 
@@ -15,10 +15,10 @@ from _prototypes.cell_remapping.src.masks import make_object_ratemap, check_disk
 
 TODO (in order of priority)
 
-- Pull out POT dependecies for sliced wass
-- take all spikes in cell, get (x,y) position, make sure they are scaled properly (i.e. in cm/inches) at file loading part
-- read ppm from position file ('pixels_per_meter' word search) and NOT settings.py file
-- check ppm can bet set at file loading, you likely gave that option if 'ppm' not present in settings
+- Pull out POT dependecies for sliced wass - DONE
+- take all spikes in cell, get (x,y) position, make sure they are scaled properly (i.e. in cm/inches) at file loading part - DONE
+- read ppm from position file ('pixels_per_meter' word search) and NOT settings.py file - DONE
+- check ppm can bet set at file loading, you likely gave that option if 'ppm' not present in settings - DONE
 
 - Use map blobs to get fields
 - get idx in fields and calculate euclidean distance for all permutations of possible field combinations
@@ -92,6 +92,7 @@ def compute_remapping(study, settings):
                         curr = flat_disk_mask(rate_map)
                     else:
                         curr = rate_map
+                        curr_spatial_spike_train = spatial_spike_train
 
                     if settings['hasObject']:
 
@@ -136,9 +137,16 @@ def compute_remapping(study, settings):
                         plot_obj_remapping(true_object_ratemap, curr, obj_output)
 
                     if prev is not None:
-                        num_proj = 100
+                        # num_proj = 100
                         wass, _, _ = compute_wasserstein_distance(prev, curr)
-                        sliced_wass = sliced_wasserstein(prev, curr, num_proj)
+                        # sliced_wass = sliced_wasserstein(prev, curr, num_proj)
+                        prev_spike_pos_x, prev_spike_pos_y, _ = prev_spatial_spike_train.get_spike_positions()
+                        prev_pts = np.array([prev_spike_pos_x, prev_spike_pos_y]).reshape((-1,2))
+
+                        curr_spike_pos_x, curr_spike_pos_y, _ = curr_spatial_spike_train.get_spike_positions()
+                        curr_pts = np.array([curr_spike_pos_x, curr_spike_pos_y]).reshape((-1,2))
+
+                        sliced_wass = pot_sliced_wasserstein(prev_pts, curr_pts)
 
                         rate_output['animal_id'].append(animal.animal_id)
                         rate_output['unit_id'].append(cell_label)
@@ -162,6 +170,7 @@ def compute_remapping(study, settings):
                         c += 1
                     else:
                         prev = np.copy(curr)
+                        prev_spatial_spike_train = curr_spatial_spike_train
 
             if 'rate_remapping' not in animal.stats_dict:
                 animal.stats_dict['rate_remapping'] = {}
