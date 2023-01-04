@@ -178,6 +178,7 @@ def _get_position(pos_fpath, ppm, method='', flip_y=True):
                 timebase = (line.decode(encoding='UTF-8')[len('timebase '):]).split(' ')[0]
                 headers += line.decode(encoding='UTF-8')
             elif 'pixels_per_metre' in str(line):
+                # print('READING PIXELS PER METRE FROM FILE')
                 ppm = float(line.decode(encoding='UTF-8')[len('pixels_per_metre '):])
                 headers += line.decode(encoding='UTF-8')
             elif 'min_x' in str(line) and 'window' not in str(line):
@@ -252,7 +253,7 @@ def _get_position(pos_fpath, ppm, method='', flip_y=True):
     else:
         print("Haven't made any code for this part yet.")
 
-    return x.reshape((len(x), 1)), y.reshape((len(y), 1)), t.reshape((len(t), 1)), sample_rate
+    return x.reshape((len(x), 1)), y.reshape((len(y), 1)), t.reshape((len(t), 1)), sample_rate, ppm
 
 
 def grab_position_data(pos_path: str, ppm: int) -> tuple:
@@ -290,6 +291,8 @@ def grab_position_data(pos_path: str, ppm: int) -> tuple:
 
     Fs_pos = pos_data[3]
 
+    file_ppm = pos_data[-1]
+
     pos_x = pos_data[0]
     pos_y = pos_data[1]
     pos_t = new_pos_t
@@ -320,4 +323,4 @@ def grab_position_data(pos_path: str, ppm: int) -> tuple:
     pos_x_width = max(pos_x) - min(pos_x)
     pos_y_width = max(pos_y) - min(pos_y)
 
-    return {"t": pos_t, "x": pos_x, "y": pos_y, "arena_width":pos_x_width, "arena_height":pos_y_width, "sample_rate":pos_data[3]}
+    return {"t": pos_t, "x": pos_x, "y": pos_y, "arena_width":pos_x_width, "arena_height":pos_y_width, "sample_rate":pos_data[3], "ppm":file_ppm}

@@ -285,6 +285,11 @@ def make_session(cut_file, tet_file, pos_file, settings_dict, session_settings_d
 
     # session.set_animal_id()
 
+    if 'ppm' in pos_dict:
+        print('OLD PPM: ' + str(ppm))
+        ppm = pos_dict['ppm']
+        print('NEW PPM: ' + str(ppm))
+
     session.session_metadata.add_file_paths(cut_file, tet_file, pos_file, ppm)
 
     assert isinstance(session, Session)

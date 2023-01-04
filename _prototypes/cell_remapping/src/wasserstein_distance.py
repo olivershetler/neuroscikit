@@ -188,7 +188,7 @@ def wasserstein_1d(u_values, v_values, u_weights=None, v_weights=None, p=1, requ
 
 def pot_sliced_wasserstein(X_s, X_t, a=None, b=None, n_projections=50, p=2,
                                 projections=None, seed=None, log=False):
-    """
+    r"""
     Computes a Monte-Carlo approximation of the p-Sliced Wasserstein distance
 
     .. math::
