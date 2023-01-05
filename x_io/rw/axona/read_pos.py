@@ -143,7 +143,7 @@ def _remove_nan(posx, posy, post):
             remove_nan = False
     return posx, posy, post
 
-def _get_position(pos_fpath, ppm, method='', flip_y=True):
+def _get_position(pos_fpath, ppm=None, method='', flip_y=True):
     """
     _get_position function:
     ---------------------------------------------
@@ -208,6 +208,8 @@ def _get_position(pos_fpath, ppm, method='', flip_y=True):
             else:
                 headers += line.decode(encoding='UTF-8')
 
+    assert ppm is not None, 'PPM must be in position file or settings dictionary to proceed'
+
     if two_spot:
         '''Run when two spot mode is on, (one_spot has the same format so it will also run here)'''
         with open(pos_fpath, 'rb+') as f:
@@ -256,7 +258,7 @@ def _get_position(pos_fpath, ppm, method='', flip_y=True):
     return x.reshape((len(x), 1)), y.reshape((len(y), 1)), t.reshape((len(t), 1)), sample_rate, ppm
 
 
-def grab_position_data(pos_path: str, ppm: int) -> tuple:
+def grab_position_data(pos_path: str, ppm=None) -> tuple:
 
     '''
         Extracts position data from .pos file
@@ -278,7 +280,7 @@ def grab_position_data(pos_path: str, ppm: int) -> tuple:
                 max - min y coordinate value (arena length)
     '''
 
-    pos_data = _get_position(pos_path, ppm)
+    pos_data = _get_position(pos_path, ppm=ppm)
 
     # Correcting pos_t data in case of bad position file
     new_pos_t = np.copy(pos_data[2])
@@ -292,6 +294,8 @@ def grab_position_data(pos_path: str, ppm: int) -> tuple:
     Fs_pos = pos_data[3]
 
     file_ppm = pos_data[-1]
+
+    assert file_ppm is not None, 'PPM must be in position file or settings dictionary to proceed'
 
     pos_x = pos_data[0]
     pos_y = pos_data[1]

@@ -126,7 +126,7 @@ def test__fill_session_dict():
     session_dict = _init_session_dict(settings_dict['session'])
 
     if devices['axona_led_tracker'] == True:
-        pos_dict = grab_position_data(pos_file, settings_dict['ppm'])
+        pos_dict = grab_position_data(pos_file, ppm=settings_dict['ppm'])
     else: 
         pos_dict = {}
 

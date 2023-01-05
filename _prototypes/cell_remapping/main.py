@@ -23,10 +23,6 @@ def main():
     study.make_animals()
     output = compute_remapping(study, settings_dict)
 
-    for key in output['centroid']:
-        print(key)
-        print(len(output['centroid'][key]))
-
     if 'rate' in output:
         df = pd.DataFrame(output['rate'])
         # df.to_csv(PROJECT_PATH + '/_prototypes/cell_remapping/output' + '/rate_remapping.csv')

@@ -25,7 +25,9 @@ TODO (in order of priority)
 - Use map blobs to get fields - DONE
 - get idx in fields and calculate euclidean distance for all permutations of possible field combinations - DONE
 - can start with only highest density fields - DONE
-- refactor identified + appropriate areas into helper functions (especially map blobs related code) to simplify 
+- refactor identified + appropriate areas into helper functions (especially map blobs related code) to simplify - DONE
+
+- add comments 
 - MUST revisit map blobs and how the 90th percentile is being done 
 - Reconcile definition of fields with papers Abid shared in #code to make field definition for our case concrete
 - visualize selected fields (plot ratemap + circle/highlight in diff color idx of each field, can plot binary + ratemap below to show true density in field)
@@ -33,7 +35,7 @@ TODO (in order of priority)
 - Implement rotation remapping, get ready for case where from session to session field map is rotated by 0/90/180 etc instead of object location
 - Will have to do the same as object case where you do every rotation permutation and store the true rotation angle to look at wass distances 
 
-- Implement globabl remapping? Just average ratemaps across all cells in session and use average ratemap of each sessionn in sliced wass
+- Implement globabl remapping? Just average ratemaps across all cells in session and use average ratemap of each session in sliced wass
 
 """
 
@@ -138,7 +140,8 @@ def compute_remapping(study, settings):
                         obj_output['tetrode'].append(animal.animal_id.split('tet')[-1])
                         obj_output['session_id'].append(seskey)
 
-                        plot_obj_remapping(true_object_ratemap, curr, obj_output)
+                        if settings['plotObject']:
+                            plot_obj_remapping(true_object_ratemap, curr, obj_output)
 
                     curr_id = str(animal.animal_id) + '_' + str(seskey) + '_' + str(cell.cluster.cluster_label)
 
@@ -157,23 +160,25 @@ def compute_remapping(study, settings):
                         rate_output['session_ids'].append(['session_' + str(i-1), 'session_' + str(i)])
                         rate_output['sliced_wass'].append(sliced_wass)
 
-                        plot_rate_remapping(prev, curr, rate_output)
+                        if settings['plotRate']:
+                            plot_rate_remapping(prev, curr, rate_output)
 
-                        image_prev, n_labels_prev, labels_prev, centroids_prev, field_sizes_prev = blobs_dict[prev_id]
+                        if settings['runFields']:
+                            image_prev, n_labels_prev, labels_prev, centroids_prev, field_sizes_prev = blobs_dict[prev_id]
 
-                        image_curr, n_labels_curr, labels_curr, centroids_curr, field_sizes_curr = blobs_dict[curr_id]
+                            image_curr, n_labels_curr, labels_curr, centroids_curr, field_sizes_curr = blobs_dict[curr_id]
 
-                        target_centers, source_labels = _sort_centroids_by_field_size(field_sizes_prev, field_sizes_curr, labels_prev, centroids_curr)
+                            target_centers, source_labels = _sort_centroids_by_field_size(field_sizes_prev, field_sizes_curr, labels_prev, centroids_curr)
 
-                        # prev spatial spike train is source spatial spike train
-                        centroid_wass, centroid_pairs = compute_centroid_remapping(target_centers, source_labels, prev_spatial_spike_train)
+                            # prev spatial spike train is source spatial spike train
+                            centroid_wass, centroid_pairs = compute_centroid_remapping(target_centers, source_labels, prev_spatial_spike_train)
 
-                        centroid_output['animal_id'].append(animal.animal_id)
-                        centroid_output['unit_id'].append(cell_label)
-                        centroid_output['tetrode'].append(animal.animal_id.split('tet')[-1])
-                        centroid_output['session_ids'].append(['session_' + str(i-1), 'session_' + str(i)])
+                            centroid_output['animal_id'].append(animal.animal_id)
+                            centroid_output['unit_id'].append(cell_label)
+                            centroid_output['tetrode'].append(animal.animal_id.split('tet')[-1])
+                            centroid_output['session_ids'].append(['session_' + str(i-1), 'session_' + str(i)])
 
-                        centroid_output = _fill_centroid_output(centroid_output, max_centroid_count, centroid_wass, centroid_pairs)
+                            centroid_output = _fill_centroid_output(centroid_output, max_centroid_count, centroid_wass, centroid_pairs)
 
                         remapping_indices[cell_label-1].append(i-1)
 

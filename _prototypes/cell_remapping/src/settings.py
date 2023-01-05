@@ -4,7 +4,15 @@ implant = {'implant_id': 'id', 'implant_type': 'tetrode', 'implant_geometry': 's
 
 session_settings = {'channel_count': 4, 'animal': animal, 'devices': devices, 'implant': implant}
 
-settings_dict = {'ppm': 511, 'session': session_settings, 'smoothing_factor': 3, 'useMatchedCut': True, 'hasObject': True}
+settings_dict = {'session': session_settings, 
+'ppm': None, # EDIT HERE (will read from pos file)
+'smoothing_factor': 3, # EDIT HERE
+'useMatchedCut': True, # MUST BE TRUE
+'hasObject': True, # EDIT HERE
+'plotObject': True, # EDIT HERE
+'runFields': True, # EDIT HERE
+'plotRate': True, # EDIT HERE
+} 
 
 
 ##############################################################################################################################################################################

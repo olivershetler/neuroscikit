@@ -263,7 +263,10 @@ def batch_sessions(sorted_files, settings_dict, indiv_session_settings):
 
 def make_session(cut_file, tet_file, pos_file, settings_dict, session_settings_dict):
 
-    ppm = settings_dict['ppm']
+    if 'ppm' in settings_dict:
+        ppm = settings_dict['ppm']
+    else:
+        ppm = None
 
     session_dict = _init_session_dict(session_settings_dict)
 
@@ -272,7 +275,7 @@ def make_session(cut_file, tet_file, pos_file, settings_dict, session_settings_d
     session_settings_dict['channel_count'] = ch_count
 
     if session_settings_dict['devices']['axona_led_tracker'] == True:
-        pos_dict = grab_position_data(pos_file, ppm)
+        pos_dict = grab_position_data(pos_file, ppm=ppm)
         implant_data_dict['sample_rate'] = pos_dict['sample_rate']
     else:
         pos_dict = {}

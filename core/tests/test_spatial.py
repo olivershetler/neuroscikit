@@ -37,7 +37,7 @@ session_settings = {'channel_count': 4, 'animal': animal, 'devices': devices, 'i
 settings_dict = {'ppm': 511, 'session':  session_settings}
 
 def test_position2d():
-    pos_dict = grab_position_data(pos_file, settings_dict['ppm'])
+    pos_dict = grab_position_data(pos_file, ppm=settings_dict['ppm'])
 
     session = Session()
 
