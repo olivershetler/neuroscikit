@@ -107,6 +107,7 @@ class Cell(Workspace):
 
         self.dir_names = self.session_metadata.dir_names
         self.stats_dict = self._init_stats_dict()
+        self.ses_key = self.session_metadata.session_object.ses_key
         # self.stats_dict = {}
 
 

@@ -157,7 +157,7 @@ def compute_remapping(study, settings):
                         rate_output['animal_id'].append(animal.animal_id)
                         rate_output['unit_id'].append(cell_label)
                         rate_output['tetrode'].append(animal.animal_id.split('tet')[-1])
-                        rate_output['session_ids'].append(['session_' + str(i-1), 'session_' + str(i)])
+                        rate_output['session_ids'].append(['session_' + str(i), 'session_' + str(i+1)])
                         rate_output['sliced_wass'].append(sliced_wass)
 
                         if settings['plotRate']:
@@ -176,7 +176,7 @@ def compute_remapping(study, settings):
                             centroid_output['animal_id'].append(animal.animal_id)
                             centroid_output['unit_id'].append(cell_label)
                             centroid_output['tetrode'].append(animal.animal_id.split('tet')[-1])
-                            centroid_output['session_ids'].append(['session_' + str(i-1), 'session_' + str(i)])
+                            centroid_output['session_ids'].append(['session_' + str(i), 'session_' + str(i+1)])
 
                             centroid_output = _fill_centroid_output(centroid_output, max_centroid_count, centroid_wass, centroid_pairs)
 

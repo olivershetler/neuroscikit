@@ -61,7 +61,13 @@ def sort_spikes_by_cell(clusters: SpikeClusterBatch):
     #     else:
     #         empty_cell = j + 1
 
-    empty_cell = sorted(set(range(unique_labels[0], unique_labels[-1] + 1)).difference(unique_labels))
+    # print(unique_labels)
+    # empty_cell = sorted(set(range(unique_labels[0], unique_labels[-1] + 1)).difference(unique_labels))
+
+    if unique_labels[0] == 0:
+        empty_cell = sorted(set(range(unique_labels[1], unique_labels[-1] + 1)).difference(unique_labels))
+    else:
+        empty_cell = sorted(set(range(unique_labels[0], unique_labels[-1] + 1)).difference(unique_labels))
 
     if len(empty_cell) >= 1:
         empty_cell = empty_cell[0]

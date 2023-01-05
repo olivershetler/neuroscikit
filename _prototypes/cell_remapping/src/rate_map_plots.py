@@ -73,9 +73,6 @@ def plot_obj_remapping(obj_rate_map, ses_rate_map, plot_settings):
 
 
 class TemplateFig():
-    """
-    Template class for mvmt figures with 4 subplots
-    """
     def __init__(self):
         self.f = plt.figure(figsize=(10, 4))
         # mpl.rc('font', **{'size': 20})

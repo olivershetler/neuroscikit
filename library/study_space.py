@@ -35,6 +35,7 @@ class Session(Workspace):
 
         self.time_index = None
         self.datetime = None
+        self.ses_key = None
 
         if 'smoothing_factor' in kwargs:
             self.smoothing_factor = kwargs['smoothing_factor']
@@ -229,6 +230,7 @@ class Study(Workspace):
             animal_sesions = np.asarray(unsorted_animal_session[animal_id])[sort_order]
             for j in range(len(animal_sesions)):
                 sorted_animal_sessions[animal_id]['session_'+str(j+1)] = animal_sesions[j]
+                animal_sesions[j].ses_key = 'session_'+str(j+1)
 
         return sorted_animal_sessions
 
