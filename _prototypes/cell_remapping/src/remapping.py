@@ -22,10 +22,11 @@ TODO (in order of priority)
 - read ppm from position file ('pixels_per_meter' word search) and NOT settings.py file - DONE
 - check ppm can bet set at file loading, you likely gave that option if 'ppm' not present in settings - DONE
 
-- Use map blobs to get fields
-- get idx in fields and calculate euclidean distance for all permutations of possible field combinations
-- can start with only highest density fields
-- MUST revisit map blobs and how the 90th percentile is being done
+- Use map blobs to get fields - DONE
+- get idx in fields and calculate euclidean distance for all permutations of possible field combinations - DONE
+- can start with only highest density fields - DONE
+- refactor identified + appropriate areas into helper functions (especially map blobs related code) to simplify 
+- MUST revisit map blobs and how the 90th percentile is being done 
 - Reconcile definition of fields with papers Abid shared in #code to make field definition for our case concrete
 - visualize selected fields (plot ratemap + circle/highlight in diff color idx of each field, can plot binary + ratemap below to show true density in field)
 
@@ -40,25 +41,8 @@ TODO (in order of priority)
 def compute_remapping(study, settings):
 
     c = 0
-
-    max_centroid_count = 0
-    blobs_dict = {}
-
-    for animal in study.animals:
-        for i in range(len(list(animal.sessions.keys()))):
-            seskey = 'session_' + str(i+1)
-            ses = animal.sessions[seskey]
-            for cell in ses.get_cell_data()['cell_ensemble'].cells:
-                spatial_spike_train = ses.make_class(SpatialSpikeTrain2D, {'cell': cell, 'position': ses.get_position_data()['position']})
-
-                image, n_labels, labels, centroids, field_sizes = map_blobs(spatial_spike_train)
-
-                id = str(animal.animal_id) + '_' + str(seskey) + '_' + str(cell.cluster.cluster_label)
-
-                blobs_dict[id] = [image, n_labels, labels, centroids, field_sizes]
-
-                print(len(field_sizes))
-                max_centroid_count = max(max_centroid_count, len(field_sizes))
+    
+    max_centroid_count, blobs_dict = _find_largest_centroid_count(study)
 
     for animal in study.animals:
 
@@ -347,3 +331,22 @@ def _read_location_from_file(path, cylinder, true_var):
         assert int(object_location) in [0,90,180,270]
 
     return object_location
+
+def _find_largest_centroid_count(study):
+    max_centroid_count = 0
+    blobs_dict = {}
+    for animal in study.animals:
+        for i in range(len(list(animal.sessions.keys()))):
+            seskey = 'session_' + str(i+1)
+            ses = animal.sessions[seskey]
+            for cell in ses.get_cell_data()['cell_ensemble'].cells:
+                spatial_spike_train = ses.make_class(SpatialSpikeTrain2D, {'cell': cell, 'position': ses.get_position_data()['position']})
+
+                image, n_labels, labels, centroids, field_sizes = map_blobs(spatial_spike_train)
+
+                id = str(animal.animal_id) + '_' + str(seskey) + '_' + str(cell.cluster.cluster_label)
+
+                blobs_dict[id] = [image, n_labels, labels, centroids, field_sizes]
+
+                print(len(field_sizes))
+                max_centroid_count = max(max_centroid_count, len(field_sizes))
