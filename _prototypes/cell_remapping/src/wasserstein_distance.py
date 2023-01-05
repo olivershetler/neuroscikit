@@ -9,38 +9,45 @@ sys.path.append(PROJECT_PATH)
 from _prototypes.cell_remapping.src.backend import get_backend, NumpyBackend
 from _prototypes.cell_remapping.src.utils import list_to_array
 
+def compute_centroid_remapping(centroid_t, label_s, spatial_spike_train_s):
+    # centroid_wass = np.zeros((len(np.unique(label_s)-1), len(centroid_t)))
+    
+    centroid_wass = []
+    centroid_pairs = []
 
-# NEEDS UPDATING
-def compute_wasserstein_distance(X, Y):
-    # distance = wasserstein_distance(prev, ses)
-    coords = np.array([X.flatten(), Y.flatten()]).T
-    coordsSqr = np.sum(coords**2, 1)
-    M = coordsSqr[:, None] + coordsSqr[None, :] - 2*coords.dot(coords.T)
-    M[M < 0] = 0
-    M = np.sqrt(M)
-    radius = 0.2
-    I = 1e-5 + np.array((X)**2 + (Y)**2 < radius**2, dtype=float)
-    I /= np.sum(I)
+    for i in range(1,len(np.unique(label_s))):
+        for j in range(len(centroid_t)):
+            source_label = np.copy(label_s)
+            # source_idx = np.where(label_s == i)[0]
+            # print(source_idx)
+            # source_label[source_idx] = 1
 
-    l2dist = np.sqrt(np.sum((I)**2))
-    wass = ot.sinkhorn2(I.flatten(), I.flatten(), M, 1.0)
+            source_label[source_label != i] = 0
+            source_label[source_label == i] = 1
 
-    # assert X.shape == Y.shape
-    # n = X.shape[0]
-    # d = cdist(X, Y)
-    # assignment = linear_sum_assignment(d)
-    # wass = d[assignment].sum() / n
-    # return wass
+            rows, cols = np.where(source_label == 1)
 
-    return wass, l2dist, I
+            idx_s = np.array([rows, cols]).reshape((-1,2))
 
-def single_point_wasserstein(object_coords, rate_map_obj):
+            wass = single_point_wasserstein(centroid_t[j], source_label, spatial_spike_train_s.arena_size, ids=idx_s)
+
+            # centroid_wass[i-1,j] = wass
+
+            centroid_wass.append(wass)
+            centroid_pairs.append([i,j+1])
+
+    return np.array(centroid_wass), np.array(centroid_pairs).reshape((-1,2))
+
+def single_point_wasserstein(object_coords, rate_map, arena_size, ids=None):
     # gets arena height and width as inches or whatever unit they were entered in the position file
-    arena_height, arena_width = rate_map_obj.arena_size
-    arena_height = arena_height[0]
-    arena_width = arena_width[0]
+    arena_height, arena_width = arena_size
 
-    rate_map, _ = rate_map_obj.get_rate_map()
+    if len(arena_height) > 0:
+        arena_height = arena_height[0]
+    if len(arena_width) > 0:
+        arena_width = arena_width[0]
+
+    # rate_map, _ = rate_map_obj.get_rate_map()
 
     # gets rate map dimensions (64, 64)
     y, x = rate_map.shape
@@ -63,17 +70,26 @@ def single_point_wasserstein(object_coords, rate_map_obj):
     width_bucket_midpoints = width + width_step/2
 
     # these are the coordinates of the object on a 64,64 array so e.g. (0,32)
-    obj_x = object_coords['x']
-    obj_y = object_coords['y']
+    if isinstance(object_coords, dict):
+        obj_x = object_coords['x']
+        obj_y = object_coords['y']
+    else:
+        obj_x = object_coords[0]
+        obj_y = object_coords[1]
 
     # loop through each bucket and compute the euclidean distance between the object and the bucket
     # then multiply that distance by the rate map value at that bucket
     weighted_dists = np.zeros((y,x))
     for i in range(y):
         for j in range(x):
-            pt = (width_bucket_midpoints[i], height_bucket_midpoints[j])
-            dist = np.linalg.norm(np.array((obj_y, obj_x)) - np.array(pt))
-            weighted_dists[i,j] = dist * rate_map[i,j]
+            if ids is not None and [i,j] in ids:
+                pt = (width_bucket_midpoints[i], height_bucket_midpoints[j])
+                dist = np.linalg.norm(np.array((obj_y, obj_x)) - np.array(pt))
+                weighted_dists[i,j] = dist * rate_map[i,j]
+            elif ids is None:
+                pt = (width_bucket_midpoints[i], height_bucket_midpoints[j])
+                dist = np.linalg.norm(np.array((obj_y, obj_x)) - np.array(pt))
+                weighted_dists[i,j] = dist * rate_map[i,j]
 
     # then sum
     return np.sum(weighted_dists)

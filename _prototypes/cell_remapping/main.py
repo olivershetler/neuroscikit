@@ -23,12 +23,23 @@ def main():
     study.make_animals()
     output = compute_remapping(study, settings_dict)
 
+    for key in output['centroid']:
+        print(key)
+        print(len(output['centroid'][key]))
+
     if 'rate' in output:
         df = pd.DataFrame(output['rate'])
-        df.to_csv(PROJECT_PATH + '/_prototypes/cell_remapping/output' + '/rate_remapping.csv')
+        # df.to_csv(PROJECT_PATH + '/_prototypes/cell_remapping/output' + '/rate_remapping.csv')
+        df.to_excel(PROJECT_PATH + '/_prototypes/cell_remapping/output' + '/rate_remapping.xlsx')
     if 'object' in output:
         df = pd.DataFrame(output['object'])
-        df.to_csv(PROJECT_PATH + '/_prototypes/cell_remapping/output' + '/obj_remapping.csv')
+        # df.to_csv(PROJECT_PATH + '/_prototypes/cell_remapping/output' + '/obj_remapping.csv')
+        df.to_excel(PROJECT_PATH + '/_prototypes/cell_remapping/output' + '/obj_remapping.xlsx')
+    if 'centroid' in output:
+        df = pd.DataFrame(output['centroid'])
+        # df.to_csv(PROJECT_PATH + '/_prototypes/cell_remapping/output' + '/centroid_remapping.csv')
+        df.to_excel(PROJECT_PATH + '/_prototypes/cell_remapping/output' + '/centroid_remapping.xlsx')
+
 
     print('Total run time: ' + str(time.time() - start_time))
 

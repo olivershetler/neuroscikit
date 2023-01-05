@@ -11,11 +11,17 @@ settings_dict = {'ppm': 511, 'session': session_settings, 'smoothing_factor': 3,
 
 rate_output = {}
 obj_output = {}
-keys = ['animal_id','tetrode','unit_id','wass', 'session_ids', 'sliced_wass']
+centroid_output = {}
+
+keys = ['animal_id','tetrode','unit_id', 'session_ids', 'sliced_wass']
 obj_keys = ['animal_id','tetrode','unit_id','session_id', 'obj_pos_x', 'obj_pos_y', 'object_location', 'obj_wass_0', 'obj_wass_90', 'obj_wass_180', 'obj_wass_270', 'obj_wass_no']
+centroid_keys = ['animal_id','tetrode','unit_id','session_ids']
+
 for key in keys:
     rate_output[key] = []
 for key in obj_keys:
     obj_output[key] = []
+for key in centroid_keys:
+    centroid_output[key] = []
 
 ##############################################################################################################################################################################
