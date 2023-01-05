@@ -143,9 +143,6 @@ def compute_remapping(study, settings):
                     curr_id = str(animal.animal_id) + '_' + str(seskey) + '_' + str(cell.cluster.cluster_label)
 
                     if prev is not None:
-                        # num_proj = 100
-                        # wass, _, _ = compute_wasserstein_distance(prev, curr)
-                        # sliced_wass = sliced_wasserstein(prev, curr, num_proj)
                         prev_spike_pos_x, prev_spike_pos_y, _ = prev_spatial_spike_train.get_spike_positions()
                         prev_pts = np.array([prev_spike_pos_x, prev_spike_pos_y]).reshape((-1,2))
 
@@ -158,151 +155,35 @@ def compute_remapping(study, settings):
                         rate_output['unit_id'].append(cell_label)
                         rate_output['tetrode'].append(animal.animal_id.split('tet')[-1])
                         rate_output['session_ids'].append(['session_' + str(i), 'session_' + str(i+1)])
-                        # rate_output['wass'].append(wass)
                         rate_output['sliced_wass'].append(sliced_wass)
 
                         plot_rate_remapping(prev, curr, rate_output)
-
-                        
-                        # image_prev, n_labels_prev, labels_prev, centroids_prev, field_sizes_prev = map_blobs(prev_spatial_spike_train)
-
-                        # image_curr, n_labels_curr, labels_curr, centroids_curr, field_sizes_curr = map_blobs(curr_spatial_spike_train)
 
                         image_prev, n_labels_prev, labels_prev, centroids_prev, field_sizes_prev = blobs_dict[prev_id]
 
                         image_curr, n_labels_curr, labels_curr, centroids_curr, field_sizes_curr = blobs_dict[curr_id]
 
-                        sort_idx_source = np.argsort(-np.array(field_sizes_prev))
-                        source_labels = np.zeros(labels_prev.shape)
+                        target_centers, source_labels = _sort_centroids_by_field_size(field_sizes_prev, field_sizes_curr, labels_prev, centroids_curr)
 
-                        map_dict = {}
-                        for k in np.unique(labels_prev):
-                            if k != 0:
-                                row, col = np.where(labels_prev == k)
-                                source_labels[row, col] = sort_idx_source[k-1] + 1
-                                map_dict[k] = sort_idx_source[k-1] + 1
-                            else:
-                                map_dict[k] = 0
-
-                        out = np.vectorize(map_dict.get)(labels_prev)
-
-                        assert out.all() == source_labels.all()
-
-                        # print(map_dict, np.unique(source_labels), np.unique(labels_prev))
-
-                        # fig = plt.figure(figsize=(6,6))
-                        # plt.imshow(source_labels)
-                        # plt.show()
-
-                        # fig = plt.figure(figsize=(6,6))
-                        # plt.imshow(labels_prev)
-                        # plt.show()
-
-                        assert len(np.unique(source_labels)) == len(np.unique(labels_prev))
-
-                        sort_idx_target = np.argsort(-np.array(field_sizes_curr))
-
-                        centroid_wass, centroid_pairs = compute_centroid_remapping(centroids_curr[sort_idx_target], source_labels, prev_spatial_spike_train)
-
-                        # print(len(centroid_wass), len(field_sizes_prev)*len(field_sizes_curr))
-
-                        assert len(centroid_wass) == len(field_sizes_prev) * len(field_sizes_curr)
-
-                        # if max_centroid_count > len(centroid_wass):
-                        #     rng = max_centroid_count
-                        # else:
-                        #     rng = len(centroid_wass)
-
-                        prev_key_len = None
-                        # prev_wass_key = None 
-                        # prev_id_key = None
-
-                        # max_key_len = 0
+                        # prev spatial spike train is source spatial spike train
+                        centroid_wass, centroid_pairs = compute_centroid_remapping(target_centers, source_labels, prev_spatial_spike_train)
 
                         centroid_output['animal_id'].append(animal.animal_id)
                         centroid_output['unit_id'].append(cell_label)
                         centroid_output['tetrode'].append(animal.animal_id.split('tet')[-1])
                         centroid_output['session_ids'].append(['session_' + str(i), 'session_' + str(i+1)])
-                        # centroid_output['cumulative_wass'].append()
 
-                        # print('rng: ' + str(max_centroid_count) + ' prev: ' + str(max_centroid_count) + ' curr: ' + str(len(centroid_wass)))
-                        for n in range(max_centroid_count):
-                            wass_key = 'centroid_wass_'+str(n+1)
-                            id_key = 'centroid_ids_'+str(n+1)
-
-                            if wass_key not in centroid_output:
-                                centroid_output[wass_key] = []
-                                centroid_output[id_key] = []
-                            # else: 
-
-                            if n < len(centroid_wass):
-                                centroid_output[wass_key].append(centroid_wass[n])
-                                centroid_output[id_key].append(centroid_pairs[n])
-                            else:
-                                centroid_output[wass_key].append(0)
-                                centroid_output[id_key].append([0,0])
-
-                            # curr_key_len = len(rate_output[wass_key])
-
-                            if prev_key_len is not None and prev_key_len > len(centroid_output[wass_key]):
-                                diff = prev_key_len - len(centroid_output[wass_key])
-
-                                print('Should not see this line')
-
-                                assert diff > 0
-                                # print(diff, len(rate_output[wass_key]))
-                                for k in range(diff):
-                                    centroid_output[wass_key] = [0] + centroid_output[wass_key]
-                                    centroid_output[id_key] = [[0,0]] + centroid_output[id_key]
-
-                                # print(prev_key_len,  len(rate_output[wass_key]))
-                                assert prev_key_len == len(centroid_output[wass_key])
-
-                            prev_key_len = len(centroid_output[wass_key])
-                            # prev_wass_key = wass_key
-                            # prev_id_key = id_key
-
-                            # if curr_key_len > max_key_len:
-                            #     max_key_len = curr_key_len
-
-                        # if 'centroid_comp_count' not in rate_output:
-                        #     rate_output['centroid_comp_count'] = []
-
-                        # rate_output['centroid_comp_count'].append(rng)
-
-                        # global remapping ?
-                        # centroids cdist
-                        # nswe 4 direction distance
-
-                        # remapping_distances[i-1,cell_label-1] = wass
+                        centroid_output = _fill_centroid_output(centroid_output, max_centroid_count, centroid_wass, centroid_pairs)
 
                         remapping_indices[cell_label-1].append(i-1)
 
                         remapping_session_ids[cell_label-1].append([i-1,i])
-
-                        # if max_centroid_count is not None:
-                        #     max_centroid_count = max(max_centroid_count, len(centroid_wass))
-                        # else:
-                        #     max_centroid_count = len(centroid_wass)
 
                         c += 1
                     else:
                         prev = np.copy(curr)
                         prev_spatial_spike_train = curr_spatial_spike_train
                         prev_id = curr_id
-
-            # if 'rate_remapping' not in animal.stats_dict:
-            #     animal.stats_dict['rate_remapping'] = {}
-
-            # prev_max_centroid_count = max_centroid_count
-
-            # distances = np.asarray(remapping_distances[:, cell_label-1])[remapping_indices[cell_label-1]]
-
-            # session_pairs = np.asarray(remapping_session_ids[cell_label-1])
-
-            # animal.stats_dict['rate_remapping']['cell_' + str(cell_label)] = {}
-            # animal.stats_dict['rate_remapping']['cell_' + str(cell_label)]['distances'] = distances
-            # animal.stats_dict['rate_remapping']['cell_' + str(cell_label)]['session_pairs'] = session_pairs
 
             c += 1
 
@@ -350,3 +231,38 @@ def _find_largest_centroid_count(study):
 
                 print(len(field_sizes))
                 max_centroid_count = max(max_centroid_count, len(field_sizes))
+
+def _sort_centroids_by_field_size(field_sizes_source, field_sizes_target, blobs_map_source, target_centers):
+    sort_idx_source = np.argsort(-np.array(field_sizes_source))
+    source_labels = np.zeros(blobs_map_source.shape)
+    map_dict = {}
+    for k in np.unique(blobs_map_source):
+        if k != 0:
+            # row, col = np.where(labels_prev == k)
+            # source_labels[row, col] = sort_idx_source[k-1] + 1
+            map_dict[k] = sort_idx_source[k-1] + 1
+        else:
+            map_dict[k] = 0
+    source_labels = np.vectorize(map_dict.get)(blobs_map_source)
+
+    sort_idx_target = np.argsort(-np.array(field_sizes_target))
+
+    return target_centers[sort_idx_target], source_labels
+
+def _fill_centroid_output(centroid_output, max_centroid_count, centroid_wass, centroid_pairs):
+    for n in range(max_centroid_count):
+        wass_key = 'centroid_wass_'+str(n+1)
+        id_key = 'centroid_ids_'+str(n+1)
+
+        if wass_key not in centroid_output:
+            centroid_output[wass_key] = []
+            centroid_output[id_key] = []
+
+        if n < len(centroid_wass):
+            centroid_output[wass_key].append(centroid_wass[n])
+            centroid_output[id_key].append(centroid_pairs[n])
+        else:
+            centroid_output[wass_key].append(0)
+            centroid_output[id_key].append([0,0])
+
+    return centroid_output
