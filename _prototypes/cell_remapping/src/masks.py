@@ -39,10 +39,10 @@ def make_object_ratemap(object_location, rate_map_obj):
         # }
 
         object_location_dict = {
-            0: (int(np.floor(y/2)), 0),
-            90: (y-1, int(np.floor(x/2))),
-            180: (int(np.floor(y/2)), x-1),
-            270:  (0, int(np.floor(x/2)))
+            0: (0,int(np.floor(x/2))),
+            90: (int(np.floor(y/2)),y-1),
+            180: (y-1,int(np.floor(x/2))),
+            270:  (int(np.floor(y/2)),0)
         }
 
         id_y, id_x = object_location_dict[object_location]
@@ -63,7 +63,7 @@ def make_object_ratemap(object_location, rate_map_obj):
 
         # set that bin equal to 1
 
-        arena[id_x, id_y] = 1
+        arena[id_y, id_x] = 1
 
         # print(np.max(rate_map), np.max(rate_map)-np.min(rate_map), np.min(rate_map), np.sum(rate_map))
         # arena[id_x, id_y] = np.sum(rate_map)

@@ -22,7 +22,10 @@ def main():
     study = make_study(data_dir,settings_dict)
     study.make_animals()
     output = compute_remapping(study, settings_dict)
-
+    for key in output['centroid']:
+        print(key)
+        print(np.array(output['centroid'][key]).shape)
+        print(output['centroid'][key])
     if 'rate' in output:
         df = pd.DataFrame(output['rate'])
         # df.to_csv(PROJECT_PATH + '/_prototypes/cell_remapping/output' + '/rate_remapping.csv')
@@ -35,7 +38,11 @@ def main():
         df = pd.DataFrame(output['centroid'])
         # df.to_csv(PROJECT_PATH + '/_prototypes/cell_remapping/output' + '/centroid_remapping.csv')
         df.to_excel(PROJECT_PATH + '/_prototypes/cell_remapping/output' + '/centroid_remapping.xlsx')
-
+    if 'context' in output:
+        for context in output['context']:
+            df = pd.DataFrame(output['context'][context])
+            # df.to_csv(PROJECT_PATH + '/_prototypes/cell_remapping/output' + '/context_output.csv')
+            df.to_excel(PROJECT_PATH + '/_prototypes/cell_remapping/output' + '/' + str(context) + '_output.xlsx')
 
     print('Total run time: ' + str(time.time() - start_time))
 

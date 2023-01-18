@@ -1,7 +1,10 @@
 import numpy as np
 import ot
 import os, sys
+import itertools
 from scipy.stats import wasserstein_distance
+from scipy.spatial.distance import cdist
+from scipy.optimize import linear_sum_assignment
 
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
@@ -9,53 +12,19 @@ sys.path.append(PROJECT_PATH)
 from _prototypes.cell_remapping.src.backend import get_backend, NumpyBackend
 from _prototypes.cell_remapping.src.utils import list_to_array
 
-def compute_centroid_remapping(centroid_t, label_s, spatial_spike_train_s):
-    # centroid_wass = np.zeros((len(np.unique(label_s)-1), len(centroid_t)))
+
+def _get_ratemap_bucket_midpoints(arena_size, y, x):
+    """
+    Helper function to create array of height and width bucket midpoints
     
-    centroid_wass = []
-    centroid_pairs = []
-
-    for i in range(1,len(np.unique(label_s))):
-        for j in range(len(centroid_t)):
-            source_label = np.copy(label_s)
-            # source_idx = np.where(label_s == i)[0]
-            # print(source_idx)
-            # source_label[source_idx] = 1
-
-            source_label[source_label != i] = 0
-            source_label[source_label == i] = 1
-
-            rows, cols = np.where(source_label == 1)
-
-            idx_s = np.array([rows, cols]).reshape((-1,2))
-
-            wass = single_point_wasserstein(centroid_t[j], source_label, spatial_spike_train_s.arena_size, ids=idx_s)
-
-            # centroid_wass[i-1,j] = wass
-
-            centroid_wass.append(wass)
-            centroid_pairs.append([i,j+1])
-
-    return np.array(centroid_wass), np.array(centroid_pairs).reshape((-1,2))
-
-def single_point_wasserstein(object_coords, rate_map, arena_size, ids=None):
-    # gets arena height and width as inches or whatever unit they were entered in the position file
+    Takes in arena dimensions (tuple) and y and x (64,64) dims of ratemap
+    """
     arena_height, arena_width = arena_size
 
     if len(arena_height) > 0:
         arena_height = arena_height[0]
     if len(arena_width) > 0:
         arena_width = arena_width[0]
-
-    # rate_map, _ = rate_map_obj.get_rate_map()
-
-    # gets rate map dimensions (64, 64)
-    y, x = rate_map.shape
-
-    # normalize rate map
-    total_mass = np.sum(rate_map)
-    if total_mass != 1:
-        rate_map = rate_map / total_mass
 
     # this is the step size between each bucket, so 0 to height step is first bucket, height_step to height_step*2 is next and so one
     height_step = arena_height/x
@@ -69,30 +38,126 @@ def single_point_wasserstein(object_coords, rate_map, arena_size, ids=None):
     height_bucket_midpoints = height + height_step/2
     width_bucket_midpoints = width + width_step/2
 
+    return height_bucket_midpoints, width_bucket_midpoints
+
+
+def compute_centroid_remapping(label_t, label_s, spatial_spike_train_t, spatial_spike_train_s, centroids_t, centroids_s):
+    """
+    _s/_t are source and target (i.e. prev/curr, ses1/ses2)
+
+    label is map of same dims as ratemap with diff label for each blob/activation field
+
+    spatial_spike_train is object to get ratemap/arena size from
+
+    centroid is a pt of centroid centre on blob map, this is (64,64) ratemap bins, need to convert to height bucket midpoints, these are also (x,y) so need to flip to (y,x) for (row,col), (height,width)
+    """
+    # centroid_wass = np.zeros((len(np.unique(label_s)-1), len(centroid_t)))
+    
+    centroid_pairs = []
+
+    target_rate_map_obj = spatial_spike_train_t.get_map('rate')
+    target_map, _ = target_rate_map_obj.get_rate_map()
+
+    y, x = target_map.shape
+
+    source_rate_map_obj = spatial_spike_train_s.get_map('rate')
+    source_map, _ = source_rate_map_obj.get_rate_map()
+
+    height_bucket_midpoints, width_bucket_midpoints = _get_ratemap_bucket_midpoints(spatial_spike_train_t.arena_size, y, x)
+
+    field_wass = []
+    test_field_wass = []
+    centroid_wass = []
+    bin_field_wass = []
+
+    # for every unique blob label in source and target maps, compute wass
+    for i in range(1,len(np.unique(label_s))):
+        rows, cols = np.where(label_s == i)
+
+        bin_source_map = np.zeros(source_map.shape)
+        bin_source_map[rows, cols] = 1
+        
+        height_source_pts = height_bucket_midpoints[rows]
+        width_source_pts = width_bucket_midpoints[cols]
+
+        source_pts = np.array([height_source_pts, width_source_pts]).T
+
+        for j in range(1,len(np.unique(label_t))):
+            rows, cols = np.where(label_t == j)
+
+            height_source_pts = height_bucket_midpoints[rows]
+            width_source_pts = width_bucket_midpoints[cols]
+
+            target_pts = np.array([height_source_pts, width_source_pts]).T
+
+            # sliced wass on source pts and target pts (y,x) coordinates
+            wass = pot_sliced_wasserstein(source_pts, target_pts)
+
+            bin_target_map = np.zeros(target_map.shape)
+            bin_target_map[rows, cols] = 1
+
+            centroid_pairs.append([i,j])
+
+            # euclidean distance between points
+            c_wass = np.linalg.norm(np.array((centroids_t[j-1][0], centroids_t[j-1][1])) - np.array((centroids_s[i-1][0],centroids_s[i-1][1])))
+
+            # testing cdist / linear sum approach
+            bin_source_map = bin_source_map/np.sum(bin_source_map)
+            bin_target_map = bin_target_map/np.sum(bin_target_map)
+
+            d = cdist(bin_source_map, bin_target_map)
+            assignment = linear_sum_assignment(d)
+            test_wass = d[assignment].sum() / spatial_spike_train_s.arena_size[0] 
+
+            # test sliced wass on binary maps
+            bin_wass = pot_sliced_wasserstein(bin_source_map, bin_target_map)
+        
+            field_wass.append(wass)
+            test_field_wass.append(test_wass)
+            centroid_wass.append(c_wass)
+            bin_field_wass.append(bin_wass)
+
+    # sum(field_wass) is returned as cumualtive wass
+    return np.array(field_wass), np.array(centroid_pairs), np.sum(field_wass), test_field_wass, np.array(centroid_wass), np.array(bin_field_wass)
+
+
+def single_point_wasserstein(object_coords, rate_map, arena_size, ids=None):
+    """
+    Computes wass distancees for map relative to single point coordinate
+
+    Can pass in masked map using ids to denote bins to include
+    """
+
+    # gets rate map dimensions (64, 64)
+    y, x = rate_map.shape
+
+    height_bucket_midpoints, width_bucket_midpoints = _get_ratemap_bucket_midpoints(arena_size, y, x)
+
+    # rate_map, _ = rate_map_obj.get_rate_map()
+
+    # normalize rate map
+    total_mass = np.sum(rate_map)
+    if total_mass != 1:
+        rate_map = rate_map / total_mass
+
     # these are the coordinates of the object on a 64,64 array so e.g. (0,32)
     if isinstance(object_coords, dict):
         obj_x = object_coords['x']
         obj_y = object_coords['y']
     else:
-        obj_x = object_coords[0]
-        obj_y = object_coords[1]
+        obj_y = object_coords[0]
+        obj_x = object_coords[1]
 
-    # loop through each bucket and compute the euclidean distance between the object and the bucket
-    # then multiply that distance by the rate map value at that bucket
-    weighted_dists = np.zeros((y,x))
-    for i in range(y):
-        for j in range(x):
-            if ids is not None and [i,j] in ids:
-                pt = (width_bucket_midpoints[i], height_bucket_midpoints[j])
-                dist = np.linalg.norm(np.array((obj_y, obj_x)) - np.array(pt))
-                weighted_dists[i,j] = dist * rate_map[i,j]
-            elif ids is None:
-                pt = (width_bucket_midpoints[i], height_bucket_midpoints[j])
-                dist = np.linalg.norm(np.array((obj_y, obj_x)) - np.array(pt))
-                weighted_dists[i,j] = dist * rate_map[i,j]
+    # Batch apply euclidean distance metric, use itertools for permutations
+    if ids is None:
+        weighted_dists = list(map(lambda j, i: np.linalg.norm(np.array((obj_y, obj_x)) - np.array((width_bucket_midpoints[i], height_bucket_midpoints[j]))) * rate_map[j,i], itertools.product(np.arange(0,y,1),np.arange(0,x,1))))
+    else:
+        pdct = itertools.product(np.arange(0,y,1),np.arange(0,x,1))
+        new_ids = set(list(pdct)).intersection(tuple(map(tuple, ids)))
+        weighted_dists = list(map(lambda j, i: np.linalg.norm(np.array((obj_y, obj_x)) - np.array((width_bucket_midpoints[i], height_bucket_midpoints[j]))) * rate_map[j,i], np.array(list(new_ids)).T[0], np.array(list(new_ids)).T[1]))
 
     # then sum
-    return np.sum(weighted_dists)
+    return np.sum(weighted_dists) / len(ids)
 
 
 # https://stats.stackexchange.com/questions/404775/calculate-earth-movers-distance-for-two-grayscale-images
