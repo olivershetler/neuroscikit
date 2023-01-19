@@ -33,7 +33,7 @@ def plot_cell_waveform(cell, data_dir):
     fprefix = r'waveform_{}_{}_unit_{}'.format(animal, session, unit)
 
     ftemplate_short = "{}.{}"
-    fshort = ftemplate_short.format(fprefix, r'pdf')
+    fshort = ftemplate_short.format(fprefix, r'png')
     fp = os.path.join(save_dir, fshort)
     fig.f.savefig(fp, dpi=360.)
     plt.close(fig.f)
