@@ -6,9 +6,7 @@ import matplotlib.gridspec as gridspec
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
 
-from _prototypes.waveform_plotter.src.plots import plot_cell_waveform, plot_cell_rate_map
-
-
+from _prototypes.cell_plotter.src.plots import plot_cell_waveform, plot_cell_rate_map
 
 def batch_plots(study, settings_dict, data_dir):
 
