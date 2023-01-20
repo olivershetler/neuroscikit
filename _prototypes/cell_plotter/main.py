@@ -8,8 +8,8 @@ import time
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
 
-from _prototypes.waveform_plotter.src.batch_plots import batch_plots
-from _prototypes.waveform_plotter.src.settings import settings_dict
+from _prototypes.cell_plotter.src.batch_plots import batch_plots
+from _prototypes.cell_plotter.src.settings import settings_dict
 from x_io.rw.axona.batch_read import make_study
 
 def main():
