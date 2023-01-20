@@ -9,5 +9,18 @@ settings_dict = {'session': session_settings,
 'smoothing_factor': 3, # EDIT HERE
 'useMatchedCut': False, # EDIT HERE
 'plotCellWaveforms': True, # EDIT HERE
+'plotCellRatemap': True, # EDIT HERE
+'outputStructure': 'nested', # EDIT HERE
 # ... to add future plots
 } 
+
+
+###########################################################################################
+                        # OUTPUT STRUCTURES TO CHOOSE FROM #
+###########################################################################################
+
+output_structures = ['nested', 'single', 'sequential']
+
+# Nested output structure is: Animal_tetrode --> Session --> plot folders
+# Single output structure is: Animal --> plot folders (tetrode1_session1_unit1)
+# Sequential output structure is: Animal_tetrode --> Matched Unit --> sessions
