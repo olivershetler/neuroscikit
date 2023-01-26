@@ -6,7 +6,7 @@ PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
 
 from library.hafting_spatial_maps import SpatialSpikeTrain2D
-from _prototypes.cell_remapping.src.rate_map_plots import plot_obj_remapping, plot_rate_remapping
+from _prototypes.cell_remapping.src.rate_map_plots import plot_obj_remapping, plot_rate_remapping, plot_fields_remapping
 from _prototypes.cell_remapping.src.wasserstein_distance import sliced_wasserstein, single_point_wasserstein, pot_sliced_wasserstein, compute_centroid_remapping, _get_ratemap_bucket_midpoints
 from _prototypes.cell_remapping.src.masks import make_object_ratemap, check_disk_arena, flat_disk_mask
 from library.maps import map_blobs
@@ -14,8 +14,6 @@ from scripts.batch_map.batch_map import batch_map
 from _prototypes.cell_remapping.src.settings import obj_output, centroid_output, tasks, session_comp_categories, rate_output, context_output, variations
 from scipy.spatial.distance import cdist
 from scipy.optimize import linear_sum_assignment
-
-
 import matplotlib.pyplot as plt
 
 """
@@ -49,7 +47,7 @@ def compute_remapping(study, settings):
 
     c = 0
 
-    batch_map(study, tasks)
+    batch_map(study, tasks, settings)
     
     max_centroid_count, blobs_dict = _aggregate_cell_info(study)
 
@@ -100,7 +98,10 @@ def compute_remapping(study, settings):
                     spatial_spike_train = cell.stats_dict['cell_stats']['spatial_spike_train']
 
                     rate_map_obj = spatial_spike_train.get_map('rate')
-                    rate_map, _ = rate_map_obj.get_rate_map()
+                    if settings['normalizeRate']:
+                        rate_map, _ = rate_map_obj.get_rate_map()
+                    else:
+                        _, rate_map = rate_map_obj.get_rate_map()
                     
                     # Disk mask ratemap
                     if cylinder:
@@ -133,8 +134,12 @@ def compute_remapping(study, settings):
                             if cylinder:
                                 object_ratemap = flat_disk_mask(object_ratemap)
 
-                            rate_map, _ = rate_map_obj.get_rate_map()
-
+                            if settings['normalizeRate']:
+                                rate_map, _ = rate_map_obj.get_rate_map()
+                            else:
+                                _, rate_map = rate_map_obj.get_rate_map()
+                            
+                            # EMD on norm/unnorm ratemap + object map for OBJECT remapping
                             obj_wass = single_point_wasserstein(object_pos, rate_map, rate_map_obj.arena_size)
 
                             obj_dict[obj_wass_key].append(obj_wass)
@@ -162,37 +167,43 @@ def compute_remapping(study, settings):
                         # get x and y pts for spikes in pair of sessions (prev and curr) for a given comparison
 
                         prev_spike_pos_x, prev_spike_pos_y, _ = prev_spatial_spike_train.get_spike_positions()
-                        # prev_pts = np.array([prev_spike_pos_x, prev_spike_pos_y]).reshape((-1,2))
                         prev_pts = np.array([prev_spike_pos_x, prev_spike_pos_y]).T
 
                         curr_spike_pos_x, curr_spike_pos_y, _ = curr_spatial_spike_train.get_spike_positions()
-                        # curr_pts = np.array([curr_spike_pos_x, curr_spike_pos_y]).reshape((-1,2))
                         curr_pts = np.array([curr_spike_pos_x, curr_spike_pos_y]).T
 
-                        # Get cts from spike rate on ratemap
-                        prev_pts_ct = np.array(prev * 1000, dtype=np.int32)
-                        curr_pts_ct = np.array(curr * 1000, dtype=np.int32)
+                        y, x = prev.shape
+                        height_bucket_midpoints, width_bucket_midpoints = _get_ratemap_bucket_midpoints(prev_spatial_spike_train.arena_size, y, x)
+                        buckets = np.array(list(itertools.product(np.arange(0,y,1),np.arange(0,x,1))))
+                        source_weights = np.array(list(map(lambda x: prev[x[0],x[1]], buckets)))
+                        target_weights = np.array(list(map(lambda x: curr[x[0],x[1]], buckets)))
+                        source_weights = source_weights / np.sum(source_weights)
+                        target_weights = target_weights / np.sum(target_weights)
+                        coord_buckets = np.array(list(itertools.product(height_bucket_midpoints,width_bucket_midpoints)))
 
-                        height_bucket_midpoints, width_bucket_midpoints = _get_ratemap_bucket_midpoints(prev_spatial_spike_train.arena_size, 64, 64)
+                        # source_coords = np.array(list(map(lambda x: prev[x[0],x[1]], coord_buckets)))
+                        # target_coords = np.array(list(map(lambda x: curr[x[0],x[1]], coord_buckets)))
 
-                        # Use cts to 'weigh' number of (x,y) pts contributed by each spike
-                        prev_coords = list(map(lambda i,j: [[height_bucket_midpoints[i], width_bucket_midpoints[j]] for x in range(int(prev_pts_ct[i,j]))], np.arange(0,prev_pts_ct.shape[0],1), np.arange(0,prev_pts_ct.shape[1],1)))
-                        curr_coords = list(map(lambda i,j: [[height_bucket_midpoints[i], width_bucket_midpoints[j]] for x in range(int(curr_pts_ct[i,j]))], np.arange(0,curr_pts_ct.shape[0],1), np.arange(0,curr_pts_ct.shape[1],1)))
+                        # # Use cts to 'weigh' number of (x,y) pts contributed by each spike
+                        # prev_coords = list(map(lambda i,j: [[height_bucket_midpoints[i], width_bucket_midpoints[j]] for x in range(int(prev_pts_ct[i,j]))], np.arange(0,prev_pts_ct.shape[0],1), np.arange(0,prev_pts_ct.shape[1],1)))
+                        # curr_coords = list(map(lambda i,j: [[height_bucket_midpoints[i], width_bucket_midpoints[j]] for x in range(int(curr_pts_ct[i,j]))], np.arange(0,curr_pts_ct.shape[0],1), np.arange(0,curr_pts_ct.shape[1],1)))
 
-                        prev_coords = list(itertools.chain.from_iterable(prev_coords))
-                        curr_coords = list(itertools.chain.from_iterable(curr_coords))
+                        # prev_coords = list(itertools.chain.from_iterable(prev_coords))
+                        # curr_coords = list(itertools.chain.from_iterable(curr_coords))
 
-                        # Test wass is adjusted spike pos
-                        test_wass = pot_sliced_wasserstein(prev_coords, curr_coords)
-                        # Sliced wass is without adjustemennt
-                        sliced_wass = pot_sliced_wasserstein(prev_pts, curr_pts)
+                        # print(coord_buckets.shape, source_weights.shape, target_weights.shape)
+
+                        # This is EMD on whole map (binary) 
+                        bin_wass = pot_sliced_wasserstein(prev_pts, curr_pts)
+                        # This is EMD on whole map for normalized/unnormalized rate remapping
+                        sliced_wass = pot_sliced_wasserstein(coord_buckets, coord_buckets, source_weights, target_weights)
                         
                         rate_dict['animal_id'].append(animal.animal_id)
                         rate_dict['unit_id'].append(cell_label)
                         rate_dict['tetrode'].append(animal.animal_id.split('tet')[-1])
                         rate_dict['session_ids'].append([prev_key, curr_key])
                         rate_dict['sliced_wass'].append(sliced_wass)
-                        rate_dict['test_wass'].append(test_wass)
+                        rate_dict['bin_wass'].append(bin_wass)
 
                         # d = cdist(prev_pts, curr_pts)
                         # assignment = linear_sum_assignment(d)
@@ -226,23 +237,44 @@ def compute_remapping(study, settings):
                             target_labels, source_labels, source_centroids, target_centroids = _sort_centroids_by_field_size(field_sizes_prev, field_sizes_curr, labels_prev, labels_curr, centroids_prev, centroids_curr)
 
                             # prev spatial spike train is source spatial spike train
-                            field_wass, field_pairs, cumulative_wass, test_wass, centroid_wass, binary_wass = compute_centroid_remapping(target_labels, source_labels, curr_spatial_spike_train, prev_spatial_spike_train, target_centroids, source_centroids)
+                            # field_wass, field_pairs, cumulative_wass, test_wass, centroid_wass, binary_wass = compute_centroid_remapping(target_labels, source_labels, curr_spatial_spike_train, prev_spatial_spike_train, target_centroids, source_centroids)
                             # cumulative_wass = compute_cumulative_centroid_remapping(target_centers, source_labels, prev_spatial_spike_train, field_sizes_curr)
+                            # print(animal.animal_id, cell_label, animal.animal_id.split('tet')[-1], [prev_key, curr_key])
+                            
+                            if len(np.unique(target_labels)) > 1 and len(np.unique(source_labels)) > 1:
 
-                            centroid_dict['animal_id'].append(animal.animal_id)
-                            centroid_dict['unit_id'].append(cell_label)
-                            centroid_dict['tetrode'].append(animal.animal_id.split('tet')[-1])
-                            centroid_dict['session_ids'].append([prev_key, curr_key])
-                            centroid_dict['cumulative_wass'].append([cumulative_wass, np.sum(centroid_wass), np.sum(binary_wass)])
-                            # centroid_dict['binary_wass'].append(binary_wass)
+                                """
+                                cumulative_dict has field/centroid/binary wass, cumulative = all fields used
+                                'field_wass' is EMD on ALL fields for norm/unnorm RATE remapping
+                                'centroid_wass' is EMD on ALL field centroids for norm/unnorm LOCATION remapping (i.e. field centre points averaged + EMD calculated)
+                                'binary_wass' is EMD on ALL fields (binary) for norm/unnorm LOCATION remapping (i.e. unweighted such that each pt contributes equally within field)
 
-                            wass_args = [field_wass, centroid_wass, binary_wass]
+                                permute_dict has field/centroid/binary wass, permute = all combinations of single fields for given session pair
+                                'field_wass' is EMD on SINGLE fields for norm/unnorm RATE remapping
+                                'centroid_wass' is EMD on SINGLE field centroids for norm/unnorm LOCATION remapping (i.e. EMD calculated directly between diff centroid pairs across sessions)
+                                'binary_wass' is EMD on SINGLE fields (binary) for norm/unnorm LOCATION remapping (i.e. unweighted such that each pt contributes equally within field)
+                                """
+                                permute_dict, cumulative_dict = compute_centroid_remapping(target_labels, source_labels, curr_spatial_spike_train, prev_spatial_spike_train, target_centroids, source_centroids, settings)
 
-                            # need to make test_wass save as in fill centroid dict
-                            # centroid_dict['test_wass'].append(test_wass)
-                            # centroid_dict['centroid_wass'].append(centroid_wass)
 
-                            centroid_dict = _fill_centroid_dict(centroid_dict, max_centroid_count, wass_args, field_pairs)
+                                centroid_dict['animal_id'].append(animal.animal_id)
+                                centroid_dict['unit_id'].append(cell_label)
+                                centroid_dict['tetrode'].append(animal.animal_id.split('tet')[-1])
+                                centroid_dict['session_ids'].append([prev_key, curr_key])
+                                # field wass is weighed, centroid wass is centre pts, binary wass is unweighed (as if was bianry map with even weight so one pt per position in map)
+                                centroid_dict['cumulative_wass'].append([cumulative_dict['field_wass'], cumulative_dict['centroid_wass'], cumulative_dict['binary_wass']])
+                                # centroid_dict['binary_wass'].append(binary_wass)
+
+                                wass_args = [permute_dict['field_wass'], permute_dict['centroid_wass'], permute_dict['binary_wass']]
+
+                                # need to make test_wass save as in fill centroid dict
+                                # centroid_dict['test_wass'].append(test_wass)
+                                # centroid_dict['centroid_wass'].append(centroid_wass)
+
+                                centroid_dict = _fill_centroid_dict(centroid_dict, max_centroid_count, wass_args, permute_dict['pairs'])
+
+                                if settings['plotFields']:
+                                    plot_fields_remapping(source_labels, target_labels, prev_spatial_spike_train, curr_spatial_spike_train, source_centroids, target_centroids, centroid_dict)
 
                         remapping_indices[cell_label-1].append(i-1)
 
@@ -279,8 +311,6 @@ def compute_remapping(study, settings):
                             cell = ensemble.get_cell_by_id(cell_label)
 
                             spatial_spike_train = cell.stats_dict['cell_stats']['spatial_spike_train']
-                            # rate_map_obj = spatial_spike_train.get_map('rate')
-                            # rate_map, _ = rate_map_obj.get_rate_map()
 
                             comp_curr = spatial_spike_train
                             comp_curr_cell = cell
@@ -344,7 +374,7 @@ def _read_location_from_file(path, cylinder, true_var):
         items = path.split('/')[-1].split('-')
         idx = items.index(str(true_var)) + 2 # the object location is always 2 positions away from word denoting arena hape (e.g round/cylinder) defined by true_var
         # e.g. ROUND-3050-90_2.clu
-        object_location = items[idx].split('.')[0].split('_')[0]
+        object_location = items[idx].split('.')[0].split('_')[0].lower()
 
     object_present = True
     if str(object_location) == 'no':
@@ -354,7 +384,7 @@ def _read_location_from_file(path, cylinder, true_var):
         object_location = 0
     else:
         object_location = int(object_location)
-        assert int(object_location) in [0,90,180,270]
+        assert int(object_location) in [0,90,180,270], 'Failed bcs obj location is ' + str(int(object_location)) + ' and that is not in [0,90,180,270]'
 
     return object_location
 

@@ -41,7 +41,7 @@ def _get_ratemap_bucket_midpoints(arena_size, y, x):
     return height_bucket_midpoints, width_bucket_midpoints
 
 
-def compute_centroid_remapping(label_t, label_s, spatial_spike_train_t, spatial_spike_train_s, centroids_t, centroids_s):
+def compute_centroid_remapping(label_t, label_s, spatial_spike_train_t, spatial_spike_train_s, centroids_t, centroids_s, settings):
     """
     _s/_t are source and target (i.e. prev/curr, ses1/ses2)
 
@@ -56,12 +56,33 @@ def compute_centroid_remapping(label_t, label_s, spatial_spike_train_t, spatial_
     centroid_pairs = []
 
     target_rate_map_obj = spatial_spike_train_t.get_map('rate')
-    target_map, _ = target_rate_map_obj.get_rate_map()
+
+    if settings['normalizeRate']:
+        target_map, _ = target_rate_map_obj.get_rate_map()
+    else:
+        _, target_map = target_rate_map_obj.get_rate_map()
+                    
+    # target_map, raw_target_map = target_rate_map_obj.get_rate_map()
 
     y, x = target_map.shape
 
     source_rate_map_obj = spatial_spike_train_s.get_map('rate')
-    source_map, _ = source_rate_map_obj.get_rate_map()
+    if settings['normalizeRate']:
+        source_map, _ = source_rate_map_obj.get_rate_map()
+    else:
+        _, source_map = source_rate_map_obj.get_rate_map()
+
+    # source_map, raw_source_map = source_rate_map_obj.get_rate_map()
+
+    # # normalize rate map
+    # total_mass = np.sum(source_map)
+    # if total_mass != 1:
+    #     source_map = source_map / total_mass
+
+    # # normalize rate map
+    # total_mass = np.sum(target_map)
+    # if total_mass != 1:
+    #     target_map = target_map / total_mass
 
     height_bucket_midpoints, width_bucket_midpoints = _get_ratemap_bucket_midpoints(spatial_spike_train_t.arena_size, y, x)
 
@@ -70,31 +91,41 @@ def compute_centroid_remapping(label_t, label_s, spatial_spike_train_t, spatial_
     centroid_wass = []
     bin_field_wass = []
 
+    permute_dict = {}
+    cumulative_dict = {}
+
     # for every unique blob label in source and target maps, compute wass
     for i in range(1,len(np.unique(label_s))):
         rows, cols = np.where(label_s == i)
-
-        bin_source_map = np.zeros(source_map.shape)
-        bin_source_map[rows, cols] = 1
+        source_ids = np.array([rows, cols]).T
+        source_weights = np.array(list(map(lambda x: source_map[x[0], x[1]], source_ids)))
+        source_weights = source_weights / np.sum(source_weights)
+        # bin_source_map = np.zeros(source_map.shape)
+        # bin_source_map[rows, cols] = 1
         
         height_source_pts = height_bucket_midpoints[rows]
         width_source_pts = width_bucket_midpoints[cols]
-
         source_pts = np.array([height_source_pts, width_source_pts]).T
+        
 
         for j in range(1,len(np.unique(label_t))):
             rows, cols = np.where(label_t == j)
+            target_ids = np.array([rows, cols]).T
+            target_weights = np.array(list(map(lambda x: target_map[x[0], x[1]], target_ids)))
+            target_weights = target_weights / np.sum(target_weights)
 
-            height_source_pts = height_bucket_midpoints[rows]
-            width_source_pts = width_bucket_midpoints[cols]
+            height_target_pts = height_bucket_midpoints[rows]
+            width_target_pts = width_bucket_midpoints[cols]
+            target_pts = np.array([height_target_pts, width_target_pts]).T
 
-            target_pts = np.array([height_source_pts, width_source_pts]).T
 
             # sliced wass on source pts and target pts (y,x) coordinates
-            wass = pot_sliced_wasserstein(source_pts, target_pts)
+            wass = pot_sliced_wasserstein(source_pts, target_pts, source_weights, target_weights)
+            # sliced wass on source pts and target pts (y,x) coordinates
+            bin_wass = pot_sliced_wasserstein(source_pts, target_pts)
 
-            bin_target_map = np.zeros(target_map.shape)
-            bin_target_map[rows, cols] = 1
+            # bin_target_map = np.zeros(target_map.shape)
+            # bin_target_map[rows, cols] = 1
 
             centroid_pairs.append([i,j])
 
@@ -102,23 +133,61 @@ def compute_centroid_remapping(label_t, label_s, spatial_spike_train_t, spatial_
             c_wass = np.linalg.norm(np.array((centroids_t[j-1][0], centroids_t[j-1][1])) - np.array((centroids_s[i-1][0],centroids_s[i-1][1])))
 
             # testing cdist / linear sum approach
-            bin_source_map = bin_source_map/np.sum(bin_source_map)
-            bin_target_map = bin_target_map/np.sum(bin_target_map)
+            # bin_source_map = bin_source_map/np.sum(bin_source_map)
+            # bin_target_map = bin_target_map/np.sum(bin_target_map)
 
-            d = cdist(bin_source_map, bin_target_map)
-            assignment = linear_sum_assignment(d)
-            test_wass = d[assignment].sum() / spatial_spike_train_s.arena_size[0] 
+            # d = cdist(bin_source_map, bin_target_map)
+            # assignment = linear_sum_assignment(d)
+            # test_wass = d[assignment].sum() / spatial_spike_train_s.arena_size[0] 
 
             # test sliced wass on binary maps
-            bin_wass = pot_sliced_wasserstein(bin_source_map, bin_target_map)
+            # bin_wass = pot_sliced_wasserstein(bin_source_map, bin_target_map)
         
             field_wass.append(wass)
-            test_field_wass.append(test_wass)
+            # test_field_wass.append(test_wass)
             centroid_wass.append(c_wass)
             bin_field_wass.append(bin_wass)
 
+    # cumulative wasses
+    rows, cols = np.where(label_s != 0)
+    source_ids = np.array([rows, cols]).T
+    height_source_pts = height_bucket_midpoints[rows]
+    width_source_pts = width_bucket_midpoints[cols]
+    source_pts = np.array([height_source_pts, width_source_pts]).T
+    # bin_source_map = np.zeros(source_map.shape)
+    # bin_source_map[rows, cols] = 1
+    
+    rows, cols = np.where(label_t != 0)
+    target_ids = np.array([rows, cols]).T
+    height_source_pts = height_bucket_midpoints[rows]
+    width_source_pts = width_bucket_midpoints[cols]
+    target_pts = np.array([height_source_pts, width_source_pts]).T
+    # print(np.unique(label_t), rows, cols, target_pts, label_t, target_ids)
+    # bin_target_map = np.zeros(target_map.shape)
+    # bin_target_map[rows, cols] = 1
+
+    source_weights = np.array(list(map(lambda x: source_map[x[0], x[1]], source_ids)))
+    target_weights = np.array(list(map(lambda x: target_map[x[0], x[1]], target_ids)))
+
+    source_weights = source_weights / np.sum(source_weights)
+    target_weights = target_weights / np.sum(target_weights)
+    # print(source_pts.shape, target_pts.shape, source_weights.shape, target_weights.shape, source_ids.shape, target_ids.shape)
+    wass = pot_sliced_wasserstein(source_pts, target_pts, source_weights, target_weights)
+    bin_wass = pot_sliced_wasserstein(source_pts, target_pts)
+    c_wass = np.linalg.norm(np.array((np.mean(centroids_t, axis=0)[0], np.mean(centroids_t, axis=0)[1])) - np.array((np.mean(centroids_s, axis=0)[0],np.mean(centroids_s, axis=0)[1])))
+    cumulative_dict['field_wass'] = wass
+    cumulative_dict['binary_wass'] = bin_wass
+    cumulative_dict['centroid_wass'] = c_wass
+
+    permute_dict['field_wass'] = np.array(field_wass)
+    permute_dict['pairs'] = np.array(centroid_pairs)
+    # permute_dict['test_field_wass'] = np.array(test_field_wass)
+    permute_dict['centroid_wass'] = np.array(centroid_wass)
+    permute_dict['binary_wass'] = np.array(bin_field_wass)
+
     # sum(field_wass) is returned as cumualtive wass
-    return np.array(field_wass), np.array(centroid_pairs), np.sum(field_wass), test_field_wass, np.array(centroid_wass), np.array(bin_field_wass)
+    # return np.array(field_wass), np.array(centroid_pairs), np.sum(field_wass), test_field_wass, np.array(centroid_wass), np.array(bin_field_wass)
+    return permute_dict, cumulative_dict
 
 
 def single_point_wasserstein(object_coords, rate_map, arena_size, ids=None):
@@ -150,14 +219,14 @@ def single_point_wasserstein(object_coords, rate_map, arena_size, ids=None):
 
     # Batch apply euclidean distance metric, use itertools for permutations
     if ids is None:
-        weighted_dists = list(map(lambda j, i: np.linalg.norm(np.array((obj_y, obj_x)) - np.array((width_bucket_midpoints[i], height_bucket_midpoints[j]))) * rate_map[j,i], itertools.product(np.arange(0,y,1),np.arange(0,x,1))))
+        weighted_dists = list(map(lambda x: np.linalg.norm(np.array((obj_y, obj_x)) - np.array((height_bucket_midpoints[x[0]], width_bucket_midpoints[x[1]]))) * rate_map[x[0],x[1]], list(itertools.product(np.arange(0,y,1),np.arange(0,x,1)))))
     else:
         pdct = itertools.product(np.arange(0,y,1),np.arange(0,x,1))
         new_ids = set(list(pdct)).intersection(tuple(map(tuple, ids)))
-        weighted_dists = list(map(lambda j, i: np.linalg.norm(np.array((obj_y, obj_x)) - np.array((width_bucket_midpoints[i], height_bucket_midpoints[j]))) * rate_map[j,i], np.array(list(new_ids)).T[0], np.array(list(new_ids)).T[1]))
+        weighted_dists = list(map(lambda x: np.linalg.norm(np.array((obj_y, obj_x)) - np.array((height_bucket_midpoints[x[0]], width_bucket_midpoints[x[1]]))) * rate_map[x[0],x[1]], np.array(list(new_ids)).T[0], np.array(list(new_ids)).T[1]))
 
     # then sum
-    return np.sum(weighted_dists) / len(ids)
+    return np.sum(weighted_dists)
 
 
 # https://stats.stackexchange.com/questions/404775/calculate-earth-movers-distance-for-two-grayscale-images

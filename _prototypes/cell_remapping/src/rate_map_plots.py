@@ -56,14 +56,14 @@ def plot_obj_remapping(obj_rate_map, ses_rate_map, plot_settings):
     title = ses_key + ' & object ' + str(object_location) + ' : ' + str(round(sliced_wass, 2))
     # print(title)
 
-    fig.f.suptitle(title, ha='center', fontweight='bold', fontsize='large')
+    fig.f.suptitle(title, ha='center', fontweight='bold')
 
     """ save """
     # create a dsave and an fprefix
     save_dir = PROJECT_PATH + '/_prototypes/cell_remapping/output/object'
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
-    fprefix = 'ratemap_cell_{}_{}_{}_unit_{}'.format(animal_id, ses_key, object_location, unit_id)
+    fprefix = 'obj_ratemap_cell_{}_{}_{}_unit_{}'.format(animal_id, ses_key, object_location, unit_id)
 
     ftemplate_short = "{}.{}"
     fshort = ftemplate_short.format(fprefix, 'pdf')
@@ -71,15 +71,108 @@ def plot_obj_remapping(obj_rate_map, ses_rate_map, plot_settings):
     fig.f.savefig(fp, dpi=360.)
     plt.close(fig.f)
 
+def plot_fields_remapping(label_s, label_t, spatial_spike_train_s, spatial_spike_train_t, centroid_s, centroid_t, plot_settings):
 
-class TemplateFig():
+    target_rate_map_obj = spatial_spike_train_t.get_map('rate')
+    target_map, _ = target_rate_map_obj.get_rate_map()
+
+    y, x = target_map.shape
+
+    source_rate_map_obj = spatial_spike_train_s.get_map('rate')
+    source_map, _ = source_rate_map_obj.get_rate_map()
+
+
+    fig = FieldsTemplateFig()
+
+    fig.density_field_plot(source_map, centroid_s, fig.ax['1'])
+    fig.density_field_plot(target_map, centroid_t, fig.ax['2'])
+    fig.label_field_plot(label_s, centroid_s, fig.ax['3'])
+    fig.label_field_plot(label_t, centroid_t, fig.ax['4'])
+    fig.binary_field_plot(label_s, centroid_s, fig.ax['5'])
+    fig.binary_field_plot(label_t, centroid_t, fig.ax['6'])
+
+    prev_key, curr_key = plot_settings['session_ids'][-1]
+    cumulative_wass = plot_settings['cumulative_wass'][-1]
+    unit_id = plot_settings['unit_id'][-1]
+    animal_id = plot_settings['animal_id'][-1]
+
+    title = prev_key + ' & ' + curr_key + ' : ' + str(cumulative_wass)
+
+    fig.f.suptitle(title, ha='center', fontweight='bold')
+    # print(title)
+
+    # fig.f.suptitle(title, ha='center', fontweight='bold', fontsize='large')
+
+    """ save """
+    # create a dsave and an fprefix
+    save_dir = PROJECT_PATH + '/_prototypes/cell_remapping/output/centroid'
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+    fprefix = 'fields_ratemap_cell_{}_{}_{}_unit_{}'.format(animal_id, prev_key, curr_key, unit_id)
+
+    ftemplate_short = "{}.{}"
+    fshort = ftemplate_short.format(fprefix, 'pdf')
+    fp = os.path.join(save_dir, fshort)
+    fig.f.savefig(fp, dpi=360.)
+    plt.close(fig.f)
+
+class FieldsTemplateFig():
     def __init__(self):
-        self.f = plt.figure(figsize=(10, 4))
+        self.f = plt.figure(figsize=(10, 18))
         # mpl.rc('font', **{'size': 20})
 
 
         self.gs = {
-            'all': gridspec.GridSpec(1, 2, left=0.05, right=0.95, bottom=0.05, top=0.95, figure=self.f),
+            'all': gridspec.GridSpec(3, 2, left=0.05, right=0.95, bottom=0.1, top=0.9, figure=self.f),
+        }
+
+        self.ax = {
+            '1': self.f.add_subplot(self.gs['all'][:1, :1]),
+            '2': self.f.add_subplot(self.gs['all'][:1, 1:2]),
+            '3': self.f.add_subplot(self.gs['all'][1:2, :1]),
+            '4': self.f.add_subplot(self.gs['all'][1:2, 1:2]),
+            '5': self.f.add_subplot(self.gs['all'][2:3, :1]),
+            '6': self.f.add_subplot(self.gs['all'][2:3, 1:2]),
+        }
+
+    def density_field_plot(self, rate_map, centroids, ax):
+
+        # toplot = _interpolate_matrix(rate_map, new_size=(256,256), cv2_interpolation_method=cv2.INTER_NEAREST)
+        toplot = rate_map
+
+        img = ax.imshow(np.uint8(cm.jet(toplot)*255))
+
+        for c in centroids:
+            ax.plot(c[1], c[0], 'r.', markersize=10)
+
+        self.f.colorbar(img, ax=ax, fraction=0.046, pad=0.04)
+
+    def label_field_plot(self, labels, centroids, ax):
+
+        img = ax.imshow(labels)
+
+        for c in centroids:
+            ax.plot(c[1], c[0], 'r.', markersize=10)
+
+    def binary_field_plot(self, labels, centroids, ax):
+
+        labels[labels != 0] = 1
+
+        img = ax.imshow(labels, cmap='Greys')
+
+        for c in centroids:
+            ax.plot(c[1], c[0], 'r.', markersize=10)
+
+
+
+class TemplateFig():
+    def __init__(self):
+        self.f = plt.figure(figsize=(10, 6))
+        # mpl.rc('font', **{'size': 20})
+
+
+        self.gs = {
+            'all': gridspec.GridSpec(1, 2, left=0.05, right=0.95, bottom=0.1, top=0.9, figure=self.f),
         }
 
         self.ax = {
