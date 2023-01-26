@@ -215,6 +215,10 @@ def batch_sessions(sorted_files, settings_dict, indiv_session_settings):
 
     sessions = {}
 
+    # to look for duplicates
+    file_sizes = {}
+    ses_spk_counts = {}
+
     c = 1
 
     for i in range(len(sorted_files)):
@@ -235,28 +239,51 @@ def batch_sessions(sorted_files, settings_dict, indiv_session_settings):
 
             session_settings_dict = settings_dict['session']
             # session_settings_dict['channel_count'] = indiv_session_settings['tetrode_counts'][i]
-            animal_id = str(indiv_session_settings['animal_ids'][i] + '_tet' + str(j+1))
-
-            session_settings_dict['animal'] = {'animal_id': animal_id}
+            tet_id = int(tet_files[j].split('.')[-1])
 
 
-            if settings_dict['useMatchedCut'] == True:
-                assert len(sorted_files[i]) > 3, print('Matched cut file not present, make sure to run unit matcher')
-                cut_file = matched_cut_files[j]
-                assert 'matched.cut' in cut_file
-            else:
-                cut_file = cut_files[j]
+            ######## TESTING MEMORY ERROR ########
+            if 'single_tet' not in settings_dict or tet_id == settings_dict['single_tet']:
 
-            tet_file = tet_files[j]
+                tet_key = str(tet_files[j].split('.')[-2])
+                # print(tet_key,tet_id, tet_files[j].split('.'))
+                animal_id = str(indiv_session_settings['animal_ids'][i] + '_tet' + str(tet_id))
 
-            session = make_session(cut_file, tet_file, pos_file, settings_dict, session_settings_dict)
-            # session = make_session(sorted_files[i], session_settings_dict, settings_dict['ppm'])
+                if tet_key not in file_sizes:
+                    file_sizes[tet_key] = []
+                    ses_spk_counts[tet_key] = []
 
-            session.set_smoothing_factor(settings_dict['smoothing_factor'])
+                session_settings_dict['animal'] = {'animal_id': animal_id}
 
-            sessions['session_'+str(c)] = session
 
-            c += 1
+                if settings_dict['useMatchedCut'] == True:
+                    assert len(sorted_files[i]) > 3, print('Matched cut file not present, make sure to run unit matcher')
+                    cut_file = matched_cut_files[j]
+                    assert 'matched.cut' in cut_file
+                else:
+                    cut_file = cut_files[j]
+
+                tet_file = tet_files[j]
+
+                # print(cut_file, tet_file, pos_file)
+                session, spk_count = make_session(cut_file, tet_file, pos_file, settings_dict, session_settings_dict)
+                # session = make_session(sorted_files[i], session_settings_dict, settings_dict['ppm'])
+
+                session.set_smoothing_factor(settings_dict['smoothing_factor'])
+
+                file_size = os.path.getsize(session.session_metadata.file_paths['tet'])
+
+                if file_size not in file_sizes[tet_key] and spk_count not in ses_spk_counts[tet_key] and spk_count+1 not in ses_spk_counts[tet_key] and spk_count-1 not in ses_spk_counts[tet_key]:
+                    sessions['session_'+str(c)] = session
+                    ses_spk_counts[tet_key].append(spk_count)
+                    ses_spk_counts[tet_key].append(spk_count+1)
+                    ses_spk_counts[tet_key].append(spk_count-1)
+                    
+                    file_sizes[tet_key].append(file_size)
+                    c += 1
+                # else:
+                #     print('HERERAEASEASEASEAE')
+                #     print(session.session_metadata.file_paths['tet'])
 
     return sessions
 
@@ -295,7 +322,9 @@ def make_session(cut_file, tet_file, pos_file, settings_dict, session_settings_d
 
     assert isinstance(session, Session)
 
-    return session
+    ses_spk_count = len(implant_data_dict['event_times'])
+
+    return session, ses_spk_count
 
 def _create_session_classes(session_dict, settings_dict):
     """
@@ -432,6 +461,7 @@ def _fill_implant_data(implant_data_dict, tetrode_data, cut_data, ch_count):
     implant_data_dict['datetime'] = tetrode_data[-1]['datetime']
 
     for ch in range(ch_count):
+        # print(len(tetrode_data[1]['ch'+str(ch+1)]))
         implant_data_dict['channel_'+str(ch+1)] = tetrode_data[1]['ch'+str(ch+1)].tolist()
 
     implant_data_dict['event_times'] = tetrode_data[0].tolist()

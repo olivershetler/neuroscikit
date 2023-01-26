@@ -201,7 +201,7 @@ def _read_tetrode(tetrode_file):
         waveform_data[chan][:][:] = spike_data[chan_start_indices].reshape(num_spikes, samples_per_spike).astype(
             'int8')  # acquiring the channel bytes
         waveform_data[chan][:][:][np.where(waveform_data[chan][:][:] > 127)] -= 256
-        waveform_data[chan][:][:] = np.multiply(waveform_data[chan][:][:], little_endian_matrix)
+        waveform_data[chan][:][:] = np.multiply(waveform_data[chan][:][:], little_endian_matrix, dtype=np.float16)
 
     spikeparam = {'timebase': timebase, 'bytes_per_sample': bytes_per_sample, 'samples_per_spike': samples_per_spike,
                   'bytes_per_timestamp': bytes_per_timestamp, 'duration': duration, 'num_spikes': num_spikes,
