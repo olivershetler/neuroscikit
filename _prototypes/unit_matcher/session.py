@@ -76,6 +76,12 @@ def compute_JSD_distances(session1_cluster: SpikeClusterBatch, session2_cluster:
     session1_unit_clusters = session1_cluster.get_spike_cluster_instances()
     session2_unit_clusters = session2_cluster.get_spike_cluster_instances()
 
+    print('New here')
+
+    print(np.unique(session2_cluster.cluster_labels), np.unique(session2_cluster.good_label_ids))
+    print(session2_cluster.session_metadata.file_paths)
+    print(len(ses2_pca_feats[0]))
+
     distances = np.zeros((len(session1_unit_clusters), len(session2_unit_clusters)))
     pairs = np.zeros((len(session1_unit_clusters), len(session2_unit_clusters), 2))
 
@@ -158,6 +164,7 @@ def extract_full_matches(distances, pairs):
     full_match_distances = []
     row_mask = np.ones(distances.shape[0], bool)
     col_mask = np.ones(distances.shape[1], bool)
+    # mask = np.ones(distances.shape, bool)
 
 
     for i in range(distances.shape[0]):
@@ -171,10 +178,21 @@ def extract_full_matches(distances, pairs):
                 full_match_distances.append(distances[i,j])
                 row_mask[i] = False
                 col_mask[j] = False
-                assert sorted(unit1_pairs[unit1_min]) == sorted(unit2_pairs[unit2_min])
+                # assert sorted(unit1_pairs[unit1_min]) == sorted(unit2_pairs[unit2_min])
 
     remaining_distances = distances[row_mask,:][:,col_mask]
     remaining_pairs = pairs[row_mask,:][:,col_mask]
+
+    # remaining_distances = distances[row_mask,col_mask]
+    # remaining_pairs = pairs[row_mask,col_mask]
+    print('NEWIN')
+    print(distances, pairs)
+    print(row_mask, col_mask)
+    print(distances[row_mask,:], distances[row_mask,:].shape)
+    print(pairs[row_mask,:], pairs[row_mask,:].shape)
+    print('NEWOUT')
+    # distances = list(map(lambda x: x if x == False, np.arange(mask.shape[0])))
+    print(full_matches, full_match_distances, remaining_distances, remaining_pairs)
 
     return full_matches, full_match_distances, remaining_distances, remaining_pairs
 
@@ -184,18 +202,24 @@ def guess_remaining_matches(distances, pairs):
     assert len(row_ind) == len(col_ind)
     remaining_matches = []
     remaining_match_distances = []
+    print(pairs.shape, pairs, row_ind, col_ind)
     for i in range(len(row_ind)):
         unit_pair = pairs[row_ind[i], col_ind[i]]
         remaining_matches.append(unit_pair)
         remaining_match_distances.append(distances[row_ind[i], col_ind[i]])
 
+    print(distances, row_ind, col_ind, remaining_matches)
+    print(pairs)
+
     # session1_unmatched = list(set(np.arange(len(distances))) - set(remaining_matches[0]))
-    if len(distances) > 0:
+    if len(distances) > 0 and len(distances[0]) > 0:
         session2_unmatched = list(set(list(np.arange(len(distances[0])))) - set(list(col_ind)))
         session1_unmatched = list(set(list(np.arange(len(distances)))) - set(list(row_ind)))
     else:
         session2_unmatched = []
         session1_unmatched = []
+
+    print(session1_unmatched, session2_unmatched)
 
     unmatched_2 = []
     for i in range(len(session2_unmatched)):
@@ -208,7 +232,7 @@ def guess_remaining_matches(distances, pairs):
         # assert unit_id == pairs[1, session2_unmatched[j]][-1]
         # unmatched_2.append([0, unit_id])
         unmatched_2.append(unit_id)
-
+    
     unmatched_1 = []
     for i in range(len(session1_unmatched)):
         unit_id = pairs[session1_unmatched[i], 0][0]
@@ -226,10 +250,65 @@ def compare_sessions(session1: Session, session2: Session, method='JSD', ses1_pc
     # return mapping dict from session2 old label to new matched label based on session1 cell labels
 
     distances, pairs, agg_distances = compute_distances(session1.get_spike_data()['spike_cluster'], session2.get_spike_data()['spike_cluster'], method, ses1_pca_feats=ses1_pca_feats, ses2_pca_feats=ses2_pca_feats)
-
+    
+    print(distances, pairs, agg_distances)
     full_matches, full_match_distances, remaining_distances, remaining_pairs = extract_full_matches(distances, pairs)
 
+    remaining_pairs = np.array(remaining_pairs)
+    if len(remaining_pairs.shape) == 2:
+        remaining_pairs = remaining_pairs.reshape((1,-1))
+    if len(remaining_pairs.shape) == 1:
+        remaining_pairs = remaining_pairs.reshape((1,1,-1))
+
+    # if remaining_pairs.shape[0] != 2:
+    #     remaining_pairs = remaining_pairs.T
+
     remaining_matches, remaining_match_distances, unmatched_2, unmatched_1 = guess_remaining_matches(remaining_distances, remaining_pairs)
+
+    remaining_matches = np.asarray(remaining_matches)
+    full_matches = np.asarray(full_matches)
+    if full_matches.size > 0 and remaining_matches.size > 0:
+        if len(remaining_matches.shape) == 1:
+            remaining_matches = remaining_matches.reshape((1,-1))
+        if len(full_matches.shape) == 1:
+            full_matches = full_matches.reshape((1,-1))
+        matches = np.vstack((full_matches, remaining_matches))
+        match_distances = np.hstack((full_match_distances, remaining_match_distances))
+    else:
+        matches = full_matches
+        match_distances = np.asarray(full_match_distances)
+
+
+    # THIS IS NEW CODE, should not be needed if guess remaingand exxtract full are workingn properly
+    # HERE IS PROBLEM: very first session (true session 1) has 4 cells, very next session (true session 2) has 1 cell. That should be 1 matched (works)
+    # and 3 unmatched_1 (session 1), but unmatched_1 comes out empty from guess_remaining_matches.
+    # Need to add code for this edge case, this was done below but new code below does not work so start there
+    print("VS")
+    print(unmatched_1, matches, unmatched_2, match_distances)
+    print(matches.shape, match_distances.shape)
+    # print(len(unmatched_1) + len(matches) + len(unmatched_2), len(match_distances))
+    print(list(session1.get_cell_data()['cell_ensemble'].get_cell_label_dict().keys()))
+    print(list(session2.get_cell_data()['cell_ensemble'].get_cell_label_dict().keys()))
+    print(session1.get_cell_data()['cell_ensemble'].get_cell_label_dict().keys())
+    print(session2.get_cell_data()['cell_ensemble'].get_cell_label_dict().keys())
+
+    ses1_cell_ids = session1.get_cell_data()['cell_ensemble'].get_cell_label_dict().keys()
+    ses2_cell_ids = session2.get_cell_data()['cell_ensemble'].get_cell_label_dict().keys()
+    print(ses1_cell_ids, ses2_cell_ids)
+    print(len(unmatched_1) + len(matches), len(ses1_cell_ids))
+    if len(unmatched_1) + len(matches) < len(ses1_cell_ids):
+        for cell_label in list(ses1_cell_ids):
+            print(float(cell_label), np.array(matches,dtype=float)[:,0])
+            if float(cell_label) not in unmatched_1 and float(cell_label) not in np.array(matches,dtype=float)[:,0]:
+                unmatched_1.append(cell_label)
+    print(len(unmatched_2) + len(matches), len(ses2_cell_ids))
+    if len(unmatched_2) + len(matches) < len(ses2_cell_ids):
+        for cell_label in list(ses2_cell_ids):
+            print(float(cell_label), np.array(matches,dtype=float)[:,1])
+            if float(cell_label) not in unmatched_2 and float(cell_label) not in np.array(matches,dtype=float)[:,1]:
+                unmatched_2.append(cell_label)
+                
+    # THIS IS NEW CODE
 
     # to_stack = []
     # if np.asarray(full_matches).size > 0:
@@ -242,13 +321,8 @@ def compare_sessions(session1: Session, session2: Session, method='JSD', ses1_pc
     # matches = to_stack[0]
     # for i in range(1,len(to_stack)):
     #     matches = np.vstack((matches, to_stack[i]))
-
-    if np.asarray(full_matches).size > 0 and np.asarray(remaining_matches).size > 0:
-        matches = np.vstack((full_matches, remaining_matches))
-        match_distances = np.hstack((full_match_distances, remaining_match_distances))
-    else:
-        matches = full_matches
-        match_distances = full_match_distances
+    print(unmatched_1, unmatched_2)
+    print(matches, full_matches, remaining_matches)
 
     # matches = np.vstack((full_matches, remaining_matches))
     # matches = np.vstack((matches, unmatched))
