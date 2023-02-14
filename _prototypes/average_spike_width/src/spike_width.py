@@ -9,6 +9,7 @@ def extract_average_spike_widths(study) -> dict:
             cluster_labels = session.session_data.data['spike_cluster'].get_unique_cluster_labels()
             session_signature = session.session_metadata.file_paths['tet'].split('\\')[-1].split('/')[-1][:-2]
             alt_session_signature = session.session_metadata.file_paths['cut'].split('\\')[-1].split('/')[-1][:-6]
+            strip_ending(session_signature, "_matched")
             assert session_signature == alt_session_signature
             tetrode = session.session_metadata.file_paths['tet'].split('.')[-1]
             for unit in cluster_labels:
@@ -37,3 +38,8 @@ def extract_average_spike_widths(study) -> dict:
                 output_df['spike_width'].append(spike_width)
                 output_df['firing_rate'].append(firing_rate)
     return output_df
+
+def strip_ending(string, ending):
+    if string.endswith(ending):
+        return string[:-len(ending)]
+    return string
