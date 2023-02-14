@@ -95,8 +95,8 @@ def sort_spikes_by_cell(clusters: SpikeClusterBatch):
         good_clusters.append(indiv_clusters[j])
         assert indiv_clusters[j].cluster_label == label_id
 
-    # print(unique_labels, sorted_label_ids,empty_cell)
-    # print(good_sorted_label_ids, len(good_cells))
+    print(unique_labels, sorted_label_ids,empty_cell)
+    print(good_sorted_label_ids, len(good_cells))
 
 
     return good_cells, good_sorted_waveforms, good_clusters, good_sorted_label_ids

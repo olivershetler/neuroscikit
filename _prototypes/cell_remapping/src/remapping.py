@@ -58,8 +58,16 @@ def compute_remapping(study, settings):
 
     for animal in study.animals:
 
-        # get largest possible cell id
-        max_matched_cell_count = len(animal.sessions[sorted(list(animal.sessions.keys()))[-1]].get_cell_data()['cell_ensemble'].cells)
+        if settings['useMatchedCut']:
+            # get largest possible cell id
+            max_matched_cell_count = len(animal.sessions[sorted(list(animal.sessions.keys()))[-1]].get_cell_data()['cell_ensemble'].cells)
+        else:
+            max_matched_cell_count = max(list(map(lambda x: max(animal.sessions[x].get_cell_data()['cell_ensemble'].get_label_ids()), animal.sessions)))
+
+        print('max matched cell count: ' + str(max_matched_cell_count))
+        for x in animal.sessions:
+            print(x)
+            print('ensemble label ids: ' + str(animal.sessions[x].get_cell_data()['cell_ensemble'].get_label_ids()))
 
         # len(session) - 1 bcs thats number of comparisons. e.g. 3 session: ses1-ses2, ses2-ses3 so 2 distances will be given for remapping
         remapping_distances = np.zeros((len(list(animal.sessions.keys()))-1, max_matched_cell_count))
@@ -69,6 +77,7 @@ def compute_remapping(study, settings):
         # for every existing cell id across all sessions
         for k in range(int(max_matched_cell_count)):
             cell_label = k + 1
+            print('Cell ' + str(cell_label))
 
             # prev ratemap
             prev = None
@@ -77,6 +86,7 @@ def compute_remapping(study, settings):
             # for every session
             for i in range(len(list(animal.sessions.keys()))):
                 seskey = 'session_' + str(i+1)
+                print(seskey)
                 ses = animal.sessions[seskey]
                 path = ses.session_metadata.file_paths['tet'].lower()
 
@@ -134,13 +144,13 @@ def compute_remapping(study, settings):
                             if cylinder:
                                 object_ratemap = flat_disk_mask(object_ratemap)
 
-                            if settings['normalizeRate']:
-                                rate_map, _ = rate_map_obj.get_rate_map()
-                            else:
-                                _, rate_map = rate_map_obj.get_rate_map()
+                            # if settings['normalizeRate']:
+                            #     rate_map, _ = rate_map_obj.get_rate_map()
+                            # else:
+                            #     _, rate_map = rate_map_obj.get_rate_map()
                             
                             # EMD on norm/unnorm ratemap + object map for OBJECT remapping
-                            obj_wass = single_point_wasserstein(object_pos, rate_map, rate_map_obj.arena_size)
+                            obj_wass = single_point_wasserstein(object_pos, curr, rate_map_obj.arena_size)
 
                             obj_dict[obj_wass_key].append(obj_wass)
 
