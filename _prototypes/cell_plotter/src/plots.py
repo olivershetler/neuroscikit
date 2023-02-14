@@ -8,7 +8,14 @@ PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
 
 from library.study_space import SpatialSpikeTrain2D
+from library.maps.map_utils import disk_mask
 
+
+
+def flat_disk_mask(rate_map):
+    masked_rate_map = disk_mask(rate_map)
+    masked_rate_map.data[masked_rate_map.mask] = 0
+    return  masked_rate_map.data
 
 def plot_cell_waveform(cell, data_dir):
 
@@ -18,7 +25,7 @@ def plot_cell_waveform(cell, data_dir):
         ch = cell.signal[:,i,:]
         idx = np.random.choice(len(ch), size=200)
         waves = ch[idx, :]
-        avg_wave = np.mean(ch, axis=0)
+        avg_wave = np.mean(ch, axis=0)s
 
         fig.waveform_channel_plot(waves, avg_wave, str(i+1), fig.ax[str(i+1)])
 
@@ -44,7 +51,7 @@ def plot_cell_waveform(cell, data_dir):
     fig.f.savefig(fp, dpi=360.)
     plt.close(fig.f)
 
-def plot_cell_rate_map(cell, data_dir):
+def plot_cell_rate_map(cell, isCylinder, data_dir):
 
     fig = RatemapTemplateFig()
 
@@ -53,6 +60,9 @@ def plot_cell_rate_map(cell, data_dir):
     sst = cell.session_metadata.session_object.make_class(SpatialSpikeTrain2D, {'cell': cell, 'position': pos_obj})
     rate_map_obj = sst.get_map('rate') 
     rate_map, _ = rate_map_obj.get_rate_map()
+
+    if isCylinder:
+        rate_map = flat_disk_mask(rate_map)
 
     fig.rate_map_plot(rate_map, fig.ax['1'])
 
