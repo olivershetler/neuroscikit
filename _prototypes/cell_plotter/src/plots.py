@@ -25,7 +25,7 @@ def plot_cell_waveform(cell, data_dir):
         ch = cell.signal[:,i,:]
         idx = np.random.choice(len(ch), size=200)
         waves = ch[idx, :]
-        avg_wave = np.mean(ch, axis=0)s
+        avg_wave = np.mean(ch, axis=0)
 
         fig.waveform_channel_plot(waves, avg_wave, str(i+1), fig.ax[str(i+1)])
 
