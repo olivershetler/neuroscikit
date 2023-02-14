@@ -56,8 +56,8 @@ def batch_map(study: Study, tasks: dict, saveData=False):
 
             for cell in session.get_cell_data()['cell_ensemble'].cells:
 
-                print('session ' + str(k) + ', cell ' + str(c))
-                print(cell.event_times[:10])
+                print('session ' + str(k) + ', cell ' + str(cell.cluster.cluster_label))
+                # print(cell.event_times[:10])
                 # print('SpatialSPikeTrain Class')
                 spatial_spike_train = session.make_class(SpatialSpikeTrain2D, {'cell': cell, 'position': pos_obj})
                 # stop()
@@ -74,12 +74,17 @@ def batch_map(study: Study, tasks: dict, saveData=False):
                 # rate_obj = HaftingRateMap(spatial_spike_train)
                 rate_obj = spatial_spike_train.get_map('rate')
                 rate_map, raw_rate_map = rate_obj.get_rate_map()
+                # if settings['normalizeRate']:
+                #     rate_map, _ = rate_obj.get_rate_map()
+                # else:
+                #     _, rate_map = rate_obj.get_rate_map()
+
 
                 # print('Map Stats')
                 ratemap_stats_dict  = rate_map_stats(spatial_spike_train)
 
-                # print('Autocorr')
-                autocorr_map = autocorrelation(spatial_spike_train)
+                # UNDO COMMENT
+                # autocorr_map = autocorrelation(spatial_spike_train)
 
                 occ_map = spatial_spike_train.get_map('occupancy')
 
@@ -87,15 +92,16 @@ def batch_map(study: Study, tasks: dict, saveData=False):
                 cell_stats['rate_map_smooth'] = rate_map
                 cell_stats['occupancy_map'] = occ_map
                 cell_stats['rate_map_raw'] = raw_rate_map
-                cell_stats['autocorrelation_map'] = autocorr_map
+                # cell_stats['autocorrelation_map'] = autocorr_map
+                cell_stats['spatial_spike_train'] = spatial_spike_train
 
                 # print('Check Disk')
-                if 'disk_arena' in tasks and tasks['disk_arena'] == False:
-                    fp = session.session_metadata.file_paths['cut']
-                    possible_names = ['round', 'Round', 'ROUND', 'Cylinder', 'cylinder', 'CYLINDER', 'circle', 'CIRCLE', 'Circle']
-                    for name in possible_names:
-                        if name in fp:
-                            tasks['disk_arena'] = True
+                # if 'disk_arena' in tasks and tasks['disk_arena'] == False:
+                #     fp = session.session_metadata.file_paths['cut']
+                #     possible_names = ['round', 'Round', 'ROUND', 'Cylinder', 'cylinder', 'CYLINDER', 'circle', 'CIRCLE', 'Circle']
+                #     for name in possible_names:
+                #         if name in fp:
+                #             tasks['disk_arena'] = True
 
                 # print('Binary')
                 if tasks['binary_map']:
@@ -115,13 +121,13 @@ def batch_map(study: Study, tasks: dict, saveData=False):
                     cell_stats['autocorr_map_im'] = autocorr_map_im
 
                 if tasks['sparsity']:
-                    cell_stats['ratemap_stats_dict'] = ratemap_stats_dict['sparsity']
+                    cell_stats['sparsity'] = ratemap_stats_dict['sparsity']
 
                 if tasks['selectivity']:
-                    cell_stats['ratemap_stats_dict'] = ratemap_stats_dict['selectivity']
+                    cell_stats['selectivity'] = ratemap_stats_dict['selectivity']
 
                 if tasks['information']:
-                    cell_stats['ratemap_stats_dict'] = ratemap_stats_dict['spatial_information_content']
+                    cell_stats['spatial_information_content'] = ratemap_stats_dict['spatial_information_content']
 
                 # print('Coherence')
                 if tasks['coherence']:
@@ -168,8 +174,8 @@ def batch_map(study: Study, tasks: dict, saveData=False):
 
                 cell.stats_dict['cell_stats'] = cell_stats
 
-                colored_ratemap = Image.fromarray(np.uint8(cm.jet(rate_map)*255))
-                colored_ratemap.save('ratemap_cell_' + str(c) + '_session_' + str(k) + '.png')
+                # colored_ratemap = Image.fromarray(np.uint8(cm.jet(rate_map)*255))
+                # colored_ratemap.save('ratemap_cell_' + str(c) + '_session_' + str(k) + '.png')
 
                 if saveData == True:
 

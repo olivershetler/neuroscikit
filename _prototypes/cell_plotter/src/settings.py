@@ -7,7 +7,7 @@ session_settings = {'channel_count': 4, 'animal': animal, 'devices': devices, 'i
 settings_dict = {'session': session_settings, 
 'ppm': None, # EDIT HERE (will read from pos file)
 'smoothing_factor': 3, # EDIT HERE
-'useMatchedCut': False, # EDIT HERE
+'useMatchedCut': True, # EDIT HERE
 'plotCellWaveforms': True, # EDIT HERE
 'plotCellRatemap': True, # EDIT HERE
 'outputStructure': 'nested', # EDIT HERE

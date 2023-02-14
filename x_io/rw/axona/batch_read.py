@@ -258,6 +258,7 @@ def batch_sessions(sorted_files, settings_dict, indiv_session_settings):
 
                 if settings_dict['useMatchedCut'] == True:
                     assert len(sorted_files[i]) > 3, print('Matched cut file not present, make sure to run unit matcher')
+                    print(matched_cut_files)
                     cut_file = matched_cut_files[j]
                     assert 'matched.cut' in cut_file
                 else:

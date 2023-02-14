@@ -17,12 +17,12 @@ def main():
     root = tk.Tk()
     root.withdraw()
     data_dir = filedialog.askdirectory(parent=root,title='Please select a data directory.')
-
+    output_dir = filedialog.askdirectory(parent=root,title='Please select an output directory.')
 
     study = make_study(data_dir, settings_dict)
     study.make_animals()
 
-    batch_plots(study, settings_dict, data_dir)
+    batch_plots(study, settings_dict, data_dir, output_dir=output_dir)
 
     print('Total run time: ' + str(time.time() - start_time))
 
