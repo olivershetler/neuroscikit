@@ -5,7 +5,7 @@ STUDY_SETTINGS = {
 
     'smoothing_factor': None, # EDIT HERE
 
-    'useMatchedCut': False,  # EDIT HERE, set to False if you want to use runUnitMatcher, set to True after to load in matched.cut file
+    'useMatchedCut': True,  # EDIT HERE, set to False if you want to use runUnitMatcher, set to True after to load in matched.cut file
 }
 
 

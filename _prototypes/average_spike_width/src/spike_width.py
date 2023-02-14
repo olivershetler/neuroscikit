@@ -1,6 +1,7 @@
 import numpy as np
 from _prototypes.unit_matcher.waveform import time_index, troughs
 import warnings
+import re
 
 def extract_average_spike_widths(study) -> dict:
     output_df = {'session_signature':[], 'tetrode':[], 'unit_id':[], 'spike_width':[], 'firing_rate':[]}
@@ -8,9 +9,11 @@ def extract_average_spike_widths(study) -> dict:
         for key, session in animal.sessions.items():
             cluster_labels = session.session_data.data['spike_cluster'].get_unique_cluster_labels()
             session_signature = session.session_metadata.file_paths['tet'].split('\\')[-1].split('/')[-1][:-2]
-            alt_session_signature = session.session_metadata.file_paths['cut'].split('\\')[-1].split('/')[-1][:-6]
-            strip_ending(session_signature, "_matched")
-            assert session_signature == alt_session_signature
+            cut_filename = session.session_metadata.file_paths['cut'].split('\\')[-1].split('/')[-1]
+            alt_session_signature = ".".join(cut_filename.split('.')[:-1])
+            alt_session_signature = strip_ending(alt_session_signature, '_(match|matched)')
+            alt_session_signature = strip_ending(alt_session_signature, '_(\d|\d\d)')
+            assert session_signature == alt_session_signature, f"Session signature {session_signature} does not match {alt_session_signature}"
             tetrode = session.session_metadata.file_paths['tet'].split('.')[-1]
             for unit in cluster_labels:
                 n_spikes, spike_times, waveforms = session.session_data.data['spike_cluster'].get_single_spike_cluster_instance(unit)
@@ -40,6 +43,6 @@ def extract_average_spike_widths(study) -> dict:
     return output_df
 
 def strip_ending(string, ending):
-    if string.endswith(ending):
-        return string[:-len(ending)]
+    if re.search(ending + '$', string):
+        return re.sub(ending + '$', '', string)
     return string
