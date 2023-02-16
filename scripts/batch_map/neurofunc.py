@@ -705,11 +705,15 @@ if __name__ == '__main__':
 
     session_settings = {'channel_count': 4, 'animal': animal, 'devices': devices, 'implant': implant}
 
+    """ FOR YOU TO EDIT """
     settings = {'ppm': 511, 'session':  session_settings, 'smoothing_factor': 3, 'useMatchedCut': True}
+    """ FOR YOU TO EDIT """
 
-    settings['tasks'] = tasks
-    settings['plotTasks'] = plotTasks
-    settings['header'] = csv_header
+    settings['tasks'] = tasks # --> change tasks array to change tasks are run
+    settings['plotTasks'] = plotTasks # --> change plot tasks array to change asks taht are plotted
+    settings['header'] = csv_header # --> change csv_header header to change tasks that are saved to csv
+
+    """ FOR YOU TO EDIT """
     settings['speed_lowerbound'] = 0
     settings['speed_upperbound'] = 99
     settings['end_cell'] = None
@@ -720,6 +724,7 @@ if __name__ == '__main__':
     # 1 csv per session (all tetrode and indiv): 'one_per_session' --> 5 sheets (summary of all 4 tetrodes, tet1, tet2, tet3, tet4)
     # 1 csv per animal per tetrode (all sessions): 'one_per_animal_tetrode' --> 4 sheets one per tet 
     # 1 csv per animal (all tetrodes & sessions): 'one_per_animal' --> 1 sheet
+    """ FOR YOU TO EDIT """
 
     start_time = time.time()
     root = tk.Tk()
