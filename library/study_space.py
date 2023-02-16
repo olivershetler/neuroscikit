@@ -293,12 +293,19 @@ class Animal(Workspace):
     def _read_input_dict(self):
         sessions = {}
         ensembles = {}
+        isMatchedCut = False
+        if 'matched' in self._input_dict['session_1'].session_metadata.file_paths['cut']:
+            lbls = np.unique(np.concatenate(list(map(lambda x: np.unique(self._input_dict[x].get_spike_data()['spike_cluster'].cluster_labels), self._input_dict))))
+            isMatchedCut = True
         for key in self._input_dict:
             session = self._input_dict[key]
             assert isinstance(session, Session)
             # session is instance of SessionWorkspace, has SessionData and SessionMetadata
             # AnimalSession will hold Cells which hold SpikeTrains from SessionData
-            cell_ensemble, cell_ids = self._read_session(session)
+            if not isMatchedCut:
+                cell_ensemble, cell_ids = self._read_session(session, matched_lbls=None)
+            else:
+                cell_ensemble, cell_ids = self._read_session(session, matched_lbls=lbls)
             sessions[key] = session
             ensembles[key] = cell_ensemble
             # self.cell_ids[key] = cell_ids
@@ -327,14 +334,14 @@ class Animal(Workspace):
             print('Session data class is not valid, check inputs')
         return core_data
 
-    def _read_session(self, session):
+    def _read_session(self, session, matched_lbls=None):
         core_data = self._extract_core_classes(session)
         assert 'spike_cluster' in core_data, 'Need cluster label data to sort valid cells'
         spike_cluster = core_data['spike_cluster']
         # spike_train = core_data['spike_train']
         assert isinstance(spike_cluster, SpikeClusterBatch)
         # assert isinstance(spike_cluster, SpikeTrainBatch)
-        good_sorted_cells, good_sorted_waveforms, good_clusters, good_label_ids = sort_spikes_by_cell(spike_cluster)
+        good_sorted_cells, good_sorted_waveforms, good_clusters, good_label_ids = sort_spikes_by_cell(spike_cluster, matched_lbls=matched_lbls)
         # print(good_sorted_cells, good_label_ids)
         # spike_train.set_sorted_label_ids(good_label_ids)
         print('Session data added, spikes sorted by cell')

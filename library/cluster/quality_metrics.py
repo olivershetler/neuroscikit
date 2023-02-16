@@ -8,9 +8,10 @@ import numpy as np
 from scipy.stats import chi2
 from library.cluster import create_features
 from core.spikes import SpikeCluster
+from library.ensemble_space import CellEnsemble
 from library.batch_space import SpikeClusterBatch
 
-def L_ratio(spike_cluster: SpikeCluster | SpikeClusterBatch):
+def L_ratio(spike_cluster: SpikeCluster | SpikeClusterBatch | CellEnsemble):
     """Measures the L-Ratio, a cluster quality metric.
 
     Args:
@@ -29,7 +30,13 @@ def L_ratio(spike_cluster: SpikeCluster | SpikeClusterBatch):
     else:
         FD = spike_cluster.stats_dict['cluster']['FD']
 
-    ClusterSpikes = spike_cluster.cluster_labels
+    if isinstance(spike_cluster, CellEnsemble):
+        valid_ids = np.array(list(map(lambda x: x.cluster.cluster_label, spike_cluster.cells)), dtype=int)
+        cluster_labels = np.array(spike_cluster.cells[0].cluster.cluster_labels, dtype=int)
+        mask = list(map(lambda x: True if x in valid_ids else False, cluster_labels))
+        ClusterSpikes = cluster_labels[mask]
+    else:
+        ClusterSpikes = spike_cluster.cluster_labels
 
     nSpikes = FD.shape[0]
 
@@ -128,7 +135,13 @@ def isolation_distance(spike_cluster: SpikeCluster | SpikeClusterBatch):
     else:
         FD = spike_cluster.stats_dict['cluster']['FD']
     
-    ClusterSpikes = spike_cluster.cluster_labels
+    if isinstance(spike_cluster, CellEnsemble):
+        valid_ids = np.array(list(map(lambda x: x.cluster.cluster_label, spike_cluster.cells)), dtype=int)
+        cluster_labels = np.array(spike_cluster.cells[0].cluster.cluster_labels, dtype=int)
+        mask = list(map(lambda x: True if x in valid_ids else False, cluster_labels))
+        ClusterSpikes = cluster_labels[mask]
+    else:
+        ClusterSpikes = spike_cluster.cluster_labels
 
     nSpikes = FD.shape[0]
 

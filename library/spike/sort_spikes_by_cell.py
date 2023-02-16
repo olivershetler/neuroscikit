@@ -13,7 +13,7 @@ sys.path.append(PROJECT_PATH)
 
 from library.batch_space import SpikeClusterBatch
 
-def sort_spikes_by_cell(clusters: SpikeClusterBatch):
+def sort_spikes_by_cell(clusters: SpikeClusterBatch,matched_lbls=None):
     # spike_times, cluster_labels, waveform
     """
     Returns valid cells for session and associated waveforms
@@ -64,6 +64,11 @@ def sort_spikes_by_cell(clusters: SpikeClusterBatch):
 
     # empty_cell = sorted(set(range(unique_labels[0], unique_labels[-1] + 1)).difference(unique_labels))
 
+    if matched_lbls is not None:
+        print('Using mathced cut files')
+        print(matched_lbls)
+        unique_labels = matched_lbls
+
     if unique_labels[0] == 0:
         empty_cell = sorted(set(range(unique_labels[1], unique_labels[-1] + 1)).difference(unique_labels))
     else:
@@ -73,10 +78,16 @@ def sort_spikes_by_cell(clusters: SpikeClusterBatch):
         empty_cell = empty_cell[0]
     else:
         empty_cell = unique_labels[-1] + 1
-
+    print(empty_cell)
     sorted_label_ids = np.asarray(sorted_label_ids)
     idx = np.where((sorted_label_ids >= 1) & (sorted_label_ids < empty_cell))
     good_sorted_label_ids = sorted_label_ids[idx]
+    
+    # else:
+    #     sorted_label_ids = np.asarray(sorted_label_ids)
+    #     idx = np.where((sorted_label_ids >= 1))
+    #     good_sorted_label_ids = sorted_label_ids[idx]
+
 
     # VERY IMPORTANT LINE #
     clusters.set_sorted_label_ids(good_sorted_label_ids)

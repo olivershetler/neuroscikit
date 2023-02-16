@@ -6,13 +6,14 @@ sys.path.append(PROJECT_PATH)
 
 from library.batch_space import SpikeClusterBatch
 from core.spikes import SpikeCluster, Spike
+from library.ensemble_space import CellEnsemble
 
 import numpy as np
 
-def feature_energy(spike_cluster: Spike | SpikeCluster | SpikeClusterBatch):
+def feature_energy(spike_cluster: Spike | SpikeCluster | SpikeClusterBatch | CellEnsemble):
     """
     Normlized energy calculation discussed from:
-    Quantitative measures of cluster quality for use in extracellular recordings by Redish et al.
+    Quantitative measures of cluster quality for use in extraCellEnsembleular recordings by Redish et al.
 
     Args:
         data: ndarray representing spike data (num_channels X num_spikes X samples_per_spike)
@@ -47,7 +48,7 @@ def feature_energy(spike_cluster: Spike | SpikeCluster | SpikeClusterBatch):
 
     return E.T
 
-def feature_wave_PCX(spike_cluster: Spike | SpikeCluster | SpikeClusterBatch, iPC=1, norm=True):
+def feature_wave_PCX(spike_cluster: Spike | SpikeCluster | SpikeClusterBatch | CellEnsemble, iPC=1, norm=True):
     """Creates the principal components for the waveforms
 
     Args:
@@ -99,7 +100,7 @@ def feature_wave_PCX(spike_cluster: Spike | SpikeCluster | SpikeClusterBatch, iP
 
     return wavePCData
 
-def create_features(spike_cluster: Spike | SpikeCluster | SpikeClusterBatch, featuresToCalculate=['energy', 'wave_PCX!1']):
+def create_features(spike_cluster: Spike | SpikeCluster | SpikeClusterBatch | CellEnsemble, featuresToCalculate=['energy', 'wave_PCX!1']):
     """Creates the features to be analyzed
 
     Args:

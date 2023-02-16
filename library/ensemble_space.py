@@ -50,6 +50,13 @@ class CellEnsemble(Workspace):
             self.animal_id = None
 
         self.cell_label_dict = None
+        self.waveforms = self.collect_cell_signal()
+
+    def collect_cell_signal(self):
+        signals = []
+        for cell_id in np.sort(self.get_label_ids()):
+            signals.append(self.get_cell_by_id(cell_id).signal)
+        return signals
 
     def _read_input_dict(self):
         cells = []

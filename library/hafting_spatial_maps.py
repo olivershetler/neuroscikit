@@ -38,8 +38,8 @@ class SpatialSpikeTrain2D():
         else:
             self.arena_size = None
 
-        if 'speed_bounds' in kwargs:
-            self.speed_bounds = kwargs['speed_bounds']
+        if 'speed_bounds' in input_dict:
+            self.speed_bounds = input_dict['speed_bounds']
         else:
             self.speed_bounds = (0, 100)
 

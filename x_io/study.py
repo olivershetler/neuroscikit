@@ -37,6 +37,7 @@ class Study():
             if animal_id not in animal_ids:
                 animal_ids.append(animal_id)
         return sessions, animal_ids
+        
 
 
     def _sort_session_by_animal(self):
@@ -49,6 +50,8 @@ class Study():
             animal_id = self.sessions[i].animal.animal_id
             assert animal_id in self.animal_ids
             animal_sessions[animal_id].append(self.sessions[i])
+
+        
 
             ### ....
             ### NEED TO EXTEND THIS TO MAKE animal_sessions[animal_id] a dictionary and not list of dictionaries
