@@ -216,8 +216,9 @@ def batch_sessions(sorted_files, settings_dict, indiv_session_settings):
     sessions = {}
 
     # to look for duplicates
-    file_sizes = {}
-    ses_spk_counts = {}
+    # file_sizes = {}
+    # ses_spk_counts = {}
+    ses_first_50 = {}
 
     c = 1
 
@@ -249,9 +250,11 @@ def batch_sessions(sorted_files, settings_dict, indiv_session_settings):
                 # print(tet_key,tet_id, tet_files[j].split('.'))
                 animal_id = str(indiv_session_settings['animal_ids'][i] + '_tet' + str(tet_id))
 
-                if tet_key not in file_sizes:
-                    file_sizes[tet_key] = []
-                    ses_spk_counts[tet_key] = []
+                # if tet_key not in file_sizes:
+                #     file_sizes[tet_key] = []
+                #     ses_spk_counts[tet_key] = []
+                if tet_key not in ses_first_50:
+                    ses_first_50[tet_key] = []
 
                 session_settings_dict['animal'] = {'animal_id': animal_id}
 
@@ -274,16 +277,19 @@ def batch_sessions(sorted_files, settings_dict, indiv_session_settings):
 
                 file_size = os.path.getsize(session.session_metadata.file_paths['tet'])
 
-                if file_size not in file_sizes[tet_key] and spk_count not in ses_spk_counts[tet_key] and spk_count+1 not in ses_spk_counts[tet_key] and spk_count-1 not in ses_spk_counts[tet_key]:
+                # if file_size not in file_sizes[tet_key] and spk_count not in ses_spk_counts[tet_key] and spk_count+1 not in ses_spk_counts[tet_key] and spk_count-1 not in ses_spk_counts[tet_key]:
+                #     sessions['session_'+str(c)] = session
+                #     ses_spk_counts[tet_key].append(spk_count)
+                #     ses_spk_counts[tet_key].append(spk_count+1)
+                #     ses_spk_counts[tet_key].append(spk_count-1)
+
+                event_times = session.get_spike_data()['spike_cluster'].event_times
+                if event_times[:50] not in ses_first_50[tet_key]:
                     sessions['session_'+str(c)] = session
-                    ses_spk_counts[tet_key].append(spk_count)
-                    ses_spk_counts[tet_key].append(spk_count+1)
-                    ses_spk_counts[tet_key].append(spk_count-1)
-                    
-                    file_sizes[tet_key].append(file_size)
+                    ses_first_50[tet_key].append(event_times[:50])
                     c += 1
                 else:
-                    print('Dropped ' + str(tet_key) + ' because of duplicate')
+                    print('Dropped signature ' + str(tet_key) + ' for tetrode ' +  str(tet_id) +  ' because of duplicate')
                 # else:
                 #     print('HERERAEASEASEASEAE')
                 #     print(session.session_metadata.file_paths['tet'])
