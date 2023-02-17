@@ -87,11 +87,15 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None):
     # Grabs headers whose value is true
     headers = [k for k, v in csv_header.items() if v]
     if 'border_score' in headers:
+        idx = headers.index('border_score') 
+        # print(idx)
         headers.remove('border_score')
-        headers.insert(5, 'border_score_top')
-        headers.insert(6, 'border_score_bottom')
-        headers.insert(7, 'border_score_left')
-        headers.insert(8, 'border_score_right')
+        headers.insert(idx, 'border_score_top')
+        headers.insert(idx+1, 'border_score_bottom')
+        headers.insert(idx+2, 'border_score_left')
+        headers.insert(idx+3, 'border_score_right')
+        # print(headers)
+        # stop()
 
     headers_dict = dict()
 
@@ -114,17 +118,67 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None):
         study.make_animals()
         print('Animals made, batching map')
 
-    animals = study.animals
+    # animals = study.animals
 
-    analysis_directories = [k for k, v in plotTasks.items() if v]
+    # analysis_directories = [k for k, v in plotTasks.items() if v]
 
-    animal_tet_count = {}
-    animal_max_tet_count = {}
-    animal_workbooks = {}
+    # animal_sessions_tets_events = {}
+    # animal_sessions_tets_events_idx = {}
+    # animal_tet_count = {}
+    # animal_max_tet_count = {}
+    # animal_sessions_tets_events_FD = {}
 
     per_animal_tracker = 1
     per_animal_tetrode_tracker = 1
 
+    # for animalID in sorted_animal_ids:
+    #     animal = study.get_animal_by_id(animalID)
+
+    #     animal_id = animal.animal_id.split('_tet')[0]
+    #     if animal_id not in animal_sessions_tets_events:
+    #         animal_sessions_tets_events[animal_id] = {}
+    #         animal_sessions_tets_events_idx[animal_id] = {}
+    #         animal_sessions_tets_events_FD[animal_id] = {}
+    #         animal_tet_count[animal_id] = {}
+    #         animal_max_tet_count[animal_id] = len(sorted_animal_ids[list(map(lambda x: True if animal_id in x else False, sorted_animal_ids))])
+        
+        # for session_key in animal.sessions:
+        #     session = animal.sessions[session_key]
+        #     if settings_dict['saveData'] == True:
+        #         clust = session.get_spike_data()['spike_cluster']
+        #         good_label_ids = clust.good_label_ids
+        #         cluster_labels = clust.cluster_labels
+
+        #         def map_func(index, label):
+        #             if label in good_label_ids:
+        #                 return index
+        #             else:
+        #                 return None
+
+        #         indices = list(filter(lambda x: x is not None, map(map_func, range(len(cluster_labels)), cluster_labels)))
+        #         waveforms = [clust.waveforms[i] for i in indices]
+        #         if session_key not in animal_sessions_tets_events[animal_id]:
+
+        #             # event_times = clust.event_times
+        #             animal_sessions_tets_events[animal_id][session_key] = [event_times]
+        #             animal_sessions_tets_events_idx[animal_id][session_key] = [indices]
+        #             animal_tet_count[animal_id] = 1
+        #         else:
+        #             animal_sessions_tets_events[animal_id][session_key].append(event_times)
+        #             animal_sessions_tets_events_idx[animal_id][session_key].append(indices)
+        #             animal_tet_count[animal_id] += 1
+                
+        #         if animal_tet_count[animal_id] == animal_max_tet_count[animal_id]:
+        #             ch1, ch2, ch3, ch4 = animal_sessions_tets_events[animal_id][session_key]
+        #             data_concat = np.vstack((ch1, ch2, ch3, ch4)).reshape((4, -1, ch1.shape[1]))
+                        
+        #             # cluster_batch = session.get_spike_data()['spike_cluster']
+        #             FD = create_features(data_concat)
+        #             animal_sessions_tets_events_FD[animal_id][session_key] = FD
+
+    animal_tet_count = {}
+    animal_max_tet_count = {}
+    animal_workbooks = {}
     sorted_animal_ids = np.unique(np.sort(study.animal_ids))
 
     for animalID in sorted_animal_ids:
@@ -133,6 +187,7 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None):
         animal_id = animal.animal_id.split('_tet')[0]
         if animal_id not in animal_tet_count:
             animal_tet_count[animal_id] = 1
+            # animal_sessions_tets_events[animal_id] = {}
             wb = xl.Workbook()
             animal_workbooks[animal_id] = wb
             animal_max_tet_count[animal_id] = len(sorted_animal_ids[list(map(lambda x: True if animal_id in x else False, sorted_animal_ids))])
@@ -160,6 +215,7 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None):
                     sum_sheet[headers_dict[header] + str(1)] = header
         else:
             animal_tet_count[animal_id] += 1
+            # animal_tets[animal_id].append(animal)
             wb = animal_workbooks[animal_id]
 
         # cells, waveforms = sort_cell_spike_times(animal)
@@ -191,7 +247,7 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None):
                 signature = tet_file.split("/")[-1][:-2]
 
                 # Create save_folder
-                save_path = os.path.join(root_path, 'PRISM_Session_' + signature) + '_' + str(c)
+                save_path = os.path.join(root_path, 'PRISM_Session_' + signature) + '_' + str(k)
 
                 if not os.path.isdir(save_path):
                     os.mkdir(save_path)
@@ -247,12 +303,32 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None):
                         current_statistics_sheet = wb[str(directory)]
                 elif settings_dict['saveMethod'] == 'one_per_animal':
                     current_statistics_sheet = wb['Summary']
-            
+
             if tasks['spike_analysis']:
-                cluster_batch = session.get_spike_data()['spike_cluster']
-                create_features(cluster_batch)
-                L_ratio(cluster_batch)
-                isolation_distance(cluster_batch)
+                clust = session.get_cell_data()['cell_ensemble']
+                # print(np.array(clust.get_waveforms()[0]).shape)
+                # print(np.array(clust.get_waveforms()[1]).shape)
+                # print(np.asarray(clust.waveforms[0]).T.shape)
+                # print(np.asarray(clust.waveforms[0]).shape)
+                clust.get_waveforms()
+                print(np.array(clust.waveforms).shape, tet_file)
+                for i in range(len(clust.waveforms)):
+                    ch = np.asarray(clust.waveforms[i])
+                    ch_lbl = np.asarray(clust.waveform_ids[i])
+                    if i == 0:
+                        data_concat = ch
+                        data_concat_lbl = ch_lbl
+                    else:
+                        data_concat = np.vstack((data_concat, ch))
+                        data_concat_lbl = np.hstack((data_concat_lbl, ch_lbl))
+                data_concat = data_concat.reshape((4, -1, ch.shape[2]))
+                # ch1, ch2, ch3, ch4 = np.asarray(clust.waveforms[0]), np.asarray(clust.waveforms[1]), np.asarray(clust.waveforms[2]), np.asarray(clust.waveforms[3])
+                # ch1_lbl, ch2_lbl, ch3_lbl, ch4_lbl = np.asarray(clust.waveform_ids[0]), np.asarray(clust.waveform_ids[1]), np.asarray(clust.waveform_ids[2]), np.asarray(clust.waveform_ids[3])
+                # data_concat = np.vstack((ch1, ch2, ch3, ch4)).reshape((4, -1, ch1.shape[2]))
+                # data_concat_lbl = np.hstack((ch1_lbl, ch2_lbl, ch3_lbl, ch4_lbl))
+                FD = create_features(data_concat)
+                # print(ch1.shape, data_concat.shape, FD.shape, data_concat_lbl.shape)
+
                 
 
             for cell in session.get_cell_data()['cell_ensemble'].cells:
@@ -321,6 +397,10 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None):
                     cell_stats['spatial_spike_train'] = spatial_spike_train
 
                     if tasks['spike_analysis']:
+                        idx = np.where(data_concat_lbl == cell.cluster.cluster_label)[0]
+                        ClusterSpikes = idx
+                        L, ratio_L, df = L_ratio(FD, ClusterSpikes)
+                        iso_dist = isolation_distance(FD, ClusterSpikes)
                         bursting, avg_spikes_per_burst = find_burst(cell)
                         ISI_dict = histogram_ISI(cell)
                     
@@ -349,12 +429,18 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None):
                         cell_stats['spike_width'] = spike_width
 
                     # print('Check Disk')
-                    if 'disk_arena' in tasks and tasks['disk_arena'] == False:
-                        fp = session.session_metadata.file_paths['cut']
-                        possible_names = ['round', 'Round', 'ROUND', 'Cylinder', 'cylinder', 'CYLINDER', 'circle', 'CIRCLE', 'Circle']
-                        for name in possible_names:
-                            if name in fp:
-                                tasks['disk_arena'] = True
+                    # if 'disk_arena' in tasks and tasks['disk_arena'] == False:
+                    fp = session.session_metadata.file_paths['cut']
+                    possible_names = ['round', 'cylinder', 'circle']
+                    isDisk = False
+                    for name in possible_names:
+                        if name in fp.lower():
+                            # isDisk = True
+                            tasks['disk_arena'] = True
+
+                    # if not isDisk
+
+                    print(fp, tasks['disk_arena'])
 
                     # print('Binary')
                     if tasks['binary_map']:
@@ -431,17 +517,18 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None):
 
                         if plotTasks['rate_map']:
                             colored_ratemap = Image.fromarray(np.uint8(cm.jet(rate_map)*255))
-                            colored_ratemap.save('ratemap_cell_' + str(c) + '_session_' + str(k) + '.png')
+                            colored_ratemap.save(tetrode_directory_paths[directory] + '/ratemap_cell_' + str(c) + '.png')
                         
-                        if tasks['disk_arena'] and plotTasks['occupancy_map']:
-                            cell_stats['occupancy_map'] = disk_mask(cell_stats['occupancy_map'])
+                        if plotTasks['occupancy_map']:
+                            if tasks['disk_arena']:
+                                cell_stats['occupancy_map'] = disk_mask(cell_stats['occupancy_map'])
                             colored_occupancy_map = Image.fromarray(np.uint8(cm.jet(cell_stats['occupancy_map'])*255))
-                            colored_occupancy_map.save(root_directory_paths['Occupancy_Map'] + '/pospdf_cell' + '.png')
+                            colored_occupancy_map.save(root_directory_paths['Occupancy_Map'] + '/pospdf_cell' + str(c) + '.png')
 
                         # Binary ratemap
                         if plotTasks['binary_map']:
                             im = Image.fromarray(np.uint8(binmap*255))
-                            im.save(tetrode_directory_paths[directory] + '/Binary_Map_Cell_' + str(i) + '.png')
+                            im.save(tetrode_directory_paths[directory] + '/Binary_Map_Cell_' + str(c) + '.png')
 
                         # Sparsity, Selectivity and Shannon
                         if tasks['sparsity']:
@@ -465,6 +552,8 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None):
                         if tasks['spike_analysis']:
                             current_statistics_sheet[headers_dict['bursting'] + str(excel_cell_index+1)] = bursting
                             current_statistics_sheet[headers_dict['Avg. Spikes/Burst'] + str(excel_cell_index+1)] = avg_spikes_per_burst
+                            current_statistics_sheet[headers_dict['L_ratio'] + str(excel_cell_index+1)] = ratio_L
+                            current_statistics_sheet[headers_dict['iso_dist'] + str(excel_cell_index+1)] = iso_dist
                             current_statistics_sheet[headers_dict['ISI_min'] + str(excel_cell_index+1)] = ISI_dict['min']
                             current_statistics_sheet[headers_dict['ISI_max'] + str(excel_cell_index+1)] = ISI_dict['max']
                             current_statistics_sheet[headers_dict['ISI_median'] + str(excel_cell_index+1)] = ISI_dict['median']
@@ -476,7 +565,7 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None):
                         # autocorrelation map
                         if plotTasks['autocorr_map']:
                             im = Image.fromarray(np.uint8(cm.jet(autocorr_map)*255))
-                            im.save(tetrode_directory_paths[directory] + '/autocorr_cell_' + str(i) + '.png')
+                            im.save(tetrode_directory_paths[directory] + '/autocorr_cell_' + str(c) + '.png')
 
                         if tasks['border_score'] and not tasks['disk_arena']:
                             current_statistics_sheet[headers_dict['border_score_top'] + str(excel_cell_index+1)] = b_score[0]
@@ -540,9 +629,9 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None):
                             plt.title('Firing Rate vs. Time')
                             plt.xlabel('Time (seconds)')
                             plt.ylabel('Firing Rate (Hertz)')
-                            print
+                            # print
                             plt.plot(pos_t, firing_rate, linewidth=0.25)
-                            plt.savefig(tetrode_directory_paths[directory] + '/FRvT_cell_' + str(i) + '.png', dpi=300, bbox_inches = 'tight')
+                            plt.savefig(tetrode_directory_paths[directory] + '/FRvT_cell_' + str(c) + '.png', dpi=300, bbox_inches = 'tight')
                             plt.close(fig)
 
                         # Firing rate vs. speed
@@ -554,7 +643,7 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None):
                             plt.xlabel('Speed (cm/s)')
                             plt.ylabel('Firing Rate (Hertz)')
                             plt.scatter(v, firing_rate, s = 0.5)
-                            plt.savefig(tetrode_directory_paths[directory] + '/FRvS_cell_' + str(i) + '.png', dpi=300, bbox_inches = 'tight')
+                            plt.savefig(tetrode_directory_paths[directory] + '/FRvS_cell_' + str(c) + '.png', dpi=300, bbox_inches = 'tight')
                             plt.close(fig)
 
                         # Plotting tuning curves (polar plots for directional firing) per cell
@@ -578,7 +667,7 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None):
                             # plt.polar(bin_array, tuned_data, linewidth=3)
 
                             plt.box(on=None)
-                            plt.savefig(tetrode_directory_paths[directory] + '/tuning_curve_cell_' + str(i) + '.png', dpi=300, bbox_inches = 'tight')
+                            plt.savefig(tetrode_directory_paths[directory] + '/tuning_curve_cell_' + str(c) + '.png', dpi=300, bbox_inches = 'tight')
                             plt.close(fig)
 
                         # Spikes over position map
@@ -592,7 +681,7 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None):
                             plt.xlabel("x coordinates")
                             plt.ylabel("y coordinates")
                             plt.gca().set_aspect('equal', adjustable='box')
-                            plt.savefig(tetrode_directory_paths[directory] + '/spikes_over_position_cell_' + str(i) + '.png', dpi=300, bbox_inches = 'tight')
+                            plt.savefig(tetrode_directory_paths[directory] + '/spikes_over_position_cell_' + str(c) + '.png', dpi=300, bbox_inches = 'tight')
                             plt.close(fig)
 
                         # Auto-resize columns to width of header text
@@ -611,7 +700,6 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None):
 
             if settings_dict['saveMethod'] == 'one_per_session':
                 if animal_tet_count[animal_id] == animal_max_tet_count[animal_id]:
-
                     list(map(lambda x: _save_wb(animal_workbooks[animal_id][x], save_path), animal_workbooks[animal_id]))
 
         if settings_dict['saveMethod'] == 'one_per_animal_tetrode':
@@ -632,6 +720,17 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None):
         # writer = pd.ExcelWriter(pth, engine="xlsxwriter")
         # df_sum.to_excel(writer, sheet_name="Summary", index=False)
         # writer.save()
+
+# def run_spk_analysis(animal_tets):
+#     ch1, ch2, ch3, ch4 = animal_tets
+#     data_concat = np.vstack((ch1, ch2, ch3, ch4)).reshape((4, -1, ch1.shape[1]))
+    
+#     # cluster_batch = session.get_spike_data()['spike_cluster']
+#     FD = create_features(data_concat)
+#     L_ratio(cluster_batch)
+#     iso_dist = isolation_distance(cluster_batch)
+# animal_sessions_tets_events
+
 
 def _save_wb(wb, root_path):
     wb._sheets = sorted(wb._sheets, key=lambda x: x.title)
@@ -678,7 +777,7 @@ if __name__ == '__main__':
 
     # MAKE SURE "field_sizes" IS THE LAST ELEMENT IN "csv_header_keys"
     csv_header = {}
-    csv_header_keys = ['spike_width', 'firing_rate', 'Avg. Spikes/Burst', 'bursting', 'ISI_min', 'ISI_max', 'ISI_mean', 'ISI_median', 'ISI_cv', 'ISI_std',
+    csv_header_keys = ['spike_width', 'firing_rate', 'Avg. Spikes/Burst', 'bursting', 'iso_dist', 'L_ratio', 'ISI_min', 'ISI_max', 'ISI_mean', 'ISI_median', 'ISI_cv', 'ISI_std',
                        'sparsity', 'selectivity', 'information', 'coherence', 'speed_score', 'hd_score', 'grid_score', 'border_score', 'field_sizes']
     for key in csv_header_keys:
         csv_header[key] = True
@@ -686,18 +785,12 @@ if __name__ == '__main__':
     tasks = {}
     task_keys = ['spike_width', 'spike_analysis', 'binary_map', 'autocorrelation_map', 'sparsity', 'selectivity', 'information', 'coherence', 'speed_score', 'hd_score', 'tuning_curve', 'grid_score', 'border_score', 'field_sizes', 'disk_arena']
     for key in task_keys:
-        if key == 'disk_arena':
-            tasks[key] = False
-        else:
-            tasks[key] = True
+        tasks[key] = True
 
     plotTasks = {}
     plot_task_keys = ['Spikes_Over_Position_Map', 'Tuning_Curve_Plots', 'Firing_Rate_vs_Speed_Plots', 'Firing_Rate_vs_Time_Plots','autocorr_map', 'binary_map','rate_map', 'occupancy_map']
     for key in plot_task_keys:
-        if key == 'disk_arena':
-            plotTasks[key] = False
-        else:
-            plotTasks[key] = True
+        plotTasks[key] = True
 
     animal = {'animal_id': '001', 'species': 'mouse', 'sex': 'F', 'age': 1, 'weight': 1, 'genotype': 'type', 'animal_notes': 'notes'}
     devices = {'axona_led_tracker': True, 'implant': True}
@@ -709,6 +802,7 @@ if __name__ == '__main__':
     settings = {'ppm': 511, 'session':  session_settings, 'smoothing_factor': 3, 'useMatchedCut': True}
     """ FOR YOU TO EDIT """
 
+    tasks['disk_arena'] = False # -->
     settings['tasks'] = tasks # --> change tasks array to change tasks are run
     settings['plotTasks'] = plotTasks # --> change plot tasks array to change asks taht are plotted
     settings['header'] = csv_header # --> change csv_header header to change tasks that are saved to csv

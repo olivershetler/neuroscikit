@@ -66,7 +66,7 @@ def sort_spikes_by_cell(clusters: SpikeClusterBatch,matched_lbls=None):
 
     if matched_lbls is not None:
         print('Using mathced cut files')
-        print(matched_lbls)
+        # print(matched_lbls)
         unique_labels = matched_lbls
 
     if unique_labels[0] == 0:
@@ -78,7 +78,7 @@ def sort_spikes_by_cell(clusters: SpikeClusterBatch,matched_lbls=None):
         empty_cell = empty_cell[0]
     else:
         empty_cell = unique_labels[-1] + 1
-    print(empty_cell)
+    # print(empty_cell)
     sorted_label_ids = np.asarray(sorted_label_ids)
     idx = np.where((sorted_label_ids >= 1) & (sorted_label_ids < empty_cell))
     good_sorted_label_ids = sorted_label_ids[idx]
@@ -106,8 +106,8 @@ def sort_spikes_by_cell(clusters: SpikeClusterBatch,matched_lbls=None):
         good_clusters.append(indiv_clusters[j])
         assert indiv_clusters[j].cluster_label == label_id
 
-    print(unique_labels, sorted_label_ids,empty_cell)
-    print(good_sorted_label_ids, len(good_cells))
+    # print(unique_labels, sorted_label_ids,empty_cell)
+    # print(good_sorted_label_ids, len(good_cells))
 
 
     return good_cells, good_sorted_waveforms, good_clusters, good_sorted_label_ids

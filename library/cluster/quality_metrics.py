@@ -11,7 +11,7 @@ from core.spikes import SpikeCluster
 from library.ensemble_space import CellEnsemble
 from library.batch_space import SpikeClusterBatch
 
-def L_ratio(spike_cluster: SpikeCluster | SpikeClusterBatch | CellEnsemble):
+def L_ratio(FD, ClusterSpikes):
     """Measures the L-Ratio, a cluster quality metric.
 
     Args:
@@ -25,18 +25,18 @@ def L_ratio(spike_cluster: SpikeCluster | SpikeClusterBatch | CellEnsemble):
 
     """
 
-    if 'FD' not in spike_cluster.stats_dict['cluster']:
-        FD = create_features(spike_cluster)
-    else:
-        FD = spike_cluster.stats_dict['cluster']['FD']
+    # if 'FD' not in spike_cluster.stats_dict['cluster']:
+    #     FD = create_features(spike_cluster)
+    # else:
+    #     FD = spike_cluster.stats_dict['cluster']['FD']
 
-    if isinstance(spike_cluster, CellEnsemble):
-        valid_ids = np.array(list(map(lambda x: x.cluster.cluster_label, spike_cluster.cells)), dtype=int)
-        cluster_labels = np.array(spike_cluster.cells[0].cluster.cluster_labels, dtype=int)
-        mask = list(map(lambda x: True if x in valid_ids else False, cluster_labels))
-        ClusterSpikes = cluster_labels[mask]
-    else:
-        ClusterSpikes = spike_cluster.cluster_labels
+    # if isinstance(spike_cluster, CellEnsemble):
+    #     valid_ids = np.array(list(map(lambda x: x.cluster.cluster_label, spike_cluster.cells)), dtype=int)
+    #     cluster_labels = np.array(spike_cluster.cells[0].cluster.cluster_labels, dtype=int)
+    #     mask = list(map(lambda x: True if x in valid_ids else False, cluster_labels))
+    #     ClusterSpikes = cluster_labels[mask]
+    # else:
+    #     ClusterSpikes = spike_cluster.cluster_labels
 
     nSpikes = FD.shape[0]
 
@@ -53,9 +53,9 @@ def L_ratio(spike_cluster: SpikeCluster | SpikeClusterBatch | CellEnsemble):
     L = np.sum(1 - chi2.cdf(m[NoiseSpikes], df))
     Lratio = L / nClusterSpikes
 
-    spike_cluster.stats_dict['cluster']['L'] = L
-    spike_cluster.stats_dict['cluster']['L_ratio'] = Lratio
-    spike_cluster.stats_dict['cluster']['df'] = df
+    # spike_cluster.stats_dict['cluster']['L'] = L
+    # spike_cluster.stats_dict['cluster']['L_ratio'] = Lratio
+    # spike_cluster.stats_dict['cluster']['df'] = df
 
     return L, Lratio, df
 
@@ -119,7 +119,7 @@ def _mahal(Y, X):
 
     return d
 
-def isolation_distance(spike_cluster: SpikeCluster | SpikeClusterBatch):
+def isolation_distance(FD, ClusterSpikes):
     """Measures the Isolation Distance, a cluster quality metric.
 
     Args:
@@ -130,22 +130,24 @@ def isolation_distance(spike_cluster: SpikeCluster | SpikeClusterBatch):
         IsoDist: the isolation distance
 
     """
-    if 'FD' not in spike_cluster.stats_dict['cluster']:
-        FD = create_features(spike_cluster)
-    else:
-        FD = spike_cluster.stats_dict['cluster']['FD']
+    # if 'FD' not in spike_cluster.stats_dict['cluster']:
+    #     FD = create_features(spike_cluster)
+    # else:
+    #     FD = spike_cluster.stats_dict['cluster']['FD']
     
-    if isinstance(spike_cluster, CellEnsemble):
-        valid_ids = np.array(list(map(lambda x: x.cluster.cluster_label, spike_cluster.cells)), dtype=int)
-        cluster_labels = np.array(spike_cluster.cells[0].cluster.cluster_labels, dtype=int)
-        mask = list(map(lambda x: True if x in valid_ids else False, cluster_labels))
-        ClusterSpikes = cluster_labels[mask]
-    else:
-        ClusterSpikes = spike_cluster.cluster_labels
+    # if isinstance(spike_cluster, CellEnsemble):
+    #     valid_ids = np.array(list(map(lambda x: x.cluster.cluster_label, spike_cluster.cells)), dtype=int)
+    #     cluster_labels = np.array(spike_cluster.cells[0].cluster.cluster_labels, dtype=int)
+    #     mask = list(map(lambda x: True if x in valid_ids else False, cluster_labels))
+    #     ClusterSpikes = cluster_labels[mask]
+    # else:
+    #     ClusterSpikes = spike_cluster.cluster_labels
 
     nSpikes = FD.shape[0]
 
     nClusterSpikes = len(ClusterSpikes)
+
+    print(nClusterSpikes, nSpikes)
 
     if nClusterSpikes > nSpikes / 2:
         IsoDist = np.NaN  # not enough out-of-cluster-spikes - IsoD undefined
@@ -164,6 +166,6 @@ def isolation_distance(spike_cluster: SpikeCluster | SpikeClusterBatch):
         sorted_values = np.sort(mNoise)
         IsoDist = sorted_values[nClusterSpikes - 1]
 
-    spike_cluster.stats_dict['cluster']['iso_dist'] = IsoDist
+    # spike_cluster.stats_dict['cluster']['iso_dist'] = IsoDist
 
     return IsoDist

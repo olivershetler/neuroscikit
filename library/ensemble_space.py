@@ -50,13 +50,35 @@ class CellEnsemble(Workspace):
             self.animal_id = None
 
         self.cell_label_dict = None
-        self.waveforms = self.collect_cell_signal()
+        self.waveforms = None
+        self.event_times = self.collect_cell_event_times()
+        self.waveform_ids = None 
+        self.event_ids = None
+
+    def get_waveforms(self):
+        if self.waveforms is None:
+            self.waveforms, self.waveform_ids = self.collect_cell_signal()
+        return self.waveforms, self.waveform_ids
+    
+    def get_event_times(self):
+        if self.event_times is None:
+            self.event_times, self.event_ids = self.collect_cell_event_times()
+        return self.event_times, self.event_ids
 
     def collect_cell_signal(self):
         signals = []
         for cell_id in np.sort(self.get_label_ids()):
+            # print('here', str(cell_id))
+            # print(np.asarray(self.get_cell_by_id(cell_id).signal).shape)
             signals.append(self.get_cell_by_id(cell_id).signal)
-        return signals
+        # return signals
+        return list(map(lambda x: self.get_cell_by_id(x).signal, np.sort(self.get_label_ids()))), list(map(lambda x: np.ones(len(self.get_cell_by_id(x).event_times)) * x, np.sort(self.get_label_ids())))
+    
+    def collect_cell_event_times(self):
+        # event_times = []
+        # for cell_id in np.sort(self.get_label_ids()):
+        #     signals.append(self.get_cell_by_id(cell_id).signal)
+        return list(map(lambda x: self.get_cell_by_id(x).event_times, np.sort(self.get_label_ids()))), list(map(lambda x: np.ones(len(self.get_cell_by_id(x).event_times)) * x, np.sort(self.get_label_ids())))
 
     def _read_input_dict(self):
         cells = []

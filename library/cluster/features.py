@@ -10,7 +10,7 @@ from library.ensemble_space import CellEnsemble
 
 import numpy as np
 
-def feature_energy(spike_cluster: Spike | SpikeCluster | SpikeClusterBatch | CellEnsemble):
+def feature_energy(data):
     """
     Normlized energy calculation discussed from:
     Quantitative measures of cluster quality for use in extraCellEnsembleular recordings by Redish et al.
@@ -25,13 +25,16 @@ def feature_energy(spike_cluster: Spike | SpikeCluster | SpikeClusterBatch | Cel
 
     """
 
-    data = spike_cluster.waveforms
+    # if isinstance(spike_cluster, CellEnsemble):
+    #     data = spike_cluster.signal 
+    # else:
+    #     data = spike_cluster.waveforms
 
-    if isinstance(spike_cluster, Spike):
-        data = np.asarray(data)
-        data = data.reshape((data.shape[0], 1, data.shape[1]))
-    else:
-        data = np.array(list(data.values()))
+    # if isinstance(spike_cluster, Spike):
+    #     data = np.asarray(data)
+    #     data = data.reshape((data.shape[0], 1, data.shape[1]))
+    # else:
+    #     data = np.array(list(data.values()))
 
 
     # energy sqrt of the sum of the squares of each point of the waveform, divided by number of samples in waveform
@@ -48,7 +51,7 @@ def feature_energy(spike_cluster: Spike | SpikeCluster | SpikeClusterBatch | Cel
 
     return E.T
 
-def feature_wave_PCX(spike_cluster: Spike | SpikeCluster | SpikeClusterBatch | CellEnsemble, iPC=1, norm=True):
+def feature_wave_PCX(data, iPC=1, norm=True):
     """Creates the principal components for the waveforms
 
     Args:
@@ -61,13 +64,16 @@ def feature_wave_PCX(spike_cluster: Spike | SpikeCluster | SpikeClusterBatch | C
 
     """
     
-    data = spike_cluster.waveforms
+    # if isinstance(spike_cluster, CellEnsemble):
+    #     data = spike_cluster.signal 
+    # else:
+    #     data = spike_cluster.waveforms
 
-    if isinstance(spike_cluster, Spike):
-        data = np.asarray(data)
-        data = data.reshape((data.shape[0], 1, data.shape[1]))
-    else:
-        data = np.array(list(data.values()))
+    # if isinstance(spike_cluster, Spike):
+    #     data = np.asarray(data)
+    #     data = data.reshape((data.shape[0], 1, data.shape[1]))
+    # else:
+    #     data = np.array(list(data.values()))
 
     nCh, nSpikes, nSamp = data.shape
 
@@ -100,7 +106,9 @@ def feature_wave_PCX(spike_cluster: Spike | SpikeCluster | SpikeClusterBatch | C
 
     return wavePCData
 
-def create_features(spike_cluster: Spike | SpikeCluster | SpikeClusterBatch | CellEnsemble, featuresToCalculate=['energy', 'wave_PCX!1']):
+# def create_features(spike_cluster: Spike | SpikeCluster | SpikeClusterBatch | CellEnsemble, featuresToCalculate=['energy', 'wave_PCX!1']):
+def create_features(data, featuresToCalculate=['energy', 'wave_PCX!1']):
+
     """Creates the features to be analyzed
 
     Args:
@@ -120,9 +128,9 @@ def create_features(spike_cluster: Spike | SpikeCluster | SpikeClusterBatch | Ce
             # all the feature functions are named 'feature_featureName'
             # WavePCX is special though since you need a PC number so separate that
             feature_name, pc_number = feature_name.split('!')
-            variables = 'spike_cluster, %s' % pc_number
+            variables = 'data, %s' % pc_number
         else:
-            variables = 'spike_cluster'
+            variables = 'data'
         
         fnc_name = 'feature_%s' % feature_name
 
@@ -135,7 +143,7 @@ def create_features(spike_cluster: Spike | SpikeCluster | SpikeClusterBatch | Ce
 
         current_FD = None
 
-    spike_cluster.stats_dict['cluster']['FD'] = FD
+    # spike_cluster.stats_dict['cluster']['FD'] = FD
 
     return FD
 
