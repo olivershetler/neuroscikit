@@ -374,7 +374,7 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None):
 
                     # spikex, spikey, spiket = spatial_spike_train.get_spike_positions()
 
-
+                    cell_stats = {}
 
                     # print('Map Stats')
                     ratemap_stats_dict  = rate_map_stats(spatial_spike_train)
@@ -435,7 +435,6 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None):
 
                     print(fp, tasks['disk_arena'])
 
-                    cell_stats = {}
                     cell_stats['rate_map_smooth'] = rate_map
                     cell_stats['occupancy_map'] = occ_map
                     cell_stats['rate_map_raw'] = rate_map_raw
