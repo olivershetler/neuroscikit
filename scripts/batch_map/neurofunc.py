@@ -284,7 +284,7 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None):
                     #current_statistics_sheet.range('A' + str(1)).value = 'Cell'
                     current_statistics_sheet['A' + str(1)] = 'Session'
                     current_statistics_sheet['B' + str(1)] = 'Tetrode'
-                    current_statistics_sheet['C' + str(1)] = 'Cell'
+                    current_statistics_sheet['C' + str(1)] = 'Cell ID'
                     for header in headers:
                         #current_statistics_sheet.range(get_column_letter(i+2) + str(1)).value = value
                         current_statistics_sheet[headers_dict[header] + str(1)] = header
@@ -295,7 +295,7 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None):
                         #current_statistics_sheet.range('A' + str(1)).value = 'Cell'
                         current_statistics_sheet['A' + str(1)] = 'Session'
                         current_statistics_sheet['B' + str(1)] = 'Tetrode'
-                        current_statistics_sheet['C' + str(1)] = 'Cell'
+                        current_statistics_sheet['C' + str(1)] = 'Cell ID'
                         for header in headers:
                             #current_statistics_sheet.range(get_column_letter(i+2) + str(1)).value = value
                             current_statistics_sheet[headers_dict[header] + str(1)] = header
