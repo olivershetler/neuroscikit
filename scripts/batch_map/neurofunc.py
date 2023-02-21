@@ -389,13 +389,6 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None):
 
                     spikex, spikey, spiket = spike_obj.spike_x, spike_obj.spike_y, spike_obj.new_spike_times
 
-                    cell_stats = {}
-                    cell_stats['rate_map_smooth'] = rate_map
-                    cell_stats['occupancy_map'] = occ_map
-                    cell_stats['rate_map_raw'] = rate_map_raw
-                    cell_stats['autocorrelation_map'] = autocorr_map
-                    cell_stats['spatial_spike_train'] = spatial_spike_train
-
                     if tasks['spike_analysis']:
                         idx = np.where(data_concat_lbl == cell.cluster.cluster_label)[0]
                         ClusterSpikes = idx
@@ -441,6 +434,13 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None):
                     # if not isDisk
 
                     print(fp, tasks['disk_arena'])
+
+                    cell_stats = {}
+                    cell_stats['rate_map_smooth'] = rate_map
+                    cell_stats['occupancy_map'] = occ_map
+                    cell_stats['rate_map_raw'] = rate_map_raw
+                    cell_stats['autocorrelation_map'] = autocorr_map
+                    cell_stats['spatial_spike_train'] = spatial_spike_train
 
                     # print('Binary')
                     if tasks['binary_map']:
@@ -516,6 +516,8 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None):
                     if settings_dict['saveData'] == True:
 
                         if plotTasks['rate_map']:
+                            if tasks['disk_arena']:
+                                cell_stats['occupancy_map'] = disk_mask(cell_stats['occupancy_map'])
                             colored_ratemap = Image.fromarray(np.uint8(cm.jet(rate_map)*255))
                             colored_ratemap.save(tetrode_directory_paths[directory] + '/ratemap_cell_' + str(c) + '.png')
                         
