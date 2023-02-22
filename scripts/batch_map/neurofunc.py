@@ -66,7 +66,7 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None):
 
     # Root path creation
     save_dir = saveDir
-    root_path = os.path.join(save_dir, 'All_PRISM_Sessions_iter_')
+    root_path = os.path.join(save_dir, 'All_Neurofunc_Sessions_iter_')
     run_number = 1
     while os.path.isdir(root_path+str(run_number)):
         run_number+=1
@@ -102,7 +102,7 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None):
     for i, header in enumerate(headers):
         headers_dict[header] = get_column_letter(i+4)
 
-    file_name = os.path.join(root_path, "PRISM_parameters.txt")
+    file_name = os.path.join(root_path, "neurofunc_parameters.txt")
     with open(file_name, 'w') as f:
         f.write("ppm is: ")
         f.write(str(settings_dict['ppm']) + "\n")
@@ -259,7 +259,8 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None):
                 signature = tet_file.split("/")[-1][:-2]
 
                 # Create save_folder
-                save_path = os.path.join(root_path, 'PRISM_Session_' + signature) + '_' + str(k)
+                save_path = os.path.join(root_path, 'neurofunc_session_' + signature) 
+                # + '_' + str(k)
 
                 if not os.path.isdir(save_path):
                     os.mkdir(save_path)
@@ -457,8 +458,8 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None):
                     # print('Binary')
                     if tasks['binary_map']:
                         binmap = binary_map(spatial_spike_train)
-                        if tasks['disk_arena']:
-                            binmap = disk_mask(binmap)
+                        # if tasks['disk_arena']:
+                        #     binmap = disk_mask(binmap)
                         # binmap_im = Image.fromarray(np.uint8(binmap*255))
                         cell_stats['binary_map'] = binmap
                         # cell_stats['binary_map_im'] = binmap_im
@@ -541,6 +542,8 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None):
 
                         # Binary ratemap
                         if plotTasks['binary_map']:
+                            if tasks['disk_arena']:
+                                binmap = disk_mask(binmap)
                             im = Image.fromarray(np.uint8(binmap*255))
                             im.save(tetrode_directory_paths[directory] + '/Binary_Map_Cell_' + str(c) + '.png')
 
