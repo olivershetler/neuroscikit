@@ -181,6 +181,13 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None):
     animal_workbooks = {}
     sorted_animal_ids = np.unique(np.sort(study.animal_ids))
 
+    one_for_parent_wb = xl.Workbook()
+    sum_sheet = one_for_parent_wb['Sheet']
+    sum_sheet.title = 'Summary'
+    sum_sheet['A' + str(1)] = 'Session'
+    sum_sheet['B' + str(1)] = 'Tetrode'
+    sum_sheet['C' + str(1)] = 'Cell ID'
+
     for animalID in sorted_animal_ids:
         animal = study.get_animal_by_id(animalID)
 
@@ -204,19 +211,24 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None):
             elif settings_dict['saveMethod'] == 'one_per_animal_tetrode':
                 # wb.remove_sheet('Summary') 
                 pass
-            elif settings_dict['saveMethod'] == 'one_per_animal':
+            elif settings_dict['saveMethod'] == 'one_for_parent':
                 # Copy headers into excel file
                 #current_statistics_sheet.range('A' + str(1)).value = 'Cell'
-                sum_sheet['A' + str(1)] = 'Session'
-                sum_sheet['B' + str(1)] = 'Tetrode'
-                sum_sheet['C' + str(1)] = 'Cell'
+                wb = one_for_parent_wb
+                sum_sheet = wb['Summary']
+                # sum_sheet['A' + str(1)] = 'Session'
+                # sum_sheet['B' + str(1)] = 'Tetrode'
+                # sum_sheet['C' + str(1)] = 'Cell'
                 for header in headers:
                     #current_statistics_sheet.range(get_column_letter(i+2) + str(1)).value = value
                     sum_sheet[headers_dict[header] + str(1)] = header
         else:
-            animal_tet_count[animal_id] += 1
-            # animal_tets[animal_id].append(animal)
-            wb = animal_workbooks[animal_id]
+            if settings_dict['saveMethod'] != 'one_for_parent':
+                animal_tet_count[animal_id] += 1
+                # animal_tets[animal_id].append(animal)
+                wb = animal_workbooks[animal_id]
+            else:
+                wb = one_for_parent_wb
 
         # cells, waveforms = sort_cell_spike_times(animal)
 
@@ -301,7 +313,7 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None):
                             current_statistics_sheet[headers_dict[header] + str(1)] = header
                     else:
                         current_statistics_sheet = wb[str(directory)]
-                elif settings_dict['saveMethod'] == 'one_per_animal':
+                elif settings_dict['saveMethod'] == 'one_for_parent':
                     current_statistics_sheet = wb['Summary']
 
             if tasks['spike_analysis']:
@@ -333,7 +345,7 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None):
 
             for cell in session.get_cell_data()['cell_ensemble'].cells:
 
-                if settings_dict['saveMethod'] == 'one_per_animal':
+                if settings_dict['saveMethod'] == 'one_for_parent':
                     excel_cell_index = per_animal_tracker
                 elif settings_dict['saveMethod'] == 'one_per_animal_tetrode':
                     excel_cell_index = per_animal_tetrode_tracker
@@ -396,6 +408,7 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None):
                         iso_dist = isolation_distance(FD, ClusterSpikes)
                         bursting, avg_spikes_per_burst = find_burst(cell)
                         ISI_dict = histogram_ISI(cell)
+                        spike_count = len(cell.event_times)
                     
                     if tasks['spike_width']:
                         # n_spikes, spike_times, waveforms = session.session_data.data['spike_cluster'].get_single_spike_cluster_instance(unit)
@@ -516,14 +529,14 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None):
 
                         if plotTasks['rate_map']:
                             if tasks['disk_arena']:
-                                cell_stats['occupancy_map'] = disk_mask(cell_stats['occupancy_map'])
+                                rate_map = disk_mask(rate_map)
                             colored_ratemap = Image.fromarray(np.uint8(cm.jet(rate_map)*255))
                             colored_ratemap.save(tetrode_directory_paths[directory] + '/ratemap_cell_' + str(c) + '.png')
                         
                         if plotTasks['occupancy_map']:
                             if tasks['disk_arena']:
-                                cell_stats['occupancy_map'] = disk_mask(cell_stats['occupancy_map'])
-                            colored_occupancy_map = Image.fromarray(np.uint8(cm.jet(cell_stats['occupancy_map'])*255))
+                                occ_map = disk_mask(occ_map)
+                            colored_occupancy_map = Image.fromarray(np.uint8(cm.jet(occ_map)*255))
                             colored_occupancy_map.save(root_directory_paths['Occupancy_Map'] + '/pospdf_cell' + str(c) + '.png')
 
                         # Binary ratemap
@@ -561,6 +574,7 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None):
                             current_statistics_sheet[headers_dict['ISI_mean'] + str(excel_cell_index+1)] = ISI_dict['mean']
                             current_statistics_sheet[headers_dict['ISI_std'] + str(excel_cell_index+1)] = ISI_dict['std']
                             current_statistics_sheet[headers_dict['ISI_cv'] + str(excel_cell_index+1)] = ISI_dict['cv']
+                            current_statistics_sheet[headers_dict['spike_count'] + str(excel_cell_index+1)] = spike_count
                             
 
                         # autocorrelation map
@@ -707,7 +721,7 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None):
             if animal_tet_count[animal_id] == animal_max_tet_count[animal_id]:
                 _save_wb(wb, root_path)
 
-    if settings_dict['saveMethod'] == 'one_per_animal':
+    if settings_dict['saveMethod'] == 'one_for_parent':
         _save_wb(wb, root_path)
         # wb._sheets = sorted(wb._sheets, key=lambda x: x.title)
         # print(root_path)
@@ -740,25 +754,36 @@ def _save_wb(wb, root_path):
     wb.save(pth)
     wb.close()
 
-    xls = pd.ExcelFile(pth)
-    df_sum = pd.read_excel(xls, 'Summary')
-    writer = pd.ExcelWriter(pth, engine="xlsxwriter")
-    dfs = []
-    for sheet in xls.sheet_names:
-        if sheet != 'Summary' and sheet != 'summary':
-            df = pd.read_excel(xls, sheet)
-            dfs.append(df) 
+    # xls = pd.ExcelFile(pth)
+    # df_sum = pd.read_excel(xls, 'Summary')
+    # writer = pd.ExcelWriter(pth, engine="xlsxwriter")
+    # dfs = []
+    # for sheet in xls.sheet_names:
+    #     if sheet != 'Summary' and sheet != 'summary':
+    #         xls = pd.ExcelFile(pth)
+    #         df = pd.read_excel(xls, sheet)
+    #         dfs.append(df) 
 
-            df = df.sort_values(['Session', 'Tetrode', 'Cell'])
-            df.to_excel(writer, sheet_name=sheet, index=True)
-            # writer.save()
+    #         df = df.sort_values(['Session', 'Tetrode', 'Cell ID'])
+    #         df.to_excel(writer, sheet_name=sheet, index=True)
+    #         # writer.save()
+
+    xls = pd.read_excel(pth, sheet_name=None)
+    df_sum = xls.pop('Summary')
+    dfs = [df.sort_values(['Session', 'Tetrode', 'Cell ID']) for df in xls.values()]
+    with pd.ExcelWriter(pth, engine='xlsxwriter') as writer:
+        df_sum.to_excel(writer, sheet_name='Summary', index=False)
+        for sheet, df in zip(xls.keys(), dfs):
+            df.to_excel(writer, sheet_name=sheet, index=False)
+
+
     
-    if len(dfs) > 0:
-        df_sum = pd.concat(dfs, axis=0).sort_values(['Session', 'Tetrode', 'Cell'])
-    else:
-        df_sum = df_sum.sort_values(['Session', 'Tetrode', 'Cell'])
-    df_sum.to_excel(writer, sheet_name="Summary", index=True)
-    writer.save()
+        if len(dfs) > 0:
+            df_sum = pd.concat(dfs, axis=0).sort_values(['Session', 'Tetrode', 'Cell ID'])
+        else:
+            df_sum = df_sum.sort_values(['Session', 'Tetrode', 'Cell ID'])
+        df_sum.to_excel(writer, sheet_name="Summary", index=True)
+    # writer.save()
     print('Saved ' + str(pth))
 
 def get_hd_score_for_cluster(hd_hist):
@@ -778,7 +803,7 @@ if __name__ == '__main__':
 
     # MAKE SURE "field_sizes" IS THE LAST ELEMENT IN "csv_header_keys"
     csv_header = {}
-    csv_header_keys = ['spike_width', 'firing_rate', 'Avg. Spikes/Burst', 'bursting', 'iso_dist', 'L_ratio', 'ISI_min', 'ISI_max', 'ISI_mean', 'ISI_median', 'ISI_cv', 'ISI_std',
+    csv_header_keys = ['spike_width', 'spike_count', 'firing_rate', 'Avg. Spikes/Burst', 'bursting', 'iso_dist', 'L_ratio', 'ISI_min', 'ISI_max', 'ISI_mean', 'ISI_median', 'ISI_cv', 'ISI_std',
                        'sparsity', 'selectivity', 'information', 'coherence', 'speed_score', 'hd_score', 'grid_score', 'border_score', 'field_sizes']
     for key in csv_header_keys:
         csv_header[key] = True
@@ -800,10 +825,10 @@ if __name__ == '__main__':
     session_settings = {'channel_count': 4, 'animal': animal, 'devices': devices, 'implant': implant}
 
     """ FOR YOU TO EDIT """
-    settings = {'ppm': 511, 'session':  session_settings, 'smoothing_factor': 3, 'useMatchedCut': True}
+    settings = {'ppm': 511, 'session':  session_settings, 'smoothing_factor': 3, 'useMatchedCut': False}
     """ FOR YOU TO EDIT """
 
-    tasks['disk_arena'] = False # -->
+    tasks['disk_arena'] = True # -->
     settings['tasks'] = tasks # --> change tasks array to change tasks are run
     settings['plotTasks'] = plotTasks # --> change plot tasks array to change asks taht are plotted
     settings['header'] = csv_header # --> change csv_header header to change tasks that are saved to csv
@@ -814,11 +839,11 @@ if __name__ == '__main__':
     settings['end_cell'] = None
     settings['start_cell'] = None
     settings['saveData'] = True
-    settings['saveMethod'] = 'one_per_animal'
+    settings['saveMethod'] = 'one_for_parent'
     # possible saves are:
     # 1 csv per session (all tetrode and indiv): 'one_per_session' --> 5 sheets (summary of all 4 tetrodes, tet1, tet2, tet3, tet4)
     # 1 csv per animal per tetrode (all sessions): 'one_per_animal_tetrode' --> 4 sheets one per tet 
-    # 1 csv per animal (all tetrodes & sessions): 'one_per_animal' --> 1 sheet
+    # 1 csv per animal (all tetrodes & sessions): 'one_for_parent' --> 1 sheet
     """ FOR YOU TO EDIT """
 
     start_time = time.time()
