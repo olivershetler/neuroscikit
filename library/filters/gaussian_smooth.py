@@ -112,6 +112,9 @@ def gaussian_smooth(data: np.ndarray | np.ma.MaskedArray, sigma, **kwargs):
 
     width = int(4*sigma)
 
+    if width == 0:
+        width = 1
+
     if circular:
         smoothed_data = convolve(working_data, kernel, boundary="wrap")
         # Don't bother with padding. Use the values from the other end of the 
@@ -131,7 +134,7 @@ def gaussian_smooth(data: np.ndarray | np.ma.MaskedArray, sigma, **kwargs):
         # Because of the padding, the boundary mode isn't really relevant
         # By choosing a large width, the edge effects arising from this additional
         # padding (boundary='extend') is minimised
-    
+
         if d == 2:
             smoothed_data = smoothed_data[width:-width, width:-width]
         elif d == 1:
@@ -146,7 +149,7 @@ def gaussian_smooth(data: np.ndarray | np.ma.MaskedArray, sigma, **kwargs):
     if type(data) == np.ma.MaskedArray:
         smoothed_data = np.ma.masked_where(data.mask, smoothed_data)
         smoothed_data.data[data.mask] = data.data[data.mask]
-    
+
     assert smoothed_data.shape == data.shape, "Output array is a different shape to input array"
 
     return smoothed_data

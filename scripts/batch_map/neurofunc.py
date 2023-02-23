@@ -324,7 +324,7 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None):
                 # print(np.asarray(clust.waveforms[0]).T.shape)
                 # print(np.asarray(clust.waveforms[0]).shape)
                 clust.get_waveforms()
-                print(np.array(clust.waveforms).shape, tet_file)
+                # print(np.array(clust.waveforms).shape, tet_file)
                 for i in range(len(clust.waveforms)):
                     ch = np.asarray(clust.waveforms[i])
                     ch_lbl = np.asarray(clust.waveform_ids[i])
@@ -447,7 +447,7 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None):
 
                     # if not isDisk
 
-                    print(fp, tasks['disk_arena'])
+                    # print(fp, tasks['disk_arena'])
 
                     cell_stats['rate_map_smooth'] = rate_map
                     cell_stats['occupancy_map'] = occ_map
@@ -488,7 +488,8 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None):
 
                     # print('Speed Score')
                     if tasks['speed_score']:
-                        s_score = speed_score(spatial_spike_train)
+                        if tasks['disk_arena']:
+                            s_score = speed_score(spatial_spike_train)
                         cell_stats['speed_score'] = s_score
 
                     # print('Spatial Tuning Curve')
