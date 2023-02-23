@@ -46,8 +46,8 @@ def sort_spikes_by_cell(clusters: SpikeClusterBatch,matched_lbls=None):
         if type(spks) == float or type(spks) == np.float64:
             spks = [spks]
         # if len(spks) < 40000 and len(spks) > 100:
-        # if len(spks) < 40000:
-        cells.append(spks)
+        if len(spks) <= 30000:
+            cells.append(spks)
         sorted_waveforms.append(waves[idx,:,:].squeeze())
         # sorted_waveforms.append(waves[:,idx,:].squeeze())
         sorted_label_ids.append(lbl)
