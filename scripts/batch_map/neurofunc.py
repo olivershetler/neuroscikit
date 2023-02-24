@@ -53,7 +53,7 @@ from library.spike import histogram_ISI, find_burst
 """ SETTINGS AT THE BOTTOM OF FILE """
 
 
-def batch_map(study: Study, settings_dict: dict, saveDir=None):
+def batch_map(study: Study, settings_dict: dict, saveDir=None, sum_sheet_count=None):
     """
     Computes rate maps across all animals, sessions, cells in a study.
 
@@ -727,7 +727,7 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None):
                 _save_wb(wb, root_path, animal_id=animal_id)
 
     if settings_dict['saveMethod'] == 'one_for_parent':
-        _save_wb(wb, root_path)
+        _save_wb(wb, root_path, sum_sheet_count=sum_sheet_count)
         # wb._sheets = sorted(wb._sheets, key=lambda x: x.title)
         # print(root_path)
         # pth = root_path + '/summary_sheet'  + '.xlsx'
@@ -752,10 +752,13 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None):
 # animal_sessions_tets_events
 
 
-def _save_wb(wb, root_path, animal_id=None):
+def _save_wb(wb, root_path, animal_id=None, sum_sheet_count=None):
     wb._sheets = sorted(wb._sheets, key=lambda x: x.title)
     if animal_id is None:
-        pth = root_path + '/summary_sheet'  + '.xlsx'
+        if sum_sheet_count is None:
+            pth = root_path + '/summary_sheet'  + '.xlsx'
+        else:
+            pth = root_path + '/summary_sheet_'  + str(sum_sheet_count) + '.xlsx'
     else:
         pth = root_path + '/summary_sheet_' + str(animal_id)  + '.xlsx'
     print(root_path)
@@ -870,12 +873,14 @@ if __name__ == '__main__':
 
     """ OPTION 2 """
     """ RUNS EACH SUBFOLDER ONE AT A TIME """
-    subdirs = [ f.path for f in os.scandir(data_dir) if f.is_dir() ]
+    subdirs = np.sort([ f.path for f in os.scandir(data_dir) if f.is_dir() ])
+    count = 1
     for subdir in subdirs:
         try:
             study = make_study(subdir,settings_dict=settings)
             study.make_animals()
-            batch_map(study, settings, subdir)
+            batch_map(study, settings, subdir, sum_sheet_count=count)
+            count += 1
         except Exception:
             print(traceback.format_exc())
             print('DID NOT WORK FOR DIRECTORY ' + str(subdir))
