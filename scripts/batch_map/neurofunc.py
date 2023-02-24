@@ -1,5 +1,6 @@
 import os
 import sys
+import traceback
 
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
@@ -723,7 +724,7 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None):
 
         if settings_dict['saveMethod'] == 'one_per_animal_tetrode':
             if animal_tet_count[animal_id] == animal_max_tet_count[animal_id]:
-                _save_wb(wb, root_path)
+                _save_wb(wb, root_path, animal_id=animal_id)
 
     if settings_dict['saveMethod'] == 'one_for_parent':
         _save_wb(wb, root_path)
@@ -751,9 +752,12 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None):
 # animal_sessions_tets_events
 
 
-def _save_wb(wb, root_path):
+def _save_wb(wb, root_path, animal_id=None):
     wb._sheets = sorted(wb._sheets, key=lambda x: x.title)
-    pth = root_path + '/summary_sheet'  + '.xlsx'
+    if animal_id is None:
+        pth = root_path + '/summary_sheet'  + '.xlsx'
+    else:
+        pth = root_path + '/summary_sheet_' + str(animal_id)  + '.xlsx'
     print(root_path)
     wb.save(pth)
     wb.close()
@@ -850,11 +854,24 @@ if __name__ == '__main__':
     # 1 csv per animal (all tetrodes & sessions): 'one_for_parent' --> 1 sheet
     """ FOR YOU TO EDIT """
 
+
     start_time = time.time()
     root = tk.Tk()
     root.withdraw()
     data_dir = filedialog.askdirectory(parent=root,title='Please select a data directory.')
-    study = make_study(data_dir,settings_dict=settings)
-    study.make_animals()
 
-    batch_map(study, settings, data_dir)
+    # RUNS EVERYTHING UNDER PARENT FOLDER (all subfolders loaded first)
+    # study = make_study(data_dir,settings_dict=settings)
+    # study.make_animals()
+    # batch_map(study, settings, data_dir)
+
+    # RUNS EACH SUBFOLDER ONE AT A TIME (make sure there are no subfolders without data)
+    subdirs = [ f.path for f in os.scandir(data_dir) if f.is_dir() ]
+    for subdir in subdirs:
+        try:
+            study = make_study(subdir,settings_dict=settings)
+            study.make_animals()
+            batch_map(study, settings, subdir)
+        except Exception:
+            print(traceback.format_exc())
+            print('DID NOT WORK FOR DIRECTORY ' + str(subdir))
