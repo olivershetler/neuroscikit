@@ -860,12 +860,16 @@ if __name__ == '__main__':
     root.withdraw()
     data_dir = filedialog.askdirectory(parent=root,title='Please select a data directory.')
 
-    # RUNS EVERYTHING UNDER PARENT FOLDER (all subfolders loaded first)
+    ########################################################################################################################
+
+    """ OPTION 1 """
+    """ RUNS EVERYTHING UNDER PARENT FOLDER (all subfolders loaded first) """
     # study = make_study(data_dir,settings_dict=settings)
     # study.make_animals()
     # batch_map(study, settings, data_dir)
 
-    # RUNS EACH SUBFOLDER ONE AT A TIME (make sure there are no subfolders without data)
+    """ OPTION 2 """
+    """ RUNS EACH SUBFOLDER ONE AT A TIME """
     subdirs = [ f.path for f in os.scandir(data_dir) if f.is_dir() ]
     for subdir in subdirs:
         try:
