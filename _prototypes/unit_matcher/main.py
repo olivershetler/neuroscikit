@@ -8,6 +8,9 @@ import sys
 import xlsxwriter
 import pandas as pd
 import pickle
+import tkinter as tk
+from tkinter import filedialog
+import traceback
 
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
@@ -45,13 +48,17 @@ def run_unit_matcher(paths=[], settings={}, method='JSD', dim_redux='PCA', study
         # make animals
         study.make_animals()
     elif isinstance(study, Study):
+        print('Using pre-made study')
         if study.animals is None:
             study.make_animals()
+
+    print('Loaded in animal ids: ' + str(np.unique(study.animal_ids)))
 
     print('Starting Unit Matching')
 
     animal_pca_results = {}
 
+    # stop()
     for animal in study.animals:
         # SESSIONS INSIDE OF ANIMAL WILL BE SORTED SEQUENTIALLY AS PART OF ANIMAL(WORKSPACE) CLASS IN STUDY_SPACE.PY
         prev = None
@@ -62,6 +69,8 @@ def run_unit_matcher(paths=[], settings={}, method='JSD', dim_redux='PCA', study
         session_mappings = {}
         animal_pca_results[animal.animal_id] = {}
         comparison_count = 1
+
+        print('Processing animmal ' + str(animal.animal_id))
 
         if dim_redux == 'PCA':
             agg_session_feats = []
@@ -125,7 +134,6 @@ def run_unit_matcher(paths=[], settings={}, method='JSD', dim_redux='PCA', study
         # stop()
 
             indiv_ses_feats, unique_ses_ids = split_agg_feature_array(agg_session_feats, agg_session_ids, agg_cell_ids)
-
         elif dim_redux is None or dim_redux == 'None' :
             indiv_ses_feats = None
             curr_pca = None
@@ -171,15 +179,15 @@ def run_unit_matcher(paths=[], settings={}, method='JSD', dim_redux='PCA', study
             prev = curr
             prev_pca = curr_pca
 
-        print(session_mappings)
+        # print(session_mappings)
 
         cross_session_matches, session_mappings = format_mapping_dicts(session_mappings)
 
         cross_session_matches = reorder_unmatched_cells(cross_session_matches)
 
-        print(cross_session_matches)
+        # print(cross_session_matches)
 
-        print('HERE CHECK WHAT HAPPENEING')
+        # print('HERE CHECK WHAT HAPPENEING')
 
         remapping_dicts = apply_cross_session_remapping(session_mappings, cross_session_matches)
         print(remapping_dicts)
@@ -190,6 +198,7 @@ def run_unit_matcher(paths=[], settings={}, method='JSD', dim_redux='PCA', study
             new_cut_file_path, new_cut_data, header_data = format_cut(map_dict['session'], map_dict['map_dict'])
             print('Writing mapping: ' + str(map_dict['map_dict']))
             write_cut(new_cut_file_path, new_cut_data, header_data)
+            print('Written to: ' + str(new_cut_file_path))
 
         # with xlsxwriter.Workbook(str(new_cut_file_path+'.xlsx')) as workbook:
         #     worksheet = workbook.add_worksheet(name=animal_id)
@@ -738,64 +747,54 @@ def map_unit_matches_first_session(matches, match_distances, unmatched):
 
 #     return map_dict
 
+if __name__ == '__main__':
+    """ If a setting is not used for your analysis (e.g. smoothing_factor), just pass in an arbitrary value or pass in 'None' """
+    STUDY_SETTINGS = {
+
+        'ppm': 511,  # EDIT HERE
+
+        'smoothing_factor': 3, # EDIT HERE
+
+        'useMatchedCut': False,  # EDIT HERE, set to False if you want to use runUnitMatcher, set to True after to load in matched.cut file
+    }
 
 
+    # Switch devices to True/False based on what is used in the acquisition (to be extended for more devices in future)
+    device_settings = {'axona_led_tracker': True, 'implant': True} 
 
+    # Make sure implant metadata is correct, change if not, AT THE MINIMUM leave implant_type: tetrode
+    implant_settings = {'implant_type': 'tetrode', 'implant_geometry': 'square', 'wire_length': 25, 'wire_length_units': 'um', 'implant_units': 'uV'}
 
-"""
+    # WE ASSUME DEVICE AND IMPLANT SETTINGS ARE CONSISTENCE ACROSS SESSIONS
 
-batch main fxn takes in study and does procedure across all pairs of sequenntial sessions
+    # Set channel count + add device/implant settings
+    SESSION_SETTINGS = {
+        'channel_count': 4, # EDIT HERE, default is 4, you can change to other number but code will check how many tetrode files are present and set that to channel copunt regardless
+        'devices': device_settings, # EDIT HERE
+        'implant': implant_settings, # EDIT HERE
+    }
 
-main fxn takes directory or session1 folder, session2 folder.
-    If directory assert only two sessions
-    Figure out which session follows which
-    Extract waveforms from cut
-    Match waveforns to units from tetrode file (use sort by spike/cell fn)
-    Return dictionary of spike waveforms for each unit (SpikeClusterBatch --> SpikeCluster --> Spike)
+    STUDY_SETTINGS['session'] = SESSION_SETTINGS
 
-"""
+    settings_dict = STUDY_SETTINGS
 
+    start_time = time.time()
+    root = tk.Tk()
+    root.withdraw()
+    data_dir = filedialog.askdirectory(parent=root,title='Please select a data directory.')
 
+    subdirs = np.sort([ f.path for f in os.scandir(data_dir) if f.is_dir() ])
+    count = 1
+    for subdir in subdirs:
+        try:
+            sub_study = make_study(subdir,settings_dict=settings_dict)
+            sub_study.make_animals()
+            run_unit_matcher(paths=[], settings=settings_dict, study=sub_study)
+            count += 1
+        except Exception:
+            print(traceback.format_exc())
+            print('DID NOT WORK FOR DIRECTORY ' + str(subdir))
 
-# def match_session_units(session_1 : Session, session_2: Session):
-#     """
-#     Input is two sequential Session() instances from study workspace
+    print('COMPLETED UNIT MATCHING')
 
-#     session_2 follows session_1
-
-#     Returns
-#     """
-
-#     assert isinstance(session_1, Session), 'Make sure inputs are of Session() class type'
-#     assert isinstance(session_2, Session), 'Make sure inputs are of Session() class type'
-
-#     ### TO DO
-
-#     # extracts features for every Spike in every SpikeCluster in SpikeClusterBatch (inputs are SpikeClusterBatch)
-#     # unit_features = get_all_unit_features(SpikeCluster) --> Sorted colleciton of Spike() objects belonging to one unit
-
-#     # match waveforms to units (inputs are SpikeCluster)
-#     # matched_units = match_units(unit_featuress)
-
-#     # best_matches = produce remapping (inputs are SpikeCluster)
-
-#     # apply remapping(best_matches)
-
-#     best_matches = {0:0, 1:2, 2:3, 3:4, 4:5, 5:6, 6:7, 7:0, 8:0, 9:0, 10:0, 11:0}
-
-#     # print(np.unique(session_1.session_data.data['cell_ensemble'].get_label_ids()))
-#     # print(np.unique(session_2.session_data.data['cell_ensemble'].get_label_ids()))
-
-#     # print(np.unique(session_1.session_data.data['spike_cluster'].cluster_labels))
-#     # print(np.unique(session_2.session_data.data['spike_cluster'].cluster_labels))
-
-#     cut_file_path = session_2.session_metadata.file_paths['cut']
-
-#     cut_data, header_data = get_current_cut_data(cut_file_path)
-
-#     new_cut_data = apply_remapping(cut_data, best_matches)
-
-#     new_cut_file_path = format_new_cut_file_name(cut_file_path)
-
-#     return new_cut_file_path, new_cut_data, header_data
 
