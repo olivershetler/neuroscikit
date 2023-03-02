@@ -783,8 +783,10 @@ if __name__ == '__main__':
     root.withdraw()
     data_dir = filedialog.askdirectory(parent=root,title='Please select a data directory.')
 
+    import sys
     subdirs = np.sort([ f.path for f in os.scandir(data_dir) if f.is_dir() ])
     count = 1
+    sys.stdout = open(r'C:\Users\aaoun\OneDrive - cumc.columbia.edu\Desktop\HussainiLab\neuroscikit\_prototypes\unit_matcher\testlog.txt', 'w')
     for subdir in subdirs:
         try:
             sub_study = make_study(subdir,settings_dict=settings_dict)
@@ -794,7 +796,8 @@ if __name__ == '__main__':
         except Exception:
             print(traceback.format_exc())
             print('DID NOT WORK FOR DIRECTORY ' + str(subdir))
-
+    sys.stdout.close()
+    sys.stdout = sys.__stdout__
     print('COMPLETED UNIT MATCHING')
 
 
