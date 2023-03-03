@@ -71,7 +71,7 @@ class Session(Workspace):
     def set_animal_id(self):
         if 'animal' in self.session_metadata.metadata:
             self.animal_id = self.session_metadata.metadata['animal'].animal_id
-            print('Animal ID set')
+            print('Session animal ID set: ' + str(self.animal_id))
 
     def _read_input_dict(self):
         session_data = {}

@@ -234,13 +234,21 @@ def batch_sessions(sorted_files, settings_dict, indiv_session_settings):
         tet_files = sorted_files[i]['tet']
         matched_cut_files = sorted_files[i]['matched_cut']
 
-        assert len(cut_files) == len(tet_files), "Number of tetrode and cut files doesn't match"
+        # assert len(cut_files) == len(tet_files), "Number of tetrode and cut files doesn't match"
+        if len(cut_files) != len(tet_files):
+            print('Number of tet and cut files is mismatched for ses with file' + str(tet_files[0]))
 
-        for j in range(len(cut_files)):
+        min_file_match_count = min(len(cut_files),len(tet_files))
+
+        # for j in range(len(cut_files)):
+        for j in range(min_file_match_count):
 
             session_settings_dict = settings_dict['session']
             # session_settings_dict['channel_count'] = indiv_session_settings['tetrode_counts'][i]
             tet_id = int(tet_files[j].split('.')[-1])
+            cut_id = int(cut_files[j].split('.')[-2][-1])
+
+            assert tet_id == cut_id, 'Paired tet and cut file are not from the same tetrode. Tet has id {} but cut has id {}'.format(tet_id, cut_id)
 
 
             ######## TESTING MEMORY ERROR ########
