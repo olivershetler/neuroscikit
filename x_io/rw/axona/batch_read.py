@@ -94,7 +94,7 @@ def _grab_tetrode_cut_position_files(paths: list, pos_files=[], cut_files=[], te
             elif file[-3:] == 'cut':
                 if 'matched' not in file:
                     cut_files.append(fpath)
-                    matched_cut_files.append(paths[0] + '/' + file)
+                    # matched_cut_files.append(paths[0] + '/' + file)
                 else:
                     matched_cut_files.append(paths[0] + '/' + file)
             elif file[-1:].isdigit() and 'clu' not in file and 'cut' not in file and 'eeg' not in file and 'egf' not in file:
@@ -233,6 +233,7 @@ def batch_sessions(sorted_files, settings_dict, indiv_session_settings):
         cut_files = sorted_files[i]['cut']
         tet_files = sorted_files[i]['tet']
         matched_cut_files = sorted_files[i]['matched_cut']
+        idlist = list(map(lambda x: int(x.split('_matched.')[-2][-1]), matched_cut_files))
 
         if settings_dict['useMatchedCut'] == False:
             # assert len(cut_files) == len(tet_files), "Number of tetrode and cut files doesn't match"
@@ -276,8 +277,17 @@ def batch_sessions(sorted_files, settings_dict, indiv_session_settings):
                 if settings_dict['useMatchedCut'] == True:
                     assert len(sorted_files[i]) > 3, print('Matched cut file not present, make sure to run unit matcher')
                     # print(matched_cut_files)
-                    cut_file = matched_cut_files[j]
+                    # cut_file = matched_cut_files[j]
+                    try:
+                        listid = idlist.index(cut_id)
+                    except Exception:
+                        print('Cut file with id {} has no matched cut file, skipping tetrode for this id'.format(cut_id))
+                        continue
+
+                    cut_file = matched_cut_files[listid]
                     assert 'matched.cut' in cut_file
+                    matched_cut_id = int(matched_cut_files[listid].split('_matched.')[-2][-1])
+                    assert matched_cut_id == cut_id, 'Selected matched cut file is incorrect. Chose {} but cut/tet id is {}'.format(matched_cut_id, cut_id)
                 else:
                     cut_file = cut_files[j]
 
