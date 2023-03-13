@@ -51,7 +51,8 @@ class CellEnsemble(Workspace):
 
         self.cell_label_dict = None
         self.waveforms = None
-        self.event_times = self.collect_cell_event_times()
+        self.event_times = None
+        # self.event_ids = self.collect_cell_event_times()
         self.waveform_ids = None 
         self.event_ids = None
 
