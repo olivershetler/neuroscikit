@@ -534,20 +534,20 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None, sum_sheet_count=N
                             if tasks['disk_arena']:
                                 rate_map = disk_mask(rate_map)
                             colored_ratemap = Image.fromarray(np.uint8(cm.jet(rate_map)*255))
-                            colored_ratemap.save(tetrode_directory_paths[directory] + '/ratemap_cell_' + str(c) + '.png')
+                            colored_ratemap.save(tetrode_directory_paths[directory] + '/ratemap_cell_' + str(cell.cluster.cluster_label) + '.png')
                         
                         if plotTasks['occupancy_map']:
                             if tasks['disk_arena']:
                                 occ_map = disk_mask(occ_map)
                             colored_occupancy_map = Image.fromarray(np.uint8(cm.jet(occ_map)*255))
-                            colored_occupancy_map.save(root_directory_paths['Occupancy_Map'] + '/pospdf_cell' + str(c) + '.png')
+                            colored_occupancy_map.save(root_directory_paths['Occupancy_Map'] + '/pospdf_cell' + str(cell.cluster.cluster_label) + '.png')
 
                         # Binary ratemap
                         if plotTasks['binary_map']:
                             if tasks['disk_arena']:
                                 binmap = disk_mask(binmap)
                             im = Image.fromarray(np.uint8(binmap*255))
-                            im.save(tetrode_directory_paths[directory] + '/Binary_Map_Cell_' + str(c) + '.png')
+                            im.save(tetrode_directory_paths[directory] + '/Binary_Map_Cell_' + str(cell.cluster.cluster_label) + '.png')
 
                         # Sparsity, Selectivity and Shannon
                         if tasks['sparsity']:
@@ -585,7 +585,7 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None, sum_sheet_count=N
                         # autocorrelation map
                         if plotTasks['autocorr_map']:
                             im = Image.fromarray(np.uint8(cm.jet(autocorr_map)*255))
-                            im.save(tetrode_directory_paths[directory] + '/autocorr_cell_' + str(c) + '.png')
+                            im.save(tetrode_directory_paths[directory] + '/autocorr_cell_' + str(cell.cluster.cluster_label) + '.png')
 
                         if tasks['border_score'] and not tasks['disk_arena']:
                             current_statistics_sheet[headers_dict['border_score_top'] + str(excel_cell_index+1)] = b_score[0]
@@ -651,7 +651,7 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None, sum_sheet_count=N
                             plt.ylabel('Firing Rate (Hertz)')
                             # print
                             plt.plot(pos_t, firing_rate, linewidth=0.25)
-                            plt.savefig(tetrode_directory_paths[directory] + '/FRvT_cell_' + str(c) + '.png', dpi=300, bbox_inches = 'tight')
+                            plt.savefig(tetrode_directory_paths[directory] + '/FRvT_cell_' + str(cell.cluster.cluster_label) + '.png', dpi=300, bbox_inches = 'tight')
                             plt.close(fig)
 
                         # Firing rate vs. speed
@@ -663,7 +663,7 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None, sum_sheet_count=N
                             plt.xlabel('Speed (cm/s)')
                             plt.ylabel('Firing Rate (Hertz)')
                             plt.scatter(v, firing_rate, s = 0.5)
-                            plt.savefig(tetrode_directory_paths[directory] + '/FRvS_cell_' + str(c) + '.png', dpi=300, bbox_inches = 'tight')
+                            plt.savefig(tetrode_directory_paths[directory] + '/FRvS_cell_' + str(cell.cluster.cluster_label) + '.png', dpi=300, bbox_inches = 'tight')
                             plt.close(fig)
 
                         # Plotting tuning curves (polar plots for directional firing) per cell
@@ -687,7 +687,7 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None, sum_sheet_count=N
                             # plt.polar(bin_array, tuned_data, linewidth=3)
 
                             plt.box(on=None)
-                            plt.savefig(tetrode_directory_paths[directory] + '/tuning_curve_cell_' + str(c) + '.png', dpi=300, bbox_inches = 'tight')
+                            plt.savefig(tetrode_directory_paths[directory] + '/tuning_curve_cell_' + str(cell.cluster.cluster_label) + '.png', dpi=300, bbox_inches = 'tight')
                             plt.close(fig)
 
                         # Spikes over position map
@@ -701,7 +701,7 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None, sum_sheet_count=N
                             plt.xlabel("x coordinates")
                             plt.ylabel("y coordinates")
                             plt.gca().set_aspect('equal', adjustable='box')
-                            plt.savefig(tetrode_directory_paths[directory] + '/spikes_over_position_cell_' + str(c) + '.png', dpi=300, bbox_inches = 'tight')
+                            plt.savefig(tetrode_directory_paths[directory] + '/spikes_over_position_cell_' + str(cell.cluster.cluster_label) + '.png', dpi=300, bbox_inches = 'tight')
                             plt.close(fig)
 
                         # Auto-resize columns to width of header text
