@@ -411,7 +411,7 @@ LEC_naming_format = {
                 '^NON-88-1_[0-9]{8}\-ROUND\-([^-]+)\-([^-]+)\-([0-9]+)$': split_name_date_round_depth_angle_int, # 'NON-88-1_{date}-ROUND-{depth}-{angle}-{int}',
             },
             'odor': {
-                '^NON-73-6_[0-9]{8}\-ROUND\-([^-]+)\-1[a-zA-Z]{1}2[a-zA-Z]{1}3[a-zA-Z]{1}$': split_name_date_round_depth_odor, # 'NON-88-1_{date}-ROUND-{depth}-1{o}2{o}3{o}',
+                '^NON-88-1_[0-9]{8}\-ROUND\-([^-]+)\-1[a-zA-Z]{1}2[a-zA-Z]{1}3[a-zA-Z]{1}$': split_name_date_round_depth_odor, # 'NON-88-1_{date}-ROUND-{depth}-1{o}2{o}3{o}',
             },
         }
     },
