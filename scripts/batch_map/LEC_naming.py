@@ -120,7 +120,7 @@ def split_name_date_angle_depth(filename):
 def split_name_date_depth_word_angle(filename):
     if 'object' in filename and 'noobject' not in filename:
         angle = filename.split('object')[-1]
-    depth = filename.split('_')[0].split('-')[-2]
+    depth = filename.split('_')[1].split('-')[-2]
     name = filename.split('_')[0]
     date = filename.split('_')[1].split('-')[0]
 
