@@ -74,10 +74,14 @@ def sort_spikes_by_cell(clusters: SpikeClusterBatch,matched_lbls=None):
     else:
         empty_cell = sorted(set(range(unique_labels[0], unique_labels[-1] + 1)).difference(unique_labels))
 
-    if len(empty_cell) >= 1:
-        empty_cell = empty_cell[0]
+    if matched_lbls is not None: # if using matched cut file
+        if len(empty_cell) >= 1:
+            empty_cell = empty_cell[0]
+        else:
+            empty_cell = unique_labels[-1] + 1
     else:
-        empty_cell = unique_labels[-1] + 1
+        empty_cell = empty_cell[0]
+
     # print(empty_cell)
     sorted_label_ids = np.asarray(sorted_label_ids)
     idx = np.where((sorted_label_ids >= 1) & (sorted_label_ids < empty_cell))
