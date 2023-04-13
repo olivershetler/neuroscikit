@@ -1,6 +1,6 @@
 def _check_angle(angle):
-    valid_angles = ['0','90','180','270','NO','noobject','no','zero']
-    conv_angles = {'noobject': 'NO','no': 'NO','zero': '0'}
+    valid_angles = ['0','90','180','270','NO','noobject','no','zero', 'NO2', 'no2']
+    conv_angles = {'noobject': 'NO','no': 'NO','zero': '0', 'NO2': 'NO', 'no2': 'NO'}
 
     assert angle in valid_angles, 'Invalid angle: {}'.format(angle)
 
@@ -116,6 +116,15 @@ def split_name_date_angle_depth(filename):
     date = filename.split('_')[1].split('-')[0]
 
     return _check_angle(angle), depth, name, date
+
+# def split_name_date_angleint_depth(filename):
+#     angle = str(filename.split('-')[-2])[:2]
+#     depth = filename.split('-')[-1]
+#     name = filename.split('_')[0]
+#     date = filename.split('_')[1].split('-')[0]
+
+#     return _check_angle(angle), depth, name, date
+
 
 def split_name_date_depth_word_angle(filename):
     if 'object' in filename and 'noobject' not in filename:
@@ -309,6 +318,7 @@ LEC_naming_format = {
             },        
             'B6-2M': {
                 'object':{
+                    # '^B6-2M_[0-9]{8}\-[a-zA-Z]{2}[0-9]{1}\-([^-]+)$': split_name_date_angleint_depth, # 'B6-2M_{date}-{angle}{int}-{depth}',
                     '^B6-2M_[0-9]{8}\-([^-]+)\-([^-]+)$': split_name_date_angle_depth, # 'B6-2M_{date}-{angle}-{depth}',
                 },
                 'odor': {
