@@ -15,9 +15,26 @@ from scripts.batch_map.LEC_naming import LEC_naming_format, extract_name
 
 pd.options.mode.chained_assignment = None
 
+# def is_filename_valid(filename, pattern):
+#     invalid_chars = [' ', '\t', '\n']  # add any other invalid characters as needed
+    
+#     # check for invalid characters in filename
+#     for char in invalid_chars:
+#         if char in filename:
+#             return False
+        
+#     return True
+
 def _check_single_format(filename, format, fxn):
+
+    # print(is_filename_valid(filename, format))
+
+    # if '20160404' in str(filename) and 'B6_LEC' in str(filename):
+    #     print('HERE')
+    #     return split_B6_LEC_20160404(filename)
+
     print(filename, format, fxn)
-    if re.match(format, filename) is not None:
+    if re.match(str(format), str(filename)) is not None:
         return fxn(filename)
     
 def _get_ses_neuron_count(ses, df):
@@ -122,12 +139,21 @@ def filter_neurofunc_unmatched_object(file_dir, settings):
 
         formats = LEC_naming_format[group][name][settings['type']]
 
-        checked = list(map(lambda x: _check_single_format(ses, x, formats[x]), list(formats.keys())))
-        checked_idx = [i for i, x in enumerate(checked) if x is not None]
-        print(checked, checked_idx)
-        assert len(checked_idx) == 1
+        # checked = list(map(lambda x: _check_single_format(ses, x, formats[x]), list(formats.keys())))
 
-        checked = checked[checked_idx[0]]
+        for format in list(formats.keys()):
+            checked = _check_single_format(ses, format, formats[format])
+            if checked is not None:
+                break
+            else:
+                continue
+
+
+        # checked_idx = [i for i, x in enumerate(checked) if x is not None]
+        print(checked)
+        # assert len(checked_idx) == 1
+
+        # checked = checked[checked_idx[0]]
 
         assert len(checked) == 4 
         assert not isinstance(checked[0], type(None)) and not isinstance(checked[0], list)
