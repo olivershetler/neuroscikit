@@ -300,7 +300,7 @@ LEC_naming_format = {
             'B6-1M': {
                 'object':{
                     '^B6-1M_[0-9]{8}\-([^-]+)\-([^-]+)$': split_name_date_angle_depth, # 'B6-1M_{date}-{angle}-{depth}',
-                    '^B6-1M_[0-9]{8}\-([0-9]+)\-([0-9]+)\-([0-9]+)$': split_name_date_angle_depth_int, # 'B6-1M_{date}-{angle}-{depth}-{int}',
+                    '^B6-1M_[0-9]{8}\-([^-]+)\-([0-9]+)\-([0-9]+)$': split_name_date_angle_depth_int, # 'B6-1M_{date}-{angle}-{depth}-{int}',
                     # '^B6-1M_[0-9]{8}\-([a-zA-Z]+)\-([0-9]+)\-([0-9]+)$': split_name_date_word_depth_int, # 'B6-1M_{date}-{angle}-{depth}-{int}',
                 },
                 'odor': {
