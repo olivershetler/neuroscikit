@@ -38,20 +38,27 @@ def L_ratio(FD, ClusterSpikes):
     # else:
     #     ClusterSpikes = spike_cluster.cluster_labels
 
-    nSpikes = FD.shape[0]
+    try:
 
-    nClusterSpikes = len(ClusterSpikes)
+        nSpikes = FD.shape[0]
 
-    # mark spikes which are not a part of the cluster as Noise
-    NoiseSpikes = np.setdiff1d(np.arange(nSpikes), ClusterSpikes)
+        nClusterSpikes = len(ClusterSpikes)
 
-    # compute _mahalanobis distances
-    m = _mahal(FD, FD[ClusterSpikes, :])
+        # mark spikes which are not a part of the cluster as Noise
+        NoiseSpikes = np.setdiff1d(np.arange(nSpikes), ClusterSpikes)
 
-    df = FD.shape[1]
+        # compute _mahalanobis distances
+        m = _mahal(FD, FD[ClusterSpikes, :])
 
-    L = np.sum(1 - chi2.cdf(m[NoiseSpikes], df))
-    Lratio = L / nClusterSpikes
+        df = FD.shape[1]
+
+        L = np.sum(1 - chi2.cdf(m[NoiseSpikes], df))
+        Lratio = L / nClusterSpikes
+
+    except:
+        L = np.nan
+        Lratio = np.nan
+        df = np.nan
 
     # spike_cluster.stats_dict['cluster']['L'] = L
     # spike_cluster.stats_dict['cluster']['L_ratio'] = Lratio
