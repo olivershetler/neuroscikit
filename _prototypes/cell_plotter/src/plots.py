@@ -14,7 +14,7 @@ from library.maps.map_utils import disk_mask
 
 def flat_disk_mask(rate_map):
     masked_rate_map = disk_mask(rate_map)
-    masked_rate_map.data[masked_rate_map.mask] = 0
+    masked_rate_map.data[masked_rate_map.mask] = np.nan
     return  masked_rate_map.data
 
 def plot_cell_waveform(cell, data_dir):

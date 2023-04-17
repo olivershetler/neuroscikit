@@ -8,7 +8,7 @@ settings_dict = {'session': session_settings,
 'ppm': None, # EDIT HERE (will read from pos file)
 'smoothing_factor': 3, # EDIT HERE
 'useMatchedCut': True, # EDIT HERE
-'plotCellWaveforms': True, # EDIT HERE
+'plotCellWaveforms': False, # EDIT HERE
 'plotCellRatemap': True, # EDIT HERE
 'outputStructure': 'nested', # EDIT HERE
 # ... to add future plots
