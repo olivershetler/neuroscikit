@@ -74,13 +74,22 @@ def sort_spikes_by_cell(clusters: SpikeClusterBatch,matched_lbls=None):
     else:
         empty_cell = sorted(set(range(unique_labels[0], unique_labels[-1] + 1)).difference(unique_labels))
 
-    if matched_lbls is not None: # if using matched cut file
-        if len(empty_cell) >= 1:
-            empty_cell = empty_cell[0]
-        else:
-            empty_cell = unique_labels[-1] + 1
-    else:
+    # if matched_lbls is not None: # if using matched cut files
+    # if we are using matched cut files, you can have multiple gap cells if a match is missing from one file then present in the next
+    # for mathced cut files, the matched_lbls are set in _read_input_dict of the Animal Class
+    # what this means is we have access to all sessions for an animal and can collect all labels across matched sessionns
+    # therefore when matched labels is used, we can be sure that the empty cell will be the first empty cell and will not be a result of gaps in matched sessions
+    # BELOW is the code used to gather all unique labels for a sequence of matched sessions
+    #    if 'matched' in self._input_dict['session_1'].session_metadata.file_paths['cut']:
+    #        lbls = np.unique(np.concatenate(list(map(lambda x: np.unique(self._input_dict[x].get_spike_data()['spike_cluster'].cluster_labels), self._input_dict))))
+    #        isMatchedCut = True
+
+
+    if len(empty_cell) >= 1: # if there are multiple empty cells, take the first one 
+        # NOTE ABOVE IF WORRIED ABOUT MULTIPLE GAP CELLS IN MATCHED CUT
         empty_cell = empty_cell[0]
+    else: # otherwise take 1 label past the last cell id
+        empty_cell = unique_labels[-1] + 1
 
     # print(empty_cell)
     sorted_label_ids = np.asarray(sorted_label_ids)
