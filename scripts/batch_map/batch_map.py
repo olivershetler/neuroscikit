@@ -12,7 +12,7 @@ from library.maps import autocorrelation, binary_map, spatial_tuning_curve, map_
 from library.hafting_spatial_maps import HaftingOccupancyMap, HaftingRateMap, HaftingSpikeMap, SpatialSpikeTrain2D
 from library.scores import hd_score, grid_score, border_score
 from library.scores import rate_map_stats, rate_map_coherence, speed_score
-from library.maps.map_utils import disk_mask
+from _prototypes.cell_remapping.src.masks import flat_disk_mask
 from PIL import Image
 import numpy as np
 from matplotlib import cm
@@ -21,13 +21,16 @@ from matplotlib import cm
 #     def __init__(self, study: StudyWorkspace):
 #         pass
 
-def batch_map(study: Study, tasks: dict, saveData=False):
+def batch_map(study: Study, tasks: dict, saveData=False, cylinder=True, ratemap_size=64):
     """
     Computes rate maps across all animals, sessions, cells in a study.
 
     Use tasks dictionary as true/false flag with variable to compute
     e.g. {'rate_map': True, 'binary_map': False}
     """
+
+    if cylinder:
+        tasks['disk_arena'] = True
 
     if study.animals is None:
         study.make_animals()
@@ -73,7 +76,7 @@ def batch_map(study: Study, tasks: dict, saveData=False):
                 # print('HaftingRateMap')
                 # rate_obj = HaftingRateMap(spatial_spike_train)
                 rate_obj = spatial_spike_train.get_map('rate')
-                rate_map, raw_rate_map = rate_obj.get_rate_map()
+                rate_map, raw_rate_map = rate_obj.get_rate_map(new_size = ratemap_size)
                 # if settings['normalizeRate']:
                 #     rate_map, _ = rate_obj.get_rate_map()
                 # else:
@@ -107,7 +110,7 @@ def batch_map(study: Study, tasks: dict, saveData=False):
                 if tasks['binary_map']:
                     binmap = binary_map(spatial_spike_train)
                     if tasks['disk_arena']:
-                        binmap = disk_mask(binary_map)
+                        binmap = flat_disk_mask(binmap)
                     binmap_im = Image.fromarray(np.uint8(binmap*255))
                     cell_stats['binary_map'] = binmap
                     cell_stats['binary_map_im'] = binmap_im
@@ -116,7 +119,7 @@ def batch_map(study: Study, tasks: dict, saveData=False):
                 if tasks['autocorrelation_map']:
                     cell_stats['autocorr_map'] = autocorr_map
                     if tasks['disk_arena']:
-                        autocorr_map = disk_mask(autocorr_map)
+                        autocorr_map = flat_disk_mask(autocorr_map)
                     autocorr_map_im = Image.fromarray(np.uint8(cm.jet(autocorr_map)*255))
                     cell_stats['autocorr_map_im'] = autocorr_map_im
 
@@ -169,7 +172,7 @@ def batch_map(study: Study, tasks: dict, saveData=False):
 
                 # print('Field sizes')
                 if tasks['field_sizes']:
-                    image, n_labels, labels, centroids, field_sizes = map_blobs(spatial_spike_train)
+                    image, n_labels, labels, centroids, field_sizes = map_blobs(spatial_spike_train, ratemap_size=ratemap_size)
                     cell_stats['field_size_data'] = {'image': image, 'n_labels': n_labels, 'labels': labels, 'centroids': centroids, 'field_sizes': field_sizes}
 
                 cell.stats_dict['cell_stats'] = cell_stats

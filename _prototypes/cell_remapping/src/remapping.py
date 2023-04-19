@@ -1,6 +1,8 @@
 import os, sys
 import numpy as np
 import itertools
+import re
+import matplotlib.pyplot as plt
 
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
@@ -10,11 +12,9 @@ from _prototypes.cell_remapping.src.rate_map_plots import plot_obj_remapping, pl
 from _prototypes.cell_remapping.src.wasserstein_distance import sliced_wasserstein, single_point_wasserstein, pot_sliced_wasserstein, compute_centroid_remapping, _get_ratemap_bucket_midpoints
 from _prototypes.cell_remapping.src.masks import make_object_ratemap, check_disk_arena, flat_disk_mask
 from library.maps import map_blobs
-from scripts.batch_map.batch_map import batch_map
+from scripts.batch_map.batch_map import batch_map 
 from _prototypes.cell_remapping.src.settings import obj_output, centroid_output, tasks, session_comp_categories, rate_output, context_output, variations
-from scipy.spatial.distance import cdist
-from scipy.optimize import linear_sum_assignment
-import matplotlib.pyplot as plt
+from scripts.batch_map.LEC_naming import LEC_naming_format, extract_name
 
 """
 
@@ -42,14 +42,20 @@ TODO (in order of priority)
 
 """
 
+                                
+def _check_single_format(filename, format, fxn):
+    print(str(format), str(filename))
+    if re.match(str(format), str(filename)) is not None:
+        return fxn(filename)
 
-def compute_remapping(study, settings):
+
+def compute_remapping(study, settings, data_dir):
 
     c = 0
 
-    batch_map(study, tasks, settings)
+    batch_map(study, tasks, ratemap_size=settings['ratemap_dims'][0])
     
-    max_centroid_count, blobs_dict = _aggregate_cell_info(study)
+    max_centroid_count, blobs_dict = _aggregate_cell_info(study, ratemap_size=settings['ratemap_dims'][0])
 
     centroid_dict = centroid_output
     rate_dict = rate_output
@@ -58,16 +64,18 @@ def compute_remapping(study, settings):
 
     for animal in study.animals:
 
-        if settings['useMatchedCut']:
-            # get largest possible cell id
-            max_matched_cell_count = len(animal.sessions[sorted(list(animal.sessions.keys()))[-1]].get_cell_data()['cell_ensemble'].cells)
-        else:
-            max_matched_cell_count = max(list(map(lambda x: max(animal.sessions[x].get_cell_data()['cell_ensemble'].get_label_ids()), animal.sessions)))
+        # if settings['useMatchedCut']:
+        #     # get largest possible cell id
+        #     max_matched_cell_count = len(animal.sessions[sorted(list(animal.sessions.keys()))[-1]].get_cell_data()['cell_ensemble'].cells)
+        # else:
+        #     max_matched_cell_count = max(list(map(lambda x: max(animal.sessions[x].get_cell_data()['cell_ensemble'].get_label_ids()), animal.sessions)))
 
-        print('max matched cell count: ' + str(max_matched_cell_count))
-        for x in animal.sessions:
-            print(x)
-            print('ensemble label ids: ' + str(animal.sessions[x].get_cell_data()['cell_ensemble'].get_label_ids()))
+        max_matched_cell_count = max(list(map(lambda x: max(animal.sessions[x].get_cell_data()['cell_ensemble'].get_label_ids()), animal.sessions)))
+
+        # print('max matched cell count: ' + str(max_matched_cell_count))
+        # for x in animal.sessions:
+        #     print(x)
+        #     print('ensemble label ids: ' + str(animal.sessions[x].get_cell_data()['cell_ensemble'].get_label_ids()))
 
         # len(session) - 1 bcs thats number of comparisons. e.g. 3 session: ses1-ses2, ses2-ses3 so 2 distances will be given for remapping
         remapping_distances = np.zeros((len(list(animal.sessions.keys()))-1, max_matched_cell_count))
@@ -88,14 +96,31 @@ def compute_remapping(study, settings):
                 seskey = 'session_' + str(i+1)
                 print(seskey)
                 ses = animal.sessions[seskey]
-                path = ses.session_metadata.file_paths['tet'].lower()
+                path = ses.session_metadata.file_paths['tet']
+                fname = path.split('/')[-1].split('.')[0]
 
                 # Check if cylinder
-                cylinder, true_var = check_disk_arena(path)
+                cylinder, true_var = check_disk_arena(fname)
 
                 ### TEMPORARY WAY TO READ OBJ LOC FROM FILE NAME ###
                 if settings['hasObject']:
-                    object_location = _read_location_from_file(path, cylinder, true_var)
+                    # object_location = _read_location_from_file(path, cylinder, true_var)
+
+                    group, name = extract_name(fname)
+
+                    formats = LEC_naming_format[group][name][settings['type']]
+
+                    for format in list(formats.keys()):
+                        checked = _check_single_format(fname, format, formats[format])
+                        if checked is not None:
+                            break
+                        else:
+                            continue
+
+                    object_location, _, _, _ = checked
+                    
+                    if object_location != 'NO':
+                        object_location = int(object_location)
 
                 ensemble = ses.get_cell_data()['cell_ensemble']
 
@@ -109,19 +134,25 @@ def compute_remapping(study, settings):
 
                     rate_map_obj = spatial_spike_train.get_map('rate')
                     if settings['normalizeRate']:
-                        rate_map, _ = rate_map_obj.get_rate_map()
+                        rate_map, _ = rate_map_obj.get_rate_map(new_size = settings['ratemap_dims'][0])
                     else:
-                        _, rate_map = rate_map_obj.get_rate_map()
+                        _, rate_map = rate_map_obj.get_rate_map(new_size = settings['ratemap_dims'][0])
+
+                    assert rate_map.shape == (settings['ratemap_dims'][0], settings['ratemap_dims'][1]), 'Wrong ratemap shape {} vs settings shape {}'.format(rate_map.shape, (settings['ratemap_dims'][0], settings['ratemap_dims'][1]))
                     
                     # Disk mask ratemap
                     if cylinder:
                         curr = flat_disk_mask(rate_map)
+                        # curr_plot = disk_mask(rate_map)
                     else:
                         curr = rate_map
+                        # curr_plot = curr
                     
                     curr_cell = cell
                     curr_spatial_spike_train = spatial_spike_train
                     curr_key = seskey
+                    curr_path = ses.session_metadata.file_paths['tet'].split('/')[-1].split('.')[0]
+                    curr_id = str(animal.animal_id) + '_' + str(seskey) + '_' + str(cell.cluster.cluster_label)
 
                     # If object used in experiment 
                     if settings['hasObject']:
@@ -133,16 +164,24 @@ def compute_remapping(study, settings):
                         for var in variations:
                             obj_wass_key = 'obj_wass_' + str(var)
 
-                            object_ratemap, object_pos = make_object_ratemap(var, rate_map_obj)
+                            object_ratemap, object_pos = make_object_ratemap(var, rate_map_obj, new_size=settings['ratemap_dims'][0])
+
+                            if cylinder:
+                                object_ratemap = flat_disk_mask(object_ratemap)
+                                # ids where not nan
+                                row, col = np.where(~np.isnan(object_ratemap))
+                                disk_ids = np.array([row, col]).T
+                            else:
+                                disk_ids = None
 
                             if var == object_location:
                                 true_object_pos = object_pos
                                 true_object_ratemap = object_ratemap
-                            
+                  
                             # disk mask fake object ratemap
                             ###### TESTING THIS,MAYBE DONT NEED TO DISK MASK THE ARTIFICAL OBJECT RATEMAP
-                            if cylinder:
-                                object_ratemap = flat_disk_mask(object_ratemap)
+                            # if cylinder:
+                            #     object_ratemap = flat_disk_mask(object_ratemap)
 
                             # if settings['normalizeRate']:
                             #     rate_map, _ = rate_map_obj.get_rate_map()
@@ -150,9 +189,50 @@ def compute_remapping(study, settings):
                             #     _, rate_map = rate_map_obj.get_rate_map()
                             
                             # EMD on norm/unnorm ratemap + object map for OBJECT remapping
-                            obj_wass = single_point_wasserstein(object_pos, curr, rate_map_obj.arena_size)
+                            obj_wass = single_point_wasserstein(object_pos, curr, rate_map_obj.arena_size, ids=disk_ids)
 
-                            obj_dict[obj_wass_key].append(obj_wass)
+                            image_curr, n_labels_curr, labels_curr, centroids_curr, field_sizes_curr = blobs_dict[curr_id]
+
+                            c_count = len(np.unique(labels_curr))
+                            labels_curr[labels_curr != 0] = 1
+
+                            # field ids is ids of binary field/map blolb
+                            row, col = np.where(labels_curr == 1)
+                            field_ids = np.array([row, col]).T
+                            
+                            y, x = curr.shape
+                            height_bucket_midpoints, width_bucket_midpoints = _get_ratemap_bucket_midpoints(rate_map_obj.arena_size, y, x)
+                            if isinstance(object_pos, dict):
+                                obj_x = width_bucket_midpoints[object_pos['x']]
+                                obj_y = height_bucket_midpoints[object_pos['y']]
+                            else:
+                                obj_y = height_bucket_midpoints[object_pos[0]]
+                                obj_x = width_bucket_midpoints[object_pos[1]]
+
+                            obj_field_wass = single_point_wasserstein(object_pos, curr, rate_map_obj.arena_size, ids=field_ids)
+
+                            # obj_bin_wass = single_point_wasserstein(object_pos, labels_curr, rate_map_obj.arena_size, ids=field_ids)
+                            source_pts = np.array([obj_y, obj_x]).reshape(1,2)
+
+                            rows, cols = np.where(labels_curr == 1)
+                            target_ids = np.array([rows, cols]).T
+                            target_weights = np.array(list(map(lambda x: labels_curr[x[0], x[1]], target_ids)))
+                            target_weights = target_weights / np.sum(target_weights)
+
+                            height_target_pts = height_bucket_midpoints[rows]
+                            width_target_pts = width_bucket_midpoints[cols]
+                            target_pts = np.array([height_target_pts, width_target_pts]).T
+
+                            obj_bin_wass = pot_sliced_wasserstein(source_pts, target_pts, n_projections=settings['n_projections'])
+
+                            if c_count > 1:
+                                centroids_curr = np.mean(centroids_curr, axis=0)
+
+                            # euclidean distance between point
+                            c_wass = np.linalg.norm(np.array((obj_y, obj_x)) - np.array((centroids_curr[0],centroids_curr[1])))
+
+                            obj_dict[obj_wass_key].append([obj_wass, obj_field_wass, obj_bin_wass, c_wass])
+                            # obj_dict[obj_wass_key].append(obj_wass)
 
                         # Store true obj location
                         obj_dict['object_location'].append(object_location)
@@ -165,11 +245,10 @@ def compute_remapping(study, settings):
                         obj_dict['unit_id'].append(cell_label)
                         obj_dict['tetrode'].append(animal.animal_id.split('tet')[-1])
                         obj_dict['session_id'].append(seskey)
+                        obj_dict['session_path'].append(curr_path)
 
                         if settings['plotObject']:
-                            plot_obj_remapping(true_object_ratemap, curr, obj_dict)
-
-                    curr_id = str(animal.animal_id) + '_' + str(seskey) + '_' + str(cell.cluster.cluster_label)
+                            plot_obj_remapping(true_object_ratemap, curr, obj_dict, data_dir)
 
                     # If prev ratemap is not None (= we are at session2 or later, session1 has no prev session to compare)
                     if prev is not None:
@@ -183,13 +262,32 @@ def compute_remapping(study, settings):
                         curr_pts = np.array([curr_spike_pos_x, curr_spike_pos_y]).T
 
                         y, x = prev.shape
+                        # find indices of not nan 
+                        row_prev, col_prev = np.where(~np.isnan(prev))
+                        row_curr, col_curr = np.where(~np.isnan(curr))
+
+                        assert row_prev.all() == row_curr.all() and col_prev.all() == col_curr.all(), 'Nans in different places'
+
                         height_bucket_midpoints, width_bucket_midpoints = _get_ratemap_bucket_midpoints(prev_spatial_spike_train.arena_size, y, x)
-                        buckets = np.array(list(itertools.product(np.arange(0,y,1),np.arange(0,x,1))))
-                        source_weights = np.array(list(map(lambda x: prev[x[0],x[1]], buckets)))
-                        target_weights = np.array(list(map(lambda x: curr[x[0],x[1]], buckets)))
+
+                        height_bucket_midpoints = height_bucket_midpoints[row_curr]
+                        width_bucket_midpoints = width_bucket_midpoints[col_curr]
+
+                        # buckets = np.array(list(itertools.product(row_curr,col_curr)))
+                        source_weights = np.array(list(map(lambda x, y: prev[x,y], row_curr, col_curr)))
+                        target_weights = np.array(list(map(lambda x, y: curr[x,y], row_curr, col_curr)))
+
+                        # print(source_weights)
+                        # print(len(source_weights), len(row_curr), len(col_curr))
+                        # plt.imshow(prev)
+                        # plt.show()
+                        # plt.imshow(prev[row_curr, col_curr])
+                        # plt.show()
+
                         source_weights = source_weights / np.sum(source_weights)
                         target_weights = target_weights / np.sum(target_weights)
-                        coord_buckets = np.array(list(itertools.product(height_bucket_midpoints,width_bucket_midpoints)))
+                        # coord_buckets = np.array(list(itertools.product(height_bucket_midpoints,width_bucket_midpoints)))
+                        coord_buckets = np.array(list(map(lambda x, y: [height_bucket_midpoints[x],width_bucket_midpoints[y]], row_curr, col_curr)))
 
                         # source_coords = np.array(list(map(lambda x: prev[x[0],x[1]], coord_buckets)))
                         # target_coords = np.array(list(map(lambda x: curr[x[0],x[1]], coord_buckets)))
@@ -204,14 +302,15 @@ def compute_remapping(study, settings):
                         # print(coord_buckets.shape, source_weights.shape, target_weights.shape)
 
                         # This is EMD on whole map (binary) 
-                        bin_wass = pot_sliced_wasserstein(prev_pts, curr_pts)
+                        bin_wass = pot_sliced_wasserstein(prev_pts, curr_pts, n_projections=settings['n_projections'])
                         # This is EMD on whole map for normalized/unnormalized rate remapping
-                        sliced_wass = pot_sliced_wasserstein(coord_buckets, coord_buckets, source_weights, target_weights)
+                        sliced_wass = pot_sliced_wasserstein(coord_buckets, coord_buckets, source_weights, target_weights, n_projections=settings['n_projections'])
                         
                         rate_dict['animal_id'].append(animal.animal_id)
                         rate_dict['unit_id'].append(cell_label)
                         rate_dict['tetrode'].append(animal.animal_id.split('tet')[-1])
                         rate_dict['session_ids'].append([prev_key, curr_key])
+                        rate_dict['session_paths'].append([prev_path, curr_path])
                         rate_dict['sliced_wass'].append(sliced_wass)
                         rate_dict['bin_wass'].append(bin_wass)
 
@@ -234,7 +333,7 @@ def compute_remapping(study, settings):
 
 
                         if settings['plotRate']:
-                            plot_rate_remapping(prev, curr, rate_dict)
+                            plot_rate_remapping(prev, curr, rate_dict, data_dir)
 
                         if settings['runFields']:
                             # blobs_dict_curr = curr_cell.stats['field_size_data']
@@ -245,6 +344,9 @@ def compute_remapping(study, settings):
                             image_curr, n_labels_curr, labels_curr, centroids_curr, field_sizes_curr = blobs_dict[curr_id]
 
                             target_labels, source_labels, source_centroids, target_centroids = _sort_centroids_by_field_size(field_sizes_prev, field_sizes_curr, labels_prev, labels_curr, centroids_prev, centroids_curr)
+
+                            assert np.unique(target_labels).all() == np.unique(labels_curr).all()
+                            assert np.unique(source_labels).all() == np.unique(labels_prev).all()
 
                             # prev spatial spike train is source spatial spike train
                             # field_wass, field_pairs, cumulative_wass, test_wass, centroid_wass, binary_wass = compute_centroid_remapping(target_labels, source_labels, curr_spatial_spike_train, prev_spatial_spike_train, target_centroids, source_centroids)
@@ -271,11 +373,12 @@ def compute_remapping(study, settings):
                                 centroid_dict['unit_id'].append(cell_label)
                                 centroid_dict['tetrode'].append(animal.animal_id.split('tet')[-1])
                                 centroid_dict['session_ids'].append([prev_key, curr_key])
+                                centroid_dict['session_paths'].append([prev_path, curr_path])
                                 # field wass is weighed, centroid wass is centre pts, binary wass is unweighed (as if was bianry map with even weight so one pt per position in map)
                                 centroid_dict['cumulative_wass'].append([cumulative_dict['field_wass'], cumulative_dict['centroid_wass'], cumulative_dict['binary_wass']])
                                 # centroid_dict['binary_wass'].append(binary_wass)
 
-                                wass_args = [permute_dict['field_wass'], permute_dict['centroid_wass'], permute_dict['binary_wass']]
+                                wass_args = [permute_dict['field_wass'], permute_dict['binary_wass'], permute_dict['centroid_wass']]
 
                                 # need to make test_wass save as in fill centroid dict
                                 # centroid_dict['test_wass'].append(test_wass)
@@ -284,7 +387,10 @@ def compute_remapping(study, settings):
                                 centroid_dict = _fill_centroid_dict(centroid_dict, max_centroid_count, wass_args, permute_dict['pairs'])
 
                                 if settings['plotFields']:
-                                    plot_fields_remapping(source_labels, target_labels, prev_spatial_spike_train, curr_spatial_spike_train, source_centroids, target_centroids, centroid_dict)
+                                    if cylinder:
+                                        target_labels = flat_disk_mask(target_labels)
+                                        source_labels = flat_disk_mask(source_labels)
+                                    plot_fields_remapping(source_labels, target_labels, prev_spatial_spike_train, curr_spatial_spike_train, source_centroids, target_centroids, centroid_dict, data_dir, settings, cylinder=cylinder)
 
                         remapping_indices[cell_label-1].append(i-1)
 
@@ -292,11 +398,13 @@ def compute_remapping(study, settings):
 
                         c += 1
 
-                    prev = np.copy(curr)
+                    prev = curr
                     prev_spatial_spike_train = curr_spatial_spike_train
                     prev_id = curr_id
                     prev_cell = curr_cell
                     prev_key = curr_key
+                    prev_path = curr_path
+                    # prev_plot = curr_plot
             
             # If there are context specific or otherwise specific groups to compare, can set those ids in settings
             # Will perform session to session remapping segregated by groups definned in settings
@@ -312,8 +420,9 @@ def compute_remapping(study, settings):
                     for comp_ses in comp_categories:
                         seskey = 'session_' + str(comp_ses)
                         ses = animal.sessions[seskey]
-                        path = ses.session_metadata.file_paths['tet'].lower()
-                        cylinder, true_var = check_disk_arena(path)
+                        path = ses.session_metadata.file_paths['tet']
+                        fname = path.split('/')[-1].split('.')[0]
+                        cylinder, true_var = check_disk_arena(fname)
 
                         ensemble = ses.get_cell_data()['cell_ensemble']
 
@@ -325,6 +434,7 @@ def compute_remapping(study, settings):
                             comp_curr = spatial_spike_train
                             comp_curr_cell = cell
                             curr_key = seskey
+                            curr_path = ses.session_metadata.file_paths['tet'].split('/')[-1].split('.')[0]
 
                             if comp_prev is not None:
                                 prev_spike_pos_x, prev_spike_pos_y, _ = comp_prev.get_spike_positions()
@@ -335,7 +445,7 @@ def compute_remapping(study, settings):
                                 # curr_pts = np.array([curr_spike_pos_x, curr_spike_pos_y]).reshape((-1,2))
                                 curr_pts = np.array([curr_spike_pos_x, curr_spike_pos_y]).T
 
-                                sliced_wass = pot_sliced_wasserstein(prev_pts, curr_pts)
+                                sliced_wass = pot_sliced_wasserstein(prev_pts, curr_pts, n_projections=settings['n_projections'])
 
                                 context_dict[categ]['animal_id'].append(animal.animal_id)
                                 context_dict[categ]['unit_id'].append(cell_label)
@@ -358,6 +468,8 @@ def compute_remapping(study, settings):
                             comp_prev = comp_curr
                             comp_prev_cell = comp_curr_cell
                             prev_key = curr_key
+                            prev_path = curr_path
+                            
 
             c += 1
 
@@ -398,14 +510,15 @@ def _read_location_from_file(path, cylinder, true_var):
 
     return object_location
 
-def _aggregate_cell_info(study):
+def _aggregate_cell_info(study, ratemap_size=64):
     max_centroid_count = 0
     blobs_dict = {}
     type_dict = {}
     spatial_obj_dict = {}
     for animal in study.animals:
         # get largest possible cell id
-        max_matched_cell_count = len(animal.sessions[sorted(list(animal.sessions.keys()))[-1]].get_cell_data()['cell_ensemble'].cells)
+        # max_matched_cell_count = len(animal.sessions[sorted(list(animal.sessions.keys()))[-1]].get_cell_data()['cell_ensemble'].cells)
+        max_matched_cell_count = max(list(map(lambda x: max(animal.sessions[x].get_cell_data()['cell_ensemble'].get_label_ids()), animal.sessions)))
         for k in range(int(max_matched_cell_count)):
             cell_label = k + 1
             prev_field_size_len = None 
@@ -413,6 +526,12 @@ def _aggregate_cell_info(study):
                 seskey = 'session_' + str(i+1)
                 ses = animal.sessions[seskey]
                 ensemble = ses.get_cell_data()['cell_ensemble']
+
+                path = ses.session_metadata.file_paths['tet']
+                fname = path.split('/')[-1].split('.')[0]
+
+                # Check if cylinder
+                cylinder, true_var = check_disk_arena(fname)
                 if cell_label in ensemble.get_cell_label_dict():
                     cell = ensemble.get_cell_by_id(cell_label)
                     # if 'spatial_spike_train' in cell.stats_dict['cell_stats']:
@@ -422,7 +541,7 @@ def _aggregate_cell_info(study):
 
                     spatial_spike_train = cell.stats_dict['cell_stats']['spatial_spike_train']
 
-                    image, n_labels, labels, centroids, field_sizes = map_blobs(spatial_spike_train)
+                    image, n_labels, labels, centroids, field_sizes = map_blobs(spatial_spike_train, ratemap_size=ratemap_size, cylinder=cylinder)
 
                     id = str(animal.animal_id) + '_' + str(seskey) + '_' + str(cell.cluster.cluster_label)
 

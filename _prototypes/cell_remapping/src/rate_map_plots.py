@@ -10,8 +10,9 @@ PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
 
 from library.map_utils import _interpolate_matrix
+from _prototypes.cell_remapping.src.masks import flat_disk_mask
 
-def plot_rate_remapping(prev, curr, plot_settings):
+def plot_rate_remapping(prev, curr, plot_settings, data_dir):
 
     fig = TemplateFig()
 
@@ -29,7 +30,8 @@ def plot_rate_remapping(prev, curr, plot_settings):
 
     """ save """
     # create a dsave and an fprefix
-    save_dir = PROJECT_PATH + '/_prototypes/cell_remapping/output/rate'
+    # save_dir = PROJECT_PATH + '/_prototypes/cell_remapping/output/rate'
+    save_dir = data_dir + '/output/rate'
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
     fprefix = 'ratemap_cell_{}_{}_{}_unit_{}'.format(animal_id, prev_key, curr_key, unit_id)
@@ -40,7 +42,7 @@ def plot_rate_remapping(prev, curr, plot_settings):
     fig.f.savefig(fp, dpi=360.)
     plt.close(fig.f)
 
-def plot_obj_remapping(obj_rate_map, ses_rate_map, plot_settings):
+def plot_obj_remapping(obj_rate_map, ses_rate_map, plot_settings, data_dir):
 
     fig = TemplateFig()
 
@@ -53,6 +55,8 @@ def plot_obj_remapping(obj_rate_map, ses_rate_map, plot_settings):
     unit_id = plot_settings['unit_id'][-1]
     animal_id = plot_settings['animal_id'][-1]
 
+    if type(sliced_wass) == list:
+        sliced_wass = sliced_wass[0]
     title = ses_key + ' & object ' + str(object_location) + ' : ' + str(round(sliced_wass, 2))
     # print(title)
 
@@ -60,7 +64,8 @@ def plot_obj_remapping(obj_rate_map, ses_rate_map, plot_settings):
 
     """ save """
     # create a dsave and an fprefix
-    save_dir = PROJECT_PATH + '/_prototypes/cell_remapping/output/object'
+    # save_dir = PROJECT_PATH + '/_prototypes/cell_remapping/output/object'
+    save_dir = data_dir + '/output/object'
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
     fprefix = 'obj_ratemap_cell_{}_{}_{}_unit_{}'.format(animal_id, ses_key, object_location, unit_id)
@@ -71,15 +76,22 @@ def plot_obj_remapping(obj_rate_map, ses_rate_map, plot_settings):
     fig.f.savefig(fp, dpi=360.)
     plt.close(fig.f)
 
-def plot_fields_remapping(label_s, label_t, spatial_spike_train_s, spatial_spike_train_t, centroid_s, centroid_t, plot_settings):
+def plot_fields_remapping(label_s, label_t, spatial_spike_train_s, spatial_spike_train_t, centroid_s, centroid_t, plot_settings, data_dir, settings, cylinder=False):
 
     target_rate_map_obj = spatial_spike_train_t.get_map('rate')
-    target_map, _ = target_rate_map_obj.get_rate_map()
+    target_map, _ = target_rate_map_obj.get_rate_map(new_size = settings['ratemap_dims'][0])
 
     y, x = target_map.shape
 
     source_rate_map_obj = spatial_spike_train_s.get_map('rate')
-    source_map, _ = source_rate_map_obj.get_rate_map()
+    source_map, _ = source_rate_map_obj.get_rate_map(new_size = settings['ratemap_dims'][0])
+    
+
+    if cylinder:
+        source_map = flat_disk_mask(source_map)
+        target_map = flat_disk_mask(target_map)
+        label_s = flat_disk_mask(label_s)
+        label_t = flat_disk_mask(label_t)
 
 
     fig = FieldsTemplateFig()
@@ -105,7 +117,8 @@ def plot_fields_remapping(label_s, label_t, spatial_spike_train_s, spatial_spike
 
     """ save """
     # create a dsave and an fprefix
-    save_dir = PROJECT_PATH + '/_prototypes/cell_remapping/output/centroid'
+    # save_dir = PROJECT_PATH + '/_prototypes/cell_remapping/output/centroid'
+    save_dir = data_dir + '/output/centroid'
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
     fprefix = 'fields_ratemap_cell_{}_{}_{}_unit_{}'.format(animal_id, prev_key, curr_key, unit_id)
@@ -140,7 +153,8 @@ class FieldsTemplateFig():
         # toplot = _interpolate_matrix(rate_map, new_size=(256,256), cv2_interpolation_method=cv2.INTER_NEAREST)
         toplot = rate_map
 
-        img = ax.imshow(np.uint8(cm.jet(toplot)*255))
+        # img = ax.imshow(np.uint8(cm.jet(toplot)*255))
+        img = ax.imshow(toplot, cmap='jet')
 
         for c in centroids:
             ax.plot(c[1], c[0], 'r.', markersize=10)
@@ -149,16 +163,24 @@ class FieldsTemplateFig():
 
     def label_field_plot(self, labels, centroids, ax):
 
-        img = ax.imshow(labels)
+        # toplot = _interpolate_matrix(labels, new_size=(256,256), cv2_interpolation_method=cv2.INTER_NEAREST)
+        toplot = labels
+
+        img = ax.imshow(toplot, cmap='Greys')
 
         for c in centroids:
             ax.plot(c[1], c[0], 'r.', markersize=10)
 
     def binary_field_plot(self, labels, centroids, ax):
 
+        labels[labels != labels] = 0
+
         labels[labels != 0] = 1
 
-        img = ax.imshow(labels, cmap='Greys')
+        # toplot = _interpolate_matrix(labels, new_size=(256,256), cv2_interpolation_method=cv2.INTER_NEAREST)
+        toplot = labels
+
+        img = ax.imshow(toplot, cmap='Greys')
 
         for c in centroids:
             ax.plot(c[1], c[0], 'r.', markersize=10)
@@ -185,7 +207,8 @@ class TemplateFig():
         # toplot = _interpolate_matrix(rate_map, new_size=(256,256), cv2_interpolation_method=cv2.INTER_NEAREST)
         toplot = rate_map
 
-        img = ax.imshow(np.uint8(cm.jet(toplot)*255))
+        # img = ax.imshow(np.uint8(cm.jet(toplot)*255))
+        img = ax.imshow(toplot, cmap='jet')
 
         self.f.colorbar(img, ax=ax, fraction=0.046, pad=0.04)
 

@@ -8,12 +8,12 @@ sys.path.append(PROJECT_PATH)
 from library.maps.map_utils import _interpolate_matrix, disk_mask
 
 
-def make_object_ratemap(object_location, rate_map_obj):
+def make_object_ratemap(object_location, rate_map_obj, new_size=(16,16)):
     #arena_height, arena_width = rate_map_obj.arena_size
     #arena_height = arena_height[0]
     #arena_width = arena_width[0]
 
-    rate_map, _ = rate_map_obj.get_rate_map()
+    rate_map, _ = rate_map_obj.get_rate_map(new_size=new_size)
 
     # (64, 64)
     y, x = rate_map.shape
@@ -26,8 +26,10 @@ def make_object_ratemap(object_location, rate_map_obj):
     arena = np.zeros((y,x))
 
     # if no object, zero across all ratemap
-    if object_location == 'no':
-        return arena, {'x':0, 'y':0}
+    if object_location == 'NO':
+        cust_arena = np.ones((y,x))
+        norm_arena = cust_arena / np.sum(cust_arena)
+        return norm_arena, {'x':0, 'y':0}
 
     else:
         # if object, pass into dictionary to get x/y coordinates of object location
@@ -74,7 +76,7 @@ def make_object_ratemap(object_location, rate_map_obj):
 
 
 def check_disk_arena(path):
-    variations = [r'cylinder', r'round', r'circle']
+    variations = [r'cylinder', r'round', r'circle', r'CYLINDER', r'ROUND', r'CIRCLE', r'Cylinder', r'Round', r'Circle']
     var_bool = []
     true_var = None
     for var in variations:
@@ -88,11 +90,17 @@ def check_disk_arena(path):
         cylinder = True
     else:
         cylinder = False
-
+    # print(cylinder, true_var, path)
     return cylinder, true_var
 
 
 def flat_disk_mask(rate_map):
     masked_rate_map = disk_mask(rate_map)
-    masked_rate_map.data[masked_rate_map.mask] = 0
-    return  masked_rate_map.data
+    # masked_rate_map.data[masked_rate_map.mask] = 0
+    # masked_rate_map.data[masked_rate_map.mask] = np.nan
+    # print(np.unique(masked_rate_map.data))
+    # return  masked_rate_map.data
+    copy = np.copy(rate_map).astype(np.float32)
+    copy[masked_rate_map.mask] = np.nan
+    return copy
+    # return masked_rate_map

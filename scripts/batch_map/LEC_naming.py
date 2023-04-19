@@ -48,7 +48,6 @@ def _merge_depth(name, date):
     while len(vals) == 0:
         datetime -= pd.Timedelta(days=1)
         vals = df.loc[df['Session'] == datetime.strftime(r'%m/%d/%y'), 'Depth'].values
-
     depth = vals[0]
 
     return depth 
@@ -314,17 +313,18 @@ def split_name_date_angle_depth_int(filename):
 
     return _check_angle(angle), depth, name, date
 
-# def split_name_date_word_depth_int(filename):
-#     # 'B6-1M_{date}-CAGE-{depth}-{int}'
-#     depth = filename.split('-')[-2]
-#     date = filename.split('_')[1].split('-')[0]
-#     name = filename.split('_')[0]
-#     angle = 'NO'
+def split_name_date_word_angle_depth(filename):
+    # 'B6-1M_{date}_ROUND-{angle}-{depth}'
+    depth = filename.split('-')[-1]
+    date = filename.split('_')[1]
+    name = filename.split('_')[0]
+    angle = filename.split('-')[-2]
 
-#     return _check_angle(angle), depth, name, date
+    return _check_angle(angle), depth, name, date
 
 def extract_name(filename):
     name = filename.split('_')[0]
+    print(filename, name)
     if 'B6' in name:
         group = 'B6'
     elif 'ANT' in name:
@@ -369,7 +369,7 @@ LEC_naming_format = {
                 'object':{
                     r'^B6-1M_[0-9]{8}\-([^-]+)\-([^-]+)$': split_name_date_angle_depth, # 'B6-1M_{date}-{angle}-{depth}',
                     r'^B6-1M_[0-9]{8}\-([^-]+)\-([0-9]+)\-([0-9]+)$': split_name_date_angle_depth_int, # 'B6-1M_{date}-{angle}-{depth}-{int}',
-                    # r'^B6-1M_[0-9]{8}\-([a-zA-Z]+)\-([0-9]+)\-([0-9]+)$': split_name_date_word_depth_int, # 'B6-1M_{date}-{angle}-{depth}-{int}',
+                    r'^B6-1M_(\d{8})_([a-zA-Z]+-[^-]+-[0-9]+)$': split_name_date_word_angle_depth, # 'B6-1M_{date}-{angle}-{depth}-{int}',
                 },
                 'odor': {
     

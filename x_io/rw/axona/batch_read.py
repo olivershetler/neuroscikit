@@ -243,7 +243,7 @@ def batch_sessions(sorted_files, settings_dict, indiv_session_settings):
             min_file_match_count = min(len(cut_files),len(tet_files))
         else:
             if len(matched_cut_files) != len(tet_files):
-                print('Number of tet and cut files is mismatched for ses with file' + str(tet_files[0]))
+                print('Number of tet and matched cut files is mismatched for ses with file' + str(tet_files[0]))
 
             min_file_match_count = min(len(matched_cut_files),len(tet_files))
 

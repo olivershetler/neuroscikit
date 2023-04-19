@@ -16,38 +16,43 @@ GLOBAL SETTINGS
 """
 
 settings_dict['session']['channel_count'] = 4
-settings_dict['ppm'] = None # EDIT HERE
-settings_dict['smoothing_factor'] = 2 # EDIT HERE
-settings_dict['useMatchedCut'] = False # EDIT HERE
+settings_dict['ppm'] = None # EDIT HERE (will auto read from file if None, otherwise will override with this value)
+settings_dict['smoothing_factor'] = 3 # EDIT HERE (for plotting)
+settings_dict['useMatchedCut'] = True # EDIT HERE (NECESSARY TO BE TRUE OR TO HAVE MANUALLY MATCHED CUT FILES)
+settings_dict['n_projections'] = 10**2 # EDIT HERE (10**3 is slow,  50 (default) is faster but less accurate, 10**2 is middle ground --> look paper)
+settings_dict['type'] = 'object' # EDIT HERE # Currently only 'object' is supported so no need to change (will add e.g. angle later)
+# Type is used to read angle or other (e.g. odor) from filename
+##### ratemap size setting (16,16) --> tradeoff between speed and accuracy
+settings_dict['ratemap_dims'] = (64,64) # EDIT HERE (16,16) is default, (32,32) is slower but more accurate,
 
 """ 
-IF YOU ARE DOING RATE REMAPPING
+IF YOU ARE DOING WHOLE MAP REMAPPING
 """
 
-settings_dict['plotRate'] = False # EDIT HERE
-settings_dict['normalizeRate'] = True # EDIT HERE
+settings_dict['plotRate'] = True # EDIT HERE
+settings_dict['normalizeRate'] = True # EDIT HERE --> NORMALIZED FOR ALL CASES 
 
 """ 
 IF YOU ARE DOING OBJECT REMAPPING
 """
 
-settings_dict['hasObject'] = False # EDIT HERE
-settings_dict['plotObject'] = False # EDIT HERE
+settings_dict['hasObject'] = True # EDIT HERE
+settings_dict['plotObject'] = True # EDIT HERE
 
-variations = [0,90,180,270,'no'] # EDIT HERE
+variations = [0,90,180,270,'NO'] # EDIT HERE
 
 """ 
 IF YOU ARE DOING CENTROID REMAPPING
 """
 
 settings_dict['runFields'] = True # EDIT HERE
-settings_dict['plotFields'] = False # EDIT HERE
+settings_dict['plotFields'] = True # EDIT HERE
 
 """ 
 IF YOU ARE DOING CONTEXT REMAPPING
 """
 
-settings_dict['runUniqueGroups'] = True # EDIT HERE
+settings_dict['runUniqueGroups'] = False # EDIT HERE
 
 session_comp_categories = {'morning': [1,3], 'afternoon': [2,4]} # EDIT HERE
 
@@ -60,10 +65,10 @@ rate_output = {}
 obj_output = {}
 centroid_output = {}
 
-keys = ['animal_id','tetrode','unit_id', 'session_ids', 'sliced_wass', 'bin_wass']
+keys = ['animal_id','tetrode','unit_id', 'session_ids', 'session_paths', 'sliced_wass', 'bin_wass']
 #  'information', 'b_top', 'b_bottom', 'b_right', 'b_left', 'grid_score']
-obj_keys = ['animal_id','tetrode','unit_id','session_id', 'obj_pos_x', 'obj_pos_y', 'object_location', 'obj_wass_0', 'obj_wass_90', 'obj_wass_180', 'obj_wass_270', 'obj_wass_no']
-centroid_keys = ['animal_id','tetrode','unit_id','session_ids','cumulative_wass']
+obj_keys = ['animal_id','tetrode','unit_id','session_id', 'session_path','obj_pos_x', 'obj_pos_y', 'object_location', 'obj_wass_0', 'obj_wass_90', 'obj_wass_180', 'obj_wass_270', 'obj_wass_NO']
+centroid_keys = ['animal_id','tetrode','unit_id','session_ids','session_paths','cumulative_wass']
 # 'test_wass','centroid_wass','binary_wass']
 
 for key in keys:
