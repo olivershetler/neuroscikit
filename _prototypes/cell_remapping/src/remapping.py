@@ -569,9 +569,9 @@ def _sort_filter_centroids_by_field_size(field_sizes_source, field_sizes_target,
 
     bin_area = heightStep * widthStep
 
-    print('HEREEE')
-    print(np.unique(blobs_map_source), np.unique(blobs_map_target), field_sizes_source, field_sizes_target)
-    print(np.argsort(-np.array(field_sizes_source)))
+    # print('HEREEE')
+    # print(np.unique(blobs_map_source), np.unique(blobs_map_target), field_sizes_source, field_sizes_target)
+    # print(np.argsort(-np.array(field_sizes_source)))
 
     sort_idx_source = np.argsort(-np.array(field_sizes_source))
     source_labels = np.zeros(blobs_map_source.shape)
@@ -579,7 +579,7 @@ def _sort_filter_centroids_by_field_size(field_sizes_source, field_sizes_target,
     for k in np.unique(blobs_map_source):
         if k != 0:
             row, col = np.where(blobs_map_source == k)
-            print(k,len(row), len(col), bin_area)
+            # print(k,len(row), len(col), bin_area)
             if (len(row) + len(col)) * bin_area > 22.5:
                 idx_to_move_to = np.where(sort_idx_source == k-1)[0][0]
                 # map_dict[k] = sort_idx_source[k-1] + 1
@@ -592,7 +592,7 @@ def _sort_filter_centroids_by_field_size(field_sizes_source, field_sizes_target,
     source_labels = np.vectorize(map_dict.get)(blobs_map_source)
 
     source_centroids = centroids_prev[sort_idx_source]
-    print(map_dict, source_centroids)
+    # print(map_dict, source_centroids)
     # sort_idx_target = np.argsort(-np.array(field_sizes_target))
     # target_centers = target_centers[sort_idx_target]
 
@@ -602,7 +602,7 @@ def _sort_filter_centroids_by_field_size(field_sizes_source, field_sizes_target,
     for k in np.unique(blobs_map_target):
         if k != 0:
             row, col = np.where(blobs_map_target == k)
-            print(k,len(row), len(col), bin_area)
+            # print(k,len(row), len(col), bin_area)
             if (len(row) + len(col)) * bin_area > 22.5:
                 # map_dict[k] = sort_idx_target[k-1] + 1
                 idx_to_move_to = np.where(sort_idx_target == k-1)[0][0]
