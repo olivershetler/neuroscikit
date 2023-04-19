@@ -120,5 +120,6 @@ def map_blobs(spatial_map: SpatialSpikeTrain2D | HaftingRateMap, **kwargs):
     elif isinstance(spatial_map, SpatialSpikeTrain2D):
         spatial_map.add_map_to_stats('map_blobs', map_blobs_dict)
 
+    print('AQUI', n_labels, np.unique(labels), len(centroids), len(field_sizes))
     return image, n_labels, labels, centroids, field_sizes
 

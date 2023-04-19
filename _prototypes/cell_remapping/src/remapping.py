@@ -191,8 +191,9 @@ def compute_remapping(study, settings, data_dir):
                             # EMD on norm/unnorm ratemap + object map for OBJECT remapping
                             obj_wass = single_point_wasserstein(object_pos, curr, rate_map_obj.arena_size, ids=disk_ids)
 
-                            image_curr, n_labels_curr, labels_curr, centroids_curr, field_sizes_curr = blobs_dict[curr_id]
-
+                            _, _, labels, centroids, _ = blobs_dict[curr_id]
+                            
+                            labels_curr = np.copy(labels)
                             c_count = len(np.unique(labels_curr))
                             labels_curr[labels_curr != 0] = 1
 
@@ -226,7 +227,7 @@ def compute_remapping(study, settings, data_dir):
                             obj_bin_wass = pot_sliced_wasserstein(source_pts, target_pts, n_projections=settings['n_projections'])
 
                             if c_count > 1:
-                                centroids_curr = np.mean(centroids_curr, axis=0)
+                                centroids_curr = np.mean(centroids, axis=0)
 
                             # euclidean distance between point
                             c_wass = np.linalg.norm(np.array((obj_y, obj_x)) - np.array((centroids_curr[0],centroids_curr[1])))
@@ -343,7 +344,7 @@ def compute_remapping(study, settings, data_dir):
 
                             image_curr, n_labels_curr, labels_curr, centroids_curr, field_sizes_curr = blobs_dict[curr_id]
 
-                            target_labels, source_labels, source_centroids, target_centroids = _sort_centroids_by_field_size(field_sizes_prev, field_sizes_curr, labels_prev, labels_curr, centroids_prev, centroids_curr)
+                            target_labels, source_labels, source_centroids, target_centroids = _sort_filter_centroids_by_field_size(field_sizes_prev, field_sizes_curr, labels_prev, labels_curr, centroids_prev, centroids_curr, prev_spatial_spike_train.arena_size)
 
                             assert np.unique(target_labels).all() == np.unique(labels_curr).all()
                             assert np.unique(source_labels).all() == np.unique(labels_prev).all()
@@ -560,21 +561,38 @@ def _aggregate_cell_info(study, ratemap_size=64):
 
     return max_centroid_count, blobs_dict
 
-def _sort_centroids_by_field_size(field_sizes_source, field_sizes_target, blobs_map_source, blobs_map_target, centroids_prev, centroids_curr):
+def _sort_filter_centroids_by_field_size(field_sizes_source, field_sizes_target, blobs_map_source, blobs_map_target, centroids_prev, centroids_curr, arena_size):
+    height, width = arena_size
+    y, x = blobs_map_source.shape
+    heightStep = height/y
+    widthStep = width/x
+
+    bin_area = heightStep * widthStep
+
+    print('HEREEE')
+    print(np.unique(blobs_map_source), np.unique(blobs_map_target), field_sizes_source, field_sizes_target)
+    print(np.argsort(-np.array(field_sizes_source)))
+
     sort_idx_source = np.argsort(-np.array(field_sizes_source))
     source_labels = np.zeros(blobs_map_source.shape)
     map_dict = {}
     for k in np.unique(blobs_map_source):
         if k != 0:
-            # row, col = np.where(labels_prev == k)
-            # source_labels[row, col] = sort_idx_source[k-1] + 1
-            map_dict[k] = sort_idx_source[k-1] + 1
+            row, col = np.where(blobs_map_source == k)
+            print(k,len(row), len(col), bin_area)
+            if (len(row) + len(col)) * bin_area > 22.5:
+                idx_to_move_to = np.where(sort_idx_source == k-1)[0][0]
+                # map_dict[k] = sort_idx_source[k-1] + 1
+                map_dict[k] = idx_to_move_to + 1
+            else:
+                print('Blob filtered out with size less than 22.5 cm^2')
+                map_dict[k] = 0
         else:
             map_dict[k] = 0
     source_labels = np.vectorize(map_dict.get)(blobs_map_source)
 
     source_centroids = centroids_prev[sort_idx_source]
-
+    print(map_dict, source_centroids)
     # sort_idx_target = np.argsort(-np.array(field_sizes_target))
     # target_centers = target_centers[sort_idx_target]
 
@@ -583,7 +601,15 @@ def _sort_centroids_by_field_size(field_sizes_source, field_sizes_target, blobs_
     map_dict = {}
     for k in np.unique(blobs_map_target):
         if k != 0:
-            map_dict[k] = sort_idx_target[k-1] + 1
+            row, col = np.where(blobs_map_target == k)
+            print(k,len(row), len(col), bin_area)
+            if (len(row) + len(col)) * bin_area > 22.5:
+                # map_dict[k] = sort_idx_target[k-1] + 1
+                idx_to_move_to = np.where(sort_idx_target == k-1)[0][0]
+                # map_dict[k] = sort_idx_source[k-1] + 1
+                map_dict[k] = idx_to_move_to + 1
+            else:
+                map_dict[k] = 0
         else:
             map_dict[k] = 0
     target_labels = np.vectorize(map_dict.get)(blobs_map_target)
