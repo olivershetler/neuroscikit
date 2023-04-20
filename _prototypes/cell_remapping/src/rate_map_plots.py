@@ -20,11 +20,11 @@ def plot_rate_remapping(prev, curr, plot_settings, data_dir):
     fig.density_plot(curr, fig.ax['2'])
 
     prev_key, curr_key = plot_settings['session_ids'][-1]
-    sliced_wass = plot_settings['sliced_wass'][-1]
+    wass = plot_settings['wass'][-1]
     unit_id = plot_settings['unit_id'][-1]
-    animal_id = plot_settings['animal_id'][-1]
+    name = plot_settings['name'][-1]
 
-    title = prev_key + ' & ' + curr_key + ' : ' + str(sliced_wass)
+    title = prev_key + ' & ' + curr_key + ' : ' + str(wass)
 
     fig.f.suptitle(title, ha='center', fontweight='bold')
 
@@ -34,7 +34,7 @@ def plot_rate_remapping(prev, curr, plot_settings, data_dir):
     save_dir = data_dir + '/output/rate'
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
-    fprefix = 'ratemap_cell_{}_{}_{}_unit_{}'.format(animal_id, prev_key, curr_key, unit_id)
+    fprefix = 'ratemap_cell_{}_{}_{}_unit_{}'.format(name, prev_key, curr_key, unit_id)
 
     ftemplate_short = "{}.{}"
     fshort = ftemplate_short.format(fprefix, 'pdf')
@@ -53,7 +53,7 @@ def plot_obj_remapping(obj_rate_map, ses_rate_map, plot_settings, data_dir):
     object_location = plot_settings['object_location'][-1]
     sliced_wass = plot_settings['obj_wass_'+str(object_location)][-1]
     unit_id = plot_settings['unit_id'][-1]
-    animal_id = plot_settings['animal_id'][-1]
+    name = plot_settings['name'][-1]
 
     if type(sliced_wass) == list:
         sliced_wass = sliced_wass[0]
@@ -68,7 +68,7 @@ def plot_obj_remapping(obj_rate_map, ses_rate_map, plot_settings, data_dir):
     save_dir = data_dir + '/output/object'
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
-    fprefix = 'obj_ratemap_cell_{}_{}_{}_unit_{}'.format(animal_id, ses_key, object_location, unit_id)
+    fprefix = 'obj_ratemap_cell_{}_{}_{}_unit_{}'.format(name, ses_key, object_location, unit_id)
 
     ftemplate_short = "{}.{}"
     fshort = ftemplate_short.format(fprefix, 'pdf')
@@ -106,7 +106,7 @@ def plot_fields_remapping(label_s, label_t, spatial_spike_train_s, spatial_spike
     prev_key, curr_key = plot_settings['session_ids'][-1]
     cumulative_wass = plot_settings['cumulative_wass'][-1]
     unit_id = plot_settings['unit_id'][-1]
-    animal_id = plot_settings['animal_id'][-1]
+    name = plot_settings['name'][-1]
 
     title = prev_key + ' & ' + curr_key + ' : ' + str(cumulative_wass)
 
@@ -121,7 +121,7 @@ def plot_fields_remapping(label_s, label_t, spatial_spike_train_s, spatial_spike
     save_dir = data_dir + '/output/centroid'
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
-    fprefix = 'fields_ratemap_cell_{}_{}_{}_unit_{}'.format(animal_id, prev_key, curr_key, unit_id)
+    fprefix = 'fields_ratemap_cell_{}_{}_{}_unit_{}'.format(name, prev_key, curr_key, unit_id)
 
     ftemplate_short = "{}.{}"
     fshort = ftemplate_short.format(fprefix, 'pdf')

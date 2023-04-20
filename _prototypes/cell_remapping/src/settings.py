@@ -31,6 +31,8 @@ IF YOU ARE DOING WHOLE MAP REMAPPING
 
 settings_dict['plotRate'] = True # EDIT HERE
 settings_dict['normalizeRate'] = True # EDIT HERE --> NORMALIZED FOR ALL CASES 
+settings_dict['rate_scores'] = ['whole', 'binary']
+
 
 """ 
 IF YOU ARE DOING OBJECT REMAPPING
@@ -38,6 +40,7 @@ IF YOU ARE DOING OBJECT REMAPPING
 
 settings_dict['hasObject'] = True # EDIT HERE
 settings_dict['plotObject'] = True # EDIT HERE
+settings_dict['object_scores'] = ['whole', 'field', 'binary', 'centroid']
 
 variations = [0,90,180,270,'NO'] # EDIT HERE
 
@@ -47,6 +50,7 @@ IF YOU ARE DOING CENTROID REMAPPING
 
 settings_dict['runFields'] = True # EDIT HERE
 settings_dict['plotFields'] = True # EDIT HERE
+settings_dict['centroid_scores'] = ['field', 'binary', 'centroid']
 
 """ 
 IF YOU ARE DOING CONTEXT REMAPPING
@@ -65,10 +69,16 @@ rate_output = {}
 obj_output = {}
 centroid_output = {}
 
-keys = ['animal_id','tetrode','unit_id', 'session_ids', 'session_paths', 'sliced_wass', 'bin_wass']
+keys = ['signature','depth', 'name', 'date', 'tetrode','unit_id', 'session_ids', 'score', 'wass']
 #  'information', 'b_top', 'b_bottom', 'b_right', 'b_left', 'grid_score']
-obj_keys = ['animal_id','tetrode','unit_id','session_id', 'session_path','obj_pos_x', 'obj_pos_y', 'object_location', 'obj_wass_0', 'obj_wass_90', 'obj_wass_180', 'obj_wass_270', 'obj_wass_NO']
-centroid_keys = ['animal_id','tetrode','unit_id','session_ids','session_paths','cumulative_wass']
+
+obj_keys = ['signature','depth', 'name', 'date','tetrode','unit_id','session_id','obj_pos_x', 'obj_pos_y', 'object_location', 'score', 
+            'obj_wass_0', 'obj_wass_90', 'obj_wass_180', 'obj_wass_270', 'obj_wass_NO', 'field_count', 'bin_area',
+            'main_field_coverage', 'main_field_area', 'main_field_rate', 'cumulative_coverage', 'cumulative_area', 'cumulative_rate',]
+
+centroid_keys = ['signature','depth', 'name', 'date','tetrode','unit_id','session_ids','cumulative_wass',
+                 'score', 'field_count', 'bin_area', 
+                 'cumulative_coverage', 'cumulative_area', 'cumulative_rate']
 # 'test_wass','centroid_wass','binary_wass']
 
 for key in keys:
@@ -102,7 +112,7 @@ morning_output = {}
 if settings_dict['runUniqueGroups'] == True:
 
     # session_comp_categories = {'morning': [1,3], 'afternoon': [2,4]}
-    keys = ['animal_id','tetrode','unit_id', 'session_ids', 'sliced_wass']
+    keys = ['signature','depth','name','date','tetrode','unit_id', 'session_ids', 'sliced_wass']
 
     for key in keys:
         morning_output[key] = []

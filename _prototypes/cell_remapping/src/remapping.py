@@ -102,22 +102,24 @@ def compute_remapping(study, settings, data_dir):
                 # Check if cylinder
                 cylinder, true_var = check_disk_arena(fname)
 
+                group, name = extract_name(fname)
+
+                formats = LEC_naming_format[group][name][settings['type']]
+
+                for format in list(formats.keys()):
+                    checked = _check_single_format(fname, format, formats[format])
+                    if checked is not None:
+                        break
+                    else:
+                        continue
+
+                stim, depth, name, date = checked
+
                 ### TEMPORARY WAY TO READ OBJ LOC FROM FILE NAME ###
                 if settings['hasObject']:
                     # object_location = _read_location_from_file(path, cylinder, true_var)
 
-                    group, name = extract_name(fname)
-
-                    formats = LEC_naming_format[group][name][settings['type']]
-
-                    for format in list(formats.keys()):
-                        checked = _check_single_format(fname, format, formats[format])
-                        if checked is not None:
-                            break
-                        else:
-                            continue
-
-                    object_location, _, _, _ = checked
+                    object_location = stim
                     
                     if object_location != 'NO':
                         object_location = int(object_location)
@@ -154,99 +156,136 @@ def compute_remapping(study, settings, data_dir):
                     curr_path = ses.session_metadata.file_paths['tet'].split('/')[-1].split('.')[0]
                     curr_id = str(animal.animal_id) + '_' + str(seskey) + '_' + str(cell.cluster.cluster_label)
 
+                    y, x = curr.shape
+                    h, w = rate_map_obj.arena_size
+                    bin_area = h/y * w/x
+
                     # If object used in experiment 
                     if settings['hasObject']:
+
+                        _, _, labels, centroids, field_sizes = blobs_dict[curr_id]
+                                    
+                        labels_curr = np.copy(labels)
+                        labels_curr[np.isnan(curr)] = 0
+                        val_r, val_c = np.where(labels_curr == 1)
+                        c_count = len(np.unique(labels_curr)) - 1
+
+                        # take only field label = 1 = largest field = main
+                        main_field_coverage = np.max(field_sizes)
+                        main_field_area = len(np.where(labels_curr == 1)[0])
+                        main_field_rate = np.sum(curr[val_r, val_c])
+
+                        # make all field labels = 1
+                        labels_curr[labels_curr != 0] = 1
+                        val_r, val_c = np.where(labels_curr == 1)
+                        cumulative_coverage = np.max(field_sizes)
+                        cumulative_area = len(np.where(labels_curr == 1)[0])
+                        cumulative_rate = np.sum(curr[val_r, val_c])
+
+                        height_bucket_midpoints, width_bucket_midpoints = _get_ratemap_bucket_midpoints(rate_map_obj.arena_size, y, x)
                         
-                        # # Possible object locations (change to get from settings)
-                        # variations = [0,90,180,270,'no']
+                        # ['whole', 'field', 'bin', 'centroid']
+                        for obj_score in settings['object_scores']:
 
-                        # compute object remapping for every object position, actual object location is store alongside wass for each object ratemap
-                        for var in variations:
-                            obj_wass_key = 'obj_wass_' + str(var)
+                            # # Possible object locations (change to get from settings)
+                            # variations = [0,90,180,270,'no']
+                            # compute object remapping for every object position, actual object location is store alongside wass for each object ratemap
+                            for var in variations:
+                                obj_wass_key = 'obj_wass_' + str(var)
 
-                            object_ratemap, object_pos = make_object_ratemap(var, rate_map_obj, new_size=settings['ratemap_dims'][0])
+                                object_ratemap, object_pos = make_object_ratemap(var, rate_map_obj, new_size=settings['ratemap_dims'][0])
 
-                            if cylinder:
-                                object_ratemap = flat_disk_mask(object_ratemap)
-                                # ids where not nan
-                                row, col = np.where(~np.isnan(object_ratemap))
-                                disk_ids = np.array([row, col]).T
-                            else:
-                                disk_ids = None
+                                if cylinder:
+                                    object_ratemap = flat_disk_mask(object_ratemap)
+                                    # ids where not nan
+                                    row, col = np.where(~np.isnan(object_ratemap))
+                                    disk_ids = np.array([row, col]).T
+                                else:
+                                    disk_ids = None
 
-                            if var == object_location:
-                                true_object_pos = object_pos
-                                true_object_ratemap = object_ratemap
-                  
-                            # disk mask fake object ratemap
-                            ###### TESTING THIS,MAYBE DONT NEED TO DISK MASK THE ARTIFICAL OBJECT RATEMAP
-                            # if cylinder:
-                            #     object_ratemap = flat_disk_mask(object_ratemap)
+                                if var == object_location:
+                                    true_object_pos = object_pos
+                                    true_object_ratemap = object_ratemap
 
-                            # if settings['normalizeRate']:
-                            #     rate_map, _ = rate_map_obj.get_rate_map()
-                            # else:
-                            #     _, rate_map = rate_map_obj.get_rate_map()
+                                if isinstance(object_pos, dict):
+                                    obj_x = width_bucket_midpoints[object_pos['x']]
+                                    obj_y = height_bucket_midpoints[object_pos['y']]
+                                else:
+                                    obj_y = height_bucket_midpoints[object_pos[0]]
+                                    obj_x = width_bucket_midpoints[object_pos[1]] 
+                
+                                # EMD on norm/unnorm ratemap + object map for OBJECT remapping
+                                if obj_score == 'whole':
+                                    obj_wass = single_point_wasserstein(object_pos, curr, rate_map_obj.arena_size, ids=disk_ids)
+
+                                elif obj_score == 'field':
+
+                                    # field ids is ids of binary field/map blolb
+                                    row, col = np.where(labels_curr == 1)
+                                    field_ids = np.array([row, col]).T
+
+                                    # take ids that are both in disk and in field
+                                    field_disk_ids = np.array([x for x in field_ids if x in disk_ids])
+                                
+
+                                    # NEED TO NORMALIZE FIELD NOT WHOLE MAP
+                                    # save total mass in firing field, save area for each field
+                                    # remember long format
+                                    obj_wass = single_point_wasserstein(object_pos, curr, rate_map_obj.arena_size, ids=field_disk_ids)
+
+                                elif obj_score == 'binary':
+                                    # obj_bin_wass = single_point_wasserstein(object_pos, labels_curr, rate_map_obj.arena_size, ids=field_ids)
+                                    source_pts = np.array([obj_y, obj_x]).reshape(1,2)
+
+                                    rows, cols = np.where(labels_curr == 1)
+                                    target_ids = np.array([rows, cols]).T
+                                    target_weights = np.array(list(map(lambda x: labels_curr[x[0], x[1]], target_ids)))
+                                    target_weights = target_weights / np.sum(target_weights)
+
+                                    height_target_pts = height_bucket_midpoints[rows]
+                                    width_target_pts = width_bucket_midpoints[cols]
+                                    target_pts = np.array([height_target_pts, width_target_pts]).T
+
+                                    obj_wass = pot_sliced_wasserstein(source_pts, target_pts, n_projections=settings['n_projections'])
+
+                                elif obj_score == 'centroid':
+                                    if c_count > 1:
+                                        cumulative_centroid = np.mean(centroids, axis=0)
+                                    else:
+                                        cumulative_centroid = centroids[0]
+
+                                    # print(cumulative_centroid, centroids, c_count)
+
+                                    # euclidean distance between point
+                                    obj_wass = np.linalg.norm(np.array((obj_y, obj_x)) - np.array((cumulative_centroid[0],cumulative_centroid[1])))
+
+                                # obj_dict[obj_wass_key].append([obj_wass, obj_field_wass, obj_bin_wass, c_wass])
+                                obj_dict[obj_wass_key].append(obj_wass)
                             
-                            # EMD on norm/unnorm ratemap + object map for OBJECT remapping
-                            obj_wass = single_point_wasserstein(object_pos, curr, rate_map_obj.arena_size, ids=disk_ids)
+                            obj_dict['score'].append(obj_score)
+                            obj_dict['main_field_coverage'].append(main_field_coverage)
+                            obj_dict['main_field_area'].append(main_field_area)
+                            obj_dict['main_field_rate'].append(main_field_rate)
+                            obj_dict['cumulative_coverage'].append(cumulative_coverage)
+                            obj_dict['cumulative_area'].append(cumulative_area)
+                            obj_dict['cumulative_rate'].append(cumulative_rate)
+                            obj_dict['field_count'].append(c_count)
+                            obj_dict['bin_area'].append(bin_area[0])
 
-                            _, _, labels, centroids, _ = blobs_dict[curr_id]
-                            
-                            labels_curr = np.copy(labels)
-                            c_count = len(np.unique(labels_curr))
-                            labels_curr[labels_curr != 0] = 1
+                            # Store true obj location
+                            obj_dict['object_location'].append(object_location)
 
-                            # field ids is ids of binary field/map blolb
-                            row, col = np.where(labels_curr == 1)
-                            field_ids = np.array([row, col]).T
-                            
-                            y, x = curr.shape
-                            height_bucket_midpoints, width_bucket_midpoints = _get_ratemap_bucket_midpoints(rate_map_obj.arena_size, y, x)
-                            if isinstance(object_pos, dict):
-                                obj_x = width_bucket_midpoints[object_pos['x']]
-                                obj_y = height_bucket_midpoints[object_pos['y']]
-                            else:
-                                obj_y = height_bucket_midpoints[object_pos[0]]
-                                obj_x = width_bucket_midpoints[object_pos[1]]
+                            # if object_pos is not None:
+                            obj_dict['obj_pos_x'].append(true_object_pos['x'])
+                            obj_dict['obj_pos_y'].append(true_object_pos['y'])
 
-                            obj_field_wass = single_point_wasserstein(object_pos, curr, rate_map_obj.arena_size, ids=field_ids)
-
-                            # obj_bin_wass = single_point_wasserstein(object_pos, labels_curr, rate_map_obj.arena_size, ids=field_ids)
-                            source_pts = np.array([obj_y, obj_x]).reshape(1,2)
-
-                            rows, cols = np.where(labels_curr == 1)
-                            target_ids = np.array([rows, cols]).T
-                            target_weights = np.array(list(map(lambda x: labels_curr[x[0], x[1]], target_ids)))
-                            target_weights = target_weights / np.sum(target_weights)
-
-                            height_target_pts = height_bucket_midpoints[rows]
-                            width_target_pts = width_bucket_midpoints[cols]
-                            target_pts = np.array([height_target_pts, width_target_pts]).T
-
-                            obj_bin_wass = pot_sliced_wasserstein(source_pts, target_pts, n_projections=settings['n_projections'])
-
-                            if c_count > 1:
-                                centroids_curr = np.mean(centroids, axis=0)
-
-                            # euclidean distance between point
-                            c_wass = np.linalg.norm(np.array((obj_y, obj_x)) - np.array((centroids_curr[0],centroids_curr[1])))
-
-                            obj_dict[obj_wass_key].append([obj_wass, obj_field_wass, obj_bin_wass, c_wass])
-                            # obj_dict[obj_wass_key].append(obj_wass)
-
-                        # Store true obj location
-                        obj_dict['object_location'].append(object_location)
-
-                        # if object_pos is not None:
-                        obj_dict['obj_pos_x'].append(true_object_pos['x'])
-                        obj_dict['obj_pos_y'].append(true_object_pos['y'])
-
-                        obj_dict['animal_id'].append(animal.animal_id)
-                        obj_dict['unit_id'].append(cell_label)
-                        obj_dict['tetrode'].append(animal.animal_id.split('tet')[-1])
-                        obj_dict['session_id'].append(seskey)
-                        obj_dict['session_path'].append(curr_path)
+                            obj_dict['signature'].append(curr_path)
+                            obj_dict['name'].append(name)
+                            obj_dict['date'].append(date)
+                            obj_dict['depth'].append(depth)
+                            obj_dict['unit_id'].append(cell_label)
+                            obj_dict['tetrode'].append(animal.animal_id.split('tet')[-1])
+                            obj_dict['session_id'].append(seskey)
 
                         if settings['plotObject']:
                             plot_obj_remapping(true_object_ratemap, curr, obj_dict, data_dir)
@@ -302,35 +341,27 @@ def compute_remapping(study, settings, data_dir):
 
                         # print(coord_buckets.shape, source_weights.shape, target_weights.shape)
 
-                        # This is EMD on whole map (binary) 
-                        bin_wass = pot_sliced_wasserstein(prev_pts, curr_pts, n_projections=settings['n_projections'])
-                        # This is EMD on whole map for normalized/unnormalized rate remapping
-                        sliced_wass = pot_sliced_wasserstein(coord_buckets, coord_buckets, source_weights, target_weights, n_projections=settings['n_projections'])
-                        
-                        rate_dict['animal_id'].append(animal.animal_id)
-                        rate_dict['unit_id'].append(cell_label)
-                        rate_dict['tetrode'].append(animal.animal_id.split('tet')[-1])
-                        rate_dict['session_ids'].append([prev_key, curr_key])
-                        rate_dict['session_paths'].append([prev_path, curr_path])
-                        rate_dict['sliced_wass'].append(sliced_wass)
-                        rate_dict['bin_wass'].append(bin_wass)
+                        for rate_score in settings['rate_scores']:
 
-                        # d = cdist(prev_pts, curr_pts)
-                        # assignment = linear_sum_assignment(d)
-                        # test_wass = d[assignment].sum() / spatial_spike_train.arena_size[0]
-                        # rate_dict['test_wass'].append(test_wass)
-
-                        # rate_dict = _fill_cell_type_stats(rate_dict, prev_cell, curr_cell)
-
-                        # rate_dict['information'].append([prev_cell.stats_dict['cell_stats']['spatial_information_content'],curr_cell.stats_dict['cell_stats']['spatial_information_content'],curr_cell.stats_dict['cell_stats']['spatial_information_content']-prev_cell.stats_dict['cell_stats']['spatial_information_content']])
-                        # rate_dict['grid_score'].append([prev_cell.stats_dict['cell_stats']['grid_score'],curr_cell.stats_dict['cell_stats']['grid_score'],curr_cell.stats_dict['cell_stats']['grid_score']-prev_cell.stats_dict['cell_stats']['grid_score']])
-                        # rate_dict['b_top'].append([prev_cell.stats_dict['cell_stats']['b_score_top'],curr_cell.stats_dict['cell_stats']['b_score_top'],curr_cell.stats_dict['cell_stats']['b_score_top']-prev_cell.stats_dict['cell_stats']['b_score_top']])
-                        # rate_dict['b_bottom'].append([prev_cell.stats_dict['cell_stats']['b_score_bottom'],curr_cell.stats_dict['cell_stats']['b_score_bottom'],curr_cell.stats_dict['cell_stats']['b_score_bottom']-prev_cell.stats_dict['cell_stats']['b_score_bottom']])
-                        # rate_dict['b_right'].append([prev_cell.stats_dict['cell_stats']['b_score_right'],curr_cell.stats_dict['cell_stats']['b_score_right'],curr_cell.stats_dict['cell_stats']['b_score_right']-prev_cell.stats_dict['cell_stats']['b_score_right']])
-                        # rate_dict['b_left'].append([prev_cell.stats_dict['cell_stats']['b_score_left'],curr_cell.stats_dict['cell_stats']['b_score_left'],curr_cell.stats_dict['cell_stats']['b_score_left']-prev_cell.stats_dict['cell_stats']['b_score_left']])
-                        
-                        # rate_dict['speed_score'].append([prev_cell.stats_dict['cell_stats']['speed_score'],curr_cell.stats_dict['cell_stats']['speed_score'],curr_cell.stats_dict['cell_stats']['speed_score']-prev_cell.stats_dict['cell_stats']['speed_score']])
-                        # rate_dict['hd_score'].append([prev_cell.stats_dict['cell_stats']['hd_score'],curr_cell.stats_dict['cell_stats']['hd_score'],curr_cell.stats_dict['cell_stats']['hd_score']-prev_cell.stats_dict['cell_stats']['hd_score']])
+                            if rate_score == 'binary':
+                                # This is EMD on whole map (binary) 
+                                wass = pot_sliced_wasserstein(prev_pts, curr_pts, n_projections=settings['n_projections'])
+                            elif rate_score == 'whole':
+                                # This is EMD on whole map for normalized/unnormalized rate remapping
+                                wass = pot_sliced_wasserstein(coord_buckets, coord_buckets, source_weights, target_weights, n_projections=settings['n_projections'])
+                                                    
+                            rate_dict['signature'].append([prev_path, curr_path])
+                            rate_dict['name'].append(name)
+                            rate_dict['date'].append(date)
+                            rate_dict['depth'].append(depth)
+                            rate_dict['unit_id'].append(cell_label)
+                            rate_dict['tetrode'].append(animal.animal_id.split('tet')[-1])
+                            rate_dict['session_ids'].append([prev_key, curr_key])
+                            # rate_dict['session_paths'].append([prev_path, curr_path])
+                            # rate_dict['sliced_wass'].append(sliced_wass)
+                            # rate_dict['bin_wass'].append(wass)
+                            rate_dict['score'].append(rate_score)
+                            rate_dict['wass'].append(wass)
 
 
                         if settings['plotRate']:
@@ -369,23 +400,66 @@ def compute_remapping(study, settings, data_dir):
                                 """
                                 permute_dict, cumulative_dict = compute_centroid_remapping(target_labels, source_labels, curr_spatial_spike_train, prev_spatial_spike_train, target_centroids, source_centroids, settings)
 
+                                y, x = curr.shape
+                                h, w = rate_map_obj.arena_size
+                                bin_area = h/y * w/x
+                                field_count = [len(np.unique(source_labels)) - 1,len(np.unique(target_labels)) - 1]
 
-                                centroid_dict['animal_id'].append(animal.animal_id)
-                                centroid_dict['unit_id'].append(cell_label)
-                                centroid_dict['tetrode'].append(animal.animal_id.split('tet')[-1])
-                                centroid_dict['session_ids'].append([prev_key, curr_key])
-                                centroid_dict['session_paths'].append([prev_path, curr_path])
-                                # field wass is weighed, centroid wass is centre pts, binary wass is unweighed (as if was bianry map with even weight so one pt per position in map)
-                                centroid_dict['cumulative_wass'].append([cumulative_dict['field_wass'], cumulative_dict['centroid_wass'], cumulative_dict['binary_wass']])
-                                # centroid_dict['binary_wass'].append(binary_wass)
+                                for centroid_score in settings['centroid_scores']:
 
-                                wass_args = [permute_dict['field_wass'], permute_dict['binary_wass'], permute_dict['centroid_wass']]
+                                    score_key = centroid_score + '_wass'
 
-                                # need to make test_wass save as in fill centroid dict
-                                # centroid_dict['test_wass'].append(test_wass)
-                                # centroid_dict['centroid_wass'].append(centroid_wass)
+                                    centroid_dict['score'].append(centroid_score)
+                                    # centroid_dict['signature'].append(curr_path)
+                                    centroid_dict['name'].append(name)
+                                    centroid_dict['date'].append(date)
+                                    centroid_dict['depth'].append(depth)
+                                    centroid_dict['bin_area'].append(bin_area[0])
+                                    centroid_dict['field_count'].append(field_count)
+                                    centroid_dict['unit_id'].append(cell_label)
+                                    centroid_dict['tetrode'].append(animal.animal_id.split('tet')[-1])
+                                    centroid_dict['session_ids'].append([prev_key, curr_key])
+                                    centroid_dict['signature'].append([prev_path, curr_path])
 
-                                centroid_dict = _fill_centroid_dict(centroid_dict, max_centroid_count, wass_args, permute_dict['pairs'])
+                                    # field wass is weighed, centroid wass is centre pts, binary wass is unweighed (as if was bianry map with even weight so one pt per position in map)
+                                    # centroid_dict['cumulative_wass'].append([cumulative_dict['field_wass'], cumulative_dict['centroid_wass'], cumulative_dict['binary_wass']])
+                                    centroid_dict['cumulative_wass'].append(cumulative_dict[score_key])
+
+                                    copy_labels = np.copy(labels_prev)
+                                    copy_labels[np.isnan(prev)] = 0
+                                    copy_labels[copy_labels != 0] = 1
+                                    val_r, val_c = np.where(copy_labels == 1)
+                                    cumulative_source_coverage = np.max(field_sizes_prev)
+                                    cumulative_source_area = len(np.where(copy_labels == 1)[0])
+                                    cumulative_source_rate = np.sum(prev[val_r, val_c])
+
+                                    copy_labels = np.copy(labels_curr)
+                                    copy_labels[np.isnan(curr)] = 0
+                                    copy_labels[copy_labels != 0] = 1
+                                    val_r, val_c = np.where(copy_labels == 1)
+                                    cumulative_target_coverage = np.max(field_sizes_curr)
+                                    cumulative_target_area = len(np.where(copy_labels == 1)[0])
+                                    cumulative_target_rate = np.sum(curr[val_r, val_c])
+
+                                    # cumulative_source_coverage = np.sum(field_sizes_prev)
+                                    # cumulative_source_area = len(np.where(source_labels != 0)[0])
+                                    # cumulative_source_rate = np.sum(prev[source_labels != 0])
+                                    # cumulative_target_coverage = np.sum(field_sizes_curr)
+                                    # cumulative_target_area = len(np.where(target_labels != 0)[0])
+                                    # cumulative_target_rate = np.sum(curr[target_labels != 0])
+
+                                    centroid_dict['cumulative_coverage'].append([cumulative_source_coverage, cumulative_target_coverage])
+                                    centroid_dict['cumulative_area'].append([cumulative_source_area, cumulative_target_area])
+                                    centroid_dict['cumulative_rate'].append([cumulative_source_rate, cumulative_target_rate])
+
+                                                            # wass_args = [permute_dict['field_wass'], permute_dict['binary_wass'], permute_dict['centroid_wass']]
+                                    wass_to_add = permute_dict[score_key]
+
+                                    # need to make test_wass save as in fill centroid dict
+                                    # centroid_dict['test_wass'].append(test_wass)
+                                    # centroid_dict['centroid_wass'].append(centroid_wass)
+
+                                    centroid_dict = _fill_centroid_dict(centroid_dict, max_centroid_count, wass_to_add, permute_dict['pairs'], prev, source_labels, field_sizes_prev, curr, target_labels, field_sizes_curr)
 
                                 if settings['plotFields']:
                                     if cylinder:
@@ -448,7 +522,10 @@ def compute_remapping(study, settings, data_dir):
 
                                 sliced_wass = pot_sliced_wasserstein(prev_pts, curr_pts, n_projections=settings['n_projections'])
 
-                                context_dict[categ]['animal_id'].append(animal.animal_id)
+                                context_dict[categ]['signature'].append(curr_path)
+                                context_dict[categ]['name'].append(name)
+                                context_dict[categ]['date'].append(date)
+                                context_dict[categ]['depth'].append(depth)
                                 context_dict[categ]['unit_id'].append(cell_label)
                                 context_dict[categ]['tetrode'].append(animal.animal_id.split('tet')[-1])
                                 context_dict[categ]['session_ids'].append([prev_key, curr_key])
@@ -569,6 +646,10 @@ def _sort_filter_centroids_by_field_size(field_sizes_source, field_sizes_target,
 
     bin_area = heightStep * widthStep
 
+    if type(bin_area) == list:
+        assert len(bin_area) == 1
+        bin_area = bin_area[0]
+
     # print('HEREEE')
     # print(np.unique(blobs_map_source), np.unique(blobs_map_target), field_sizes_source, field_sizes_target)
     # print(np.argsort(-np.array(field_sizes_source)))
@@ -618,21 +699,85 @@ def _sort_filter_centroids_by_field_size(field_sizes_source, field_sizes_target,
 
     return target_labels, source_labels, source_centroids, target_centroids
 
-def _fill_centroid_dict(centroid_dict, max_centroid_count, wass_args, centroid_pairs):
-    field_wass, centroid_wass, binary_wass = wass_args
+def _fill_centroid_dict(centroid_dict, max_centroid_count, wass_to_add, centroid_pairs, source_map, source_labels, source_field_sizes, target_map, target_labels, target_field_sizes):
+    # field_wass, centroid_wass, binary_wass = wass_args
+    # to_add = wass_args
     for n in range(max_centroid_count):
-        wass_key = 'centroid_wass_'+str(n+1)
-        id_key = 'centroid_ids_'+str(n+1)
+        wass_key = 'c_wass_'+str(n+1)
+        id_key = 'c_ids_'+str(n+1)
+        coverage_key = 'c_coverage_'+str(n+1)
+        area_key = 'c_area_'+str(n+1)
+        rate_key = 'c_rate_'+str(n+1)
 
         if wass_key not in centroid_dict:
             centroid_dict[wass_key] = []
             centroid_dict[id_key] = []
+            centroid_dict[coverage_key] = []
+            centroid_dict[area_key] = []
+            centroid_dict[rate_key] = []
 
-        if n < len(centroid_wass):
-            centroid_dict[wass_key].append([field_wass[n], centroid_wass[n], binary_wass[n]])
+        if n < len(wass_to_add):
+            centroid_dict[wass_key].append(wass_to_add[n])
             centroid_dict[id_key].append(centroid_pairs[n])
+
+            labels_curr = np.copy(source_labels)
+            labels_curr[np.isnan(source_map)] = 0
+            val_r, val_c = np.where(labels_curr == centroid_pairs[n][0])
+            # take only field label = 1 = largest field = main
+            source_field_coverage = np.max(source_field_sizes)
+            source_field_area = len(np.where(labels_curr == centroid_pairs[n][0])[0])
+            source_field_rate = np.sum(source_map[val_r, val_c])
+
+            labels_curr = np.copy(target_labels)
+            labels_curr[np.isnan(target_map)] = 0
+            val_r, val_c = np.where(labels_curr == centroid_pairs[n][1])
+            # take only field label = 1 = largest field = main
+            target_field_coverage = np.max(target_field_sizes)
+            target_field_area = len(np.where(labels_curr == centroid_pairs[n][1])[0])
+            target_field_rate = np.sum(target_map[val_r, val_c])
+
+
+            # row, col = np.where(~np.isnan(source_map))
+            # disk_ids = np.array([row, col]).T
+            # source_field_coverage = np.max(source_field_sizes)
+            # source_field_area = len(np.where(source_labels == centroid_pairs[n][0])[0])
+            # row, col = np.where(source_labels == 1)
+            # whole_map_ids = np.array([row, col]).T
+            # map_disk_ids = set(map(tuple, filter(lambda x: np.all(np.isin(tuple(x), whole_map_ids)), disk_ids))) 
+            # source_field_rate = np.sum(source_map[np.array(list(map_disk_ids))[:,0], np.array(list(map_disk_ids))[:,1]])
+
+            # row, col = np.where(~np.isnan(target_map))
+            # disk_ids = np.array([row, col]).T
+            # target_field_coverage = np.max(target_field_sizes)
+            # target_field_area = len(np.where(target_labels == centroid_pairs[n][1])[0])
+            # row, col = np.where(target_labels == 1)
+            # whole_map_ids = np.array([row, col]).T
+            # map_disk_ids = set(map(tuple, filter(lambda x: np.all(np.isin(tuple(x), whole_map_ids)), disk_ids))) 
+            # # target_field_rate = np.sum(target_map[row, col])
+            # target_field_rate = np.sum(target_map[np.array(list(map_disk_ids))[:,0], np.array(list(map_disk_ids))[:,1]])
+
+            
+            # print(len(disk_ids), len(whole_map_ids), len(np.array(list(map_disk_ids))))
+            centroid_dict[coverage_key].append([source_field_coverage, target_field_coverage])
+            centroid_dict[area_key].append([source_field_area, target_field_area])
+            centroid_dict[rate_key].append([source_field_rate, target_field_rate])
+            
         else:
-            centroid_dict[wass_key].append([0,0,0])
-            centroid_dict[id_key].append([0,0])
+            centroid_dict[wass_key].append(np.nan)
+            centroid_dict[id_key].append([np.nan])
+            centroid_dict[coverage_key].append([np.nan, np.nan])
+            centroid_dict[area_key].append([np.nan, np.nan])
+            centroid_dict[rate_key].append([np.nan, np.nan])
+
+        # if wass_key not in centroid_dict:
+        #     centroid_dict[wass_key] = []
+        #     centroid_dict[id_key] = []
+
+        # if n < len(centroid_wass):
+        #     centroid_dict[wass_key].append([field_wass[n], centroid_wass[n], binary_wass[n]])
+        #     centroid_dict[id_key].append(centroid_pairs[n])
+        # else:
+        #     centroid_dict[wass_key].append([0,0,0])
+        #     centroid_dict[id_key].append([0,0])
 
     return centroid_dict

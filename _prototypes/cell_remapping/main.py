@@ -58,6 +58,11 @@ def main(overwrite_settings=None):
 
 
 def _save_output(output, output_path, start_time):
+
+    # for ky in output['centroid']:
+    #     print(ky)
+    #     print(len(output['centroid'][ky]))
+
     if 'rate' in output:
         df = pd.DataFrame(output['rate'])
         # df.to_csv(PROJECT_PATH + '/_prototypes/cell_remapping/output' + '/rate_remapping.csv')
