@@ -37,23 +37,24 @@ def main(overwrite_settings=None):
     """ OPTION 2 """
     """ RUNS EACH SUBFOLDER ONE AT A TIME """
     subdirs = np.sort([ f.path for f in os.scandir(data_dir) if f.is_dir() ])
-    count = 1
     for subdir in subdirs:
         try:
             study = make_study(subdir,settings_dict=settings_dict)
             study.make_animals()
 
             # if subdir/remapping_output exists
-            if not os.path.isdir(subdir + '/remapping_output'):
+            if not os.path.isdir(subdir + '/remapping_output') and len(study.animals) > 0 and len(study.animals[0].sessions) > 0:
                 os.mkdir(subdir + '/remapping_output')
                 print('here')
-                
+
             if overwrite_settings is not None:
                 output = compute_remapping(study, overwrite_settings, subdir)
             else:
                 output = compute_remapping(study, settings_dict, subdir)
-            _save_output(output, subdir, start_time)
-            count += 1
+            
+            if len(study.animals) > 0 and len(study.animals[0].sessions) > 0:
+                _save_output(output, subdir, start_time)
+
         except Exception:
             print(traceback.format_exc())
             print('DID NOT WORK FOR DIRECTORY ' + str(subdir))
