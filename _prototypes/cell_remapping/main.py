@@ -23,8 +23,8 @@ def main(overwrite_settings=None):
 
     """ OPTION 1 """
     """ RUNS EVERYTHING UNDER PARENT FOLDER (all subfolders loaded first) """
-    # if not os.path.isdir(subdir + '/output'):
-    #     os.mkdir(data_dir + '/output')
+    # if not os.path.isdir(subdir + '/remapping_output'):
+    #     os.mkdir(data_dir + '/remapping_output')
     # study = make_study(data_dir,settings_dict=settings_dict)
     # study.make_animals()
     # if overwrite_settings is not None:
@@ -40,12 +40,14 @@ def main(overwrite_settings=None):
     count = 1
     for subdir in subdirs:
         try:
-            # if subdir/output exists
-            if not os.path.isdir(subdir + '/output'):
-                os.mkdir(subdir + '/output')
-                print('here')
             study = make_study(subdir,settings_dict=settings_dict)
             study.make_animals()
+
+            # if subdir/remapping_output exists
+            if not os.path.isdir(subdir + '/remapping_output'):
+                os.mkdir(subdir + '/remapping_output')
+                print('here')
+                
             if overwrite_settings is not None:
                 output = compute_remapping(study, overwrite_settings, subdir)
             else:
@@ -65,21 +67,21 @@ def _save_output(output, output_path, start_time):
 
     if 'regular' in output:
         df = pd.DataFrame(output['regular'])
-        # df.to_csv(PROJECT_PATH + '/_prototypes/cell_remapping/output' + '/rate_remapping.csv')
-        df.to_excel(output_path + '/output/regular_remapping.xlsx')
+        # df.to_csv(PROJECT_PATH + '/_prototypes/cell_remapping/remapping_output' + '/rate_remapping.csv')
+        df.to_excel(output_path + '/remapping_output/regular_remapping.xlsx')
     if 'object' in output:
         df = pd.DataFrame(output['object'])
-        # df.to_csv(PROJECT_PATH + '/_prototypes/cell_remapping/output' + '/obj_remapping.csv')
-        df.to_excel(output_path + '/output/obj_remapping.xlsx')
+        # df.to_csv(PROJECT_PATH + '/_prototypes/cell_remapping/remapping_output' + '/obj_remapping.csv')
+        df.to_excel(output_path + '/remapping_output/obj_remapping.xlsx')
     if 'centroid' in output:
         df = pd.DataFrame(output['centroid'])
-        # df.to_csv(PROJECT_PATH + '/_prototypes/cell_remapping/output' + '/centroid_remapping.csv')
-        df.to_excel(output_path + '/output/centroid_remapping.xlsx')
+        # df.to_csv(PROJECT_PATH + '/_prototypes/cell_remapping/remapping_output' + '/centroid_remapping.csv')
+        df.to_excel(output_path + '/remapping_output/centroid_remapping.xlsx')
     if 'context' in output:
         for context in output['context']:
             df = pd.DataFrame(output['context'][context])
-            # df.to_csv(PROJECT_PATH + '/_prototypes/cell_remapping/output' + '/context_output.csv')
-            df.to_excel(output_path + '/output/' + str(context) + '_output.xlsx')
+            # df.to_csv(PROJECT_PATH + '/_prototypes/cell_remapping/remapping_output' + '/context_output.csv')
+            df.to_excel(output_path + '/remapping_output/' + str(context) + '_output.xlsx')
 
     print('Total run time: ' + str(time.time() - start_time))
 
