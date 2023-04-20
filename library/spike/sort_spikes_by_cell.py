@@ -65,7 +65,7 @@ def sort_spikes_by_cell(clusters: SpikeClusterBatch,matched_lbls=None):
     # empty_cell = sorted(set(range(unique_labels[0], unique_labels[-1] + 1)).difference(unique_labels))
 
     if matched_lbls is not None:
-        print('Using mathced cut files')
+        print('Using matched cut files')
         # print(matched_lbls)
         unique_labels = matched_lbls
 

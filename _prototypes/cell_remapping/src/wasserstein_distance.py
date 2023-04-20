@@ -1,5 +1,4 @@
 import numpy as np
-import ot
 import os, sys
 import itertools
 from scipy.stats import wasserstein_distance
