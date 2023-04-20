@@ -13,7 +13,7 @@ from _prototypes.cell_remapping.src.wasserstein_distance import sliced_wasserste
 from _prototypes.cell_remapping.src.masks import make_object_ratemap, check_disk_arena, flat_disk_mask
 from library.maps import map_blobs
 from scripts.batch_map.batch_map import batch_map 
-from _prototypes.cell_remapping.src.settings import obj_output, centroid_output, tasks, session_comp_categories, rate_output, context_output, variations
+from _prototypes.cell_remapping.src.settings import obj_output, centroid_output, tasks, session_comp_categories, regular_output, context_output, variations
 from scripts.batch_map.LEC_naming import LEC_naming_format, extract_name
 
 """
@@ -47,7 +47,7 @@ def _check_single_format(filename, format, fxn):
     print(str(format), str(filename))
     if re.match(str(format), str(filename)) is not None:
         return fxn(filename)
-
+    
 
 def compute_remapping(study, settings, data_dir):
 
@@ -55,10 +55,10 @@ def compute_remapping(study, settings, data_dir):
 
     batch_map(study, tasks, ratemap_size=settings['ratemap_dims'][0])
     
-    max_centroid_count, blobs_dict = _aggregate_cell_info(study, ratemap_size=settings['ratemap_dims'][0])
+    max_centroid_count, blobs_dict = _aggregate_cell_info(study, settings)
 
     centroid_dict = centroid_output
-    rate_dict = rate_output
+    regular_dict = regular_output
     context_dict = context_output
     obj_dict = obj_output
 
@@ -171,14 +171,15 @@ def compute_remapping(study, settings, data_dir):
                         c_count = len(np.unique(labels_curr)) - 1
 
                         # take only field label = 1 = largest field = main
-                        main_field_coverage = np.max(field_sizes)
+                        main_field_coverage = len(np.where(labels_curr == 1)[0])/len(np.where(~np.isnan(curr))[0])
                         main_field_area = len(np.where(labels_curr == 1)[0])
                         main_field_rate = np.sum(curr[val_r, val_c])
 
                         # make all field labels = 1
                         labels_curr[labels_curr != 0] = 1
                         val_r, val_c = np.where(labels_curr == 1)
-                        cumulative_coverage = np.max(field_sizes)
+                        # cumulative_coverage = np.max(field_sizes)
+                        cumulative_coverage = len(np.where(labels_curr != 0)[0])/len(np.where(~np.isnan(curr))[0])
                         cumulative_area = len(np.where(labels_curr == 1)[0])
                         cumulative_rate = np.sum(curr[val_r, val_c])
 
@@ -213,51 +214,78 @@ def compute_remapping(study, settings, data_dir):
                                 else:
                                     obj_y = height_bucket_midpoints[object_pos[0]]
                                     obj_x = width_bucket_midpoints[object_pos[1]] 
+
+                                if var == 'no':
+                                    y, x = object_ratemap.shape
+                                    # find indices of not nan 
+                                    row_prev, col_prev = np.where(~np.isnan(object_ratemap))
+                                    row_curr, col_curr = np.where(~np.isnan(curr))
+
+                                    assert row_prev.all() == row_curr.all() and col_prev.all() == col_curr.all(), 'Nans in different places'
+
+                                    height_bucket_midpoints, width_bucket_midpoints = _get_ratemap_bucket_midpoints(curr_spatial_spike_train.arena_size, y, x)
+                                    height_bucket_midpoints = height_bucket_midpoints[row_curr]
+                                    width_bucket_midpoints = width_bucket_midpoints[col_curr]
+                                    source_weights = np.array(list(map(lambda x, y: object_ratemap[x,y], row_curr, col_curr)))
+                                    target_weights = np.array(list(map(lambda x, y: curr[x,y], row_curr, col_curr)))
+                                    source_weights = source_weights / np.sum(source_weights)
+                                    target_weights = target_weights / np.sum(target_weights)
+                                    coord_buckets = np.array(list(map(lambda x, y: [height_bucket_midpoints[x],width_bucket_midpoints[y]], row_curr, col_curr)))
                 
                                 # EMD on norm/unnorm ratemap + object map for OBJECT remapping
                                 if obj_score == 'whole':
-                                    obj_wass = single_point_wasserstein(object_pos, curr, rate_map_obj.arena_size, ids=disk_ids)
+                                    if var == 'no':
+                                        obj_wass = pot_sliced_wasserstein(coord_buckets, coord_buckets, source_weights, target_weights, n_projections=settings['n_projections'])
+                                    else:
+                                        obj_wass = single_point_wasserstein(object_pos, curr, rate_map_obj.arena_size, ids=disk_ids)
 
                                 elif obj_score == 'field':
 
                                     # field ids is ids of binary field/map blolb
+
+                                    # TAKE ONLY MAIN FIELD --> already sorted by size
                                     row, col = np.where(labels_curr == 1)
                                     field_ids = np.array([row, col]).T
 
                                     # take ids that are both in disk and in field
                                     field_disk_ids = np.array([x for x in field_ids if x in disk_ids])
-                                
-
-                                    # NEED TO NORMALIZE FIELD NOT WHOLE MAP
-                                    # save total mass in firing field, save area for each field
-                                    # remember long format
-                                    obj_wass = single_point_wasserstein(object_pos, curr, rate_map_obj.arena_size, ids=field_disk_ids)
+                                    
+                                    if var == 'no':
+                                        obj_wass = pot_sliced_wasserstein(coord_buckets, coord_buckets[field_disk_ids], source_weights, target_weights[field_disk_ids], n_projections=settings['n_projections'])
+                                    else:
+                                        # NEED TO NORMALIZE FIELD NOT WHOLE MAP
+                                        # save total mass in firing field, save area for each field
+                                        # remember long format
+                                        obj_wass = single_point_wasserstein(object_pos, curr, rate_map_obj.arena_size, ids=field_disk_ids)
 
                                 elif obj_score == 'binary':
                                     # obj_bin_wass = single_point_wasserstein(object_pos, labels_curr, rate_map_obj.arena_size, ids=field_ids)
-                                    source_pts = np.array([obj_y, obj_x]).reshape(1,2)
 
-                                    rows, cols = np.where(labels_curr == 1)
-                                    target_ids = np.array([rows, cols]).T
-                                    target_weights = np.array(list(map(lambda x: labels_curr[x[0], x[1]], target_ids)))
-                                    target_weights = target_weights / np.sum(target_weights)
+                                    if var == 'no':
+                                        row, col = np.where(~np.isnan(object_ratemap))
+                                        height_source_pts = height_bucket_midpoints[row]
+                                        width_source_pts = width_bucket_midpoints[col]
+                                        source_pts = np.array([height_source_pts, width_source_pts]).T
+                                    else:
+                                        source_pts = np.array([obj_y, obj_x]).reshape(1,2)
 
-                                    height_target_pts = height_bucket_midpoints[rows]
-                                    width_target_pts = width_bucket_midpoints[cols]
-                                    target_pts = np.array([height_target_pts, width_target_pts]).T
+                                    curr_spike_pos_x, curr_spike_pos_y, _ = curr_spatial_spike_train.get_spike_positions()
+                                    curr_pts = np.array([curr_spike_pos_x, curr_spike_pos_y]).T
 
-                                    obj_wass = pot_sliced_wasserstein(source_pts, target_pts, n_projections=settings['n_projections'])
+                                    obj_wass = pot_sliced_wasserstein(source_pts, curr_pts, n_projections=settings['n_projections'])
 
                                 elif obj_score == 'centroid':
-                                    if c_count > 1:
-                                        cumulative_centroid = np.mean(centroids, axis=0)
-                                    else:
-                                        cumulative_centroid = centroids[0]
+                                    # if c_count > 1:
+                                    #     cumulative_centroid = np.mean(centroids, axis=0)
+                                    # else:
+
+                                    # TAKE ONLY MAIN FIELD --> already sorted by size
+                                    main_centroid = centroids[0]
 
                                     # print(cumulative_centroid, centroids, c_count)
 
                                     # euclidean distance between point
-                                    obj_wass = np.linalg.norm(np.array((obj_y, obj_x)) - np.array((cumulative_centroid[0],cumulative_centroid[1])))
+                                    obj_wass = np.linalg.norm(np.array((obj_y, obj_x)) - np.array((main_centroid[0],main_centroid[1])))
 
                                 # obj_dict[obj_wass_key].append([obj_wass, obj_field_wass, obj_bin_wass, c_wass])
                                 obj_dict[obj_wass_key].append(obj_wass)
@@ -309,24 +337,12 @@ def compute_remapping(study, settings, data_dir):
                         assert row_prev.all() == row_curr.all() and col_prev.all() == col_curr.all(), 'Nans in different places'
 
                         height_bucket_midpoints, width_bucket_midpoints = _get_ratemap_bucket_midpoints(prev_spatial_spike_train.arena_size, y, x)
-
                         height_bucket_midpoints = height_bucket_midpoints[row_curr]
                         width_bucket_midpoints = width_bucket_midpoints[col_curr]
-
-                        # buckets = np.array(list(itertools.product(row_curr,col_curr)))
                         source_weights = np.array(list(map(lambda x, y: prev[x,y], row_curr, col_curr)))
                         target_weights = np.array(list(map(lambda x, y: curr[x,y], row_curr, col_curr)))
-
-                        # print(source_weights)
-                        # print(len(source_weights), len(row_curr), len(col_curr))
-                        # plt.imshow(prev)
-                        # plt.show()
-                        # plt.imshow(prev[row_curr, col_curr])
-                        # plt.show()
-
                         source_weights = source_weights / np.sum(source_weights)
                         target_weights = target_weights / np.sum(target_weights)
-                        # coord_buckets = np.array(list(itertools.product(height_bucket_midpoints,width_bucket_midpoints)))
                         coord_buckets = np.array(list(map(lambda x, y: [height_bucket_midpoints[x],width_bucket_midpoints[y]], row_curr, col_curr)))
 
                         # source_coords = np.array(list(map(lambda x: prev[x[0],x[1]], coord_buckets)))
@@ -350,35 +366,35 @@ def compute_remapping(study, settings, data_dir):
                                 # This is EMD on whole map for normalized/unnormalized rate remapping
                                 wass = pot_sliced_wasserstein(coord_buckets, coord_buckets, source_weights, target_weights, n_projections=settings['n_projections'])
                                                     
-                            rate_dict['signature'].append([prev_path, curr_path])
-                            rate_dict['name'].append(name)
-                            rate_dict['date'].append(date)
-                            rate_dict['depth'].append(depth)
-                            rate_dict['unit_id'].append(cell_label)
-                            rate_dict['tetrode'].append(animal.animal_id.split('tet')[-1])
-                            rate_dict['session_ids'].append([prev_key, curr_key])
-                            # rate_dict['session_paths'].append([prev_path, curr_path])
-                            # rate_dict['sliced_wass'].append(sliced_wass)
-                            # rate_dict['bin_wass'].append(wass)
-                            rate_dict['score'].append(rate_score)
-                            rate_dict['wass'].append(wass)
+                            regular_dict['signature'].append([prev_path, curr_path])
+                            regular_dict['name'].append(name)
+                            regular_dict['date'].append(date)
+                            regular_dict['depth'].append(depth)
+                            regular_dict['unit_id'].append(cell_label)
+                            regular_dict['tetrode'].append(animal.animal_id.split('tet')[-1])
+                            regular_dict['session_ids'].append([prev_key, curr_key])
+                            # regular_dict['session_paths'].append([prev_path, curr_path])
+                            # regular_dict['sliced_wass'].append(sliced_wass)
+                            # regular_dict['bin_wass'].append(wass)
+                            regular_dict['score'].append(rate_score)
+                            regular_dict['wass'].append(wass)
 
 
-                        if settings['plotRate']:
-                            plot_rate_remapping(prev, curr, rate_dict, data_dir)
+                        if settings['plotRegular']:
+                            plot_rate_remapping(prev, curr, regular_dict, data_dir)
 
                         if settings['runFields']:
                             # blobs_dict_curr = curr_cell.stats['field_size_data']
                             # blobs_dict_prev = prev_cell.stats['field_size_data']
 
-                            image_prev, n_labels_prev, labels_prev, centroids_prev, field_sizes_prev = blobs_dict[prev_id]
+                            image_prev, n_labels_prev, source_labels, source_centroids, field_sizes_prev = blobs_dict[prev_id]
 
-                            image_curr, n_labels_curr, labels_curr, centroids_curr, field_sizes_curr = blobs_dict[curr_id]
+                            image_curr, n_labels_curr, target_labels, target_centroids, field_sizes_curr = blobs_dict[curr_id]
 
-                            target_labels, source_labels, source_centroids, target_centroids = _sort_filter_centroids_by_field_size(field_sizes_prev, field_sizes_curr, labels_prev, labels_curr, centroids_prev, centroids_curr, prev_spatial_spike_train.arena_size)
+                            # target_labels, source_labels, source_centroids, target_centroids = _sort_filter_centroids_by_field_size(prev, curr, field_sizes_prev, field_sizes_curr, labels_prev, labels_curr, centroids_prev, centroids_curr, prev_spatial_spike_train.arena_size)
 
-                            assert np.unique(target_labels).all() == np.unique(labels_curr).all()
-                            assert np.unique(source_labels).all() == np.unique(labels_prev).all()
+                            # assert np.unique(target_labels).all() == np.unique(labels_curr).all()
+                            # assert np.unique(source_labels).all() == np.unique(labels_prev).all()
 
                             # prev spatial spike train is source spatial spike train
                             # field_wass, field_pairs, cumulative_wass, test_wass, centroid_wass, binary_wass = compute_centroid_remapping(target_labels, source_labels, curr_spatial_spike_train, prev_spatial_spike_train, target_centroids, source_centroids)
@@ -425,19 +441,21 @@ def compute_remapping(study, settings, data_dir):
                                     # centroid_dict['cumulative_wass'].append([cumulative_dict['field_wass'], cumulative_dict['centroid_wass'], cumulative_dict['binary_wass']])
                                     centroid_dict['cumulative_wass'].append(cumulative_dict[score_key])
 
-                                    copy_labels = np.copy(labels_prev)
+                                    copy_labels = np.copy(source_labels)
                                     copy_labels[np.isnan(prev)] = 0
                                     copy_labels[copy_labels != 0] = 1
                                     val_r, val_c = np.where(copy_labels == 1)
-                                    cumulative_source_coverage = np.max(field_sizes_prev)
+                                    # cumulative_source_coverage = np.max(field_sizes_prev)
+                                    cumulative_source_coverage = len(np.where(copy_labels != 0)[0])/len(np.where(~np.isnan(prev))[0])
                                     cumulative_source_area = len(np.where(copy_labels == 1)[0])
                                     cumulative_source_rate = np.sum(prev[val_r, val_c])
 
-                                    copy_labels = np.copy(labels_curr)
+                                    copy_labels = np.copy(target_labels)
                                     copy_labels[np.isnan(curr)] = 0
                                     copy_labels[copy_labels != 0] = 1
                                     val_r, val_c = np.where(copy_labels == 1)
-                                    cumulative_target_coverage = np.max(field_sizes_curr)
+                                    # cumulative_target_coverage = np.max(field_sizes_curr)
+                                    cumulative_target_coverage = len(np.where(copy_labels != 0)[0])/len(np.where(~np.isnan(curr))[0])
                                     cumulative_target_area = len(np.where(copy_labels == 1)[0])
                                     cumulative_target_rate = np.sum(curr[val_r, val_c])
 
@@ -551,7 +569,7 @@ def compute_remapping(study, settings, data_dir):
 
             c += 1
 
-    return {'rate': rate_dict, 'object': obj_dict, 'centroid': centroid_dict, 'context': context_dict}
+    return {'regular': regular_dict, 'object': obj_dict, 'centroid': centroid_dict, 'context': context_dict}
 
 def _fill_cell_type_stats(inp_dict, prev_cell, curr_cell):
     inp_dict['information'].append([prev_cell.stats_dict['cell_stats']['spatial_information_content'],curr_cell.stats_dict['cell_stats']['spatial_information_content'],curr_cell.stats_dict['cell_stats']['spatial_information_content']-prev_cell.stats_dict['cell_stats']['spatial_information_content']])
@@ -588,7 +606,8 @@ def _read_location_from_file(path, cylinder, true_var):
 
     return object_location
 
-def _aggregate_cell_info(study, ratemap_size=64):
+def _aggregate_cell_info(study, settings):
+    ratemap_size = settings['ratemap_dims'][0]
     max_centroid_count = 0
     blobs_dict = {}
     type_dict = {}
@@ -619,7 +638,20 @@ def _aggregate_cell_info(study, ratemap_size=64):
 
                     spatial_spike_train = cell.stats_dict['cell_stats']['spatial_spike_train']
 
+                    rate_map_obj = spatial_spike_train.get_map('rate')
+                    if settings['normalizeRate']:
+                        rate_map, _ = rate_map_obj.get_rate_map(new_size = settings['ratemap_dims'][0])
+                    else:
+                        _, rate_map = rate_map_obj.get_rate_map(new_size = settings['ratemap_dims'][0])
+
+                    assert rate_map.shape == (settings['ratemap_dims'][0], settings['ratemap_dims'][1]), 'Wrong ratemap shape {} vs settings shape {}'.format(rate_map.shape, (settings['ratemap_dims'][0], settings['ratemap_dims'][1]))
+                    
+                    if cylinder:
+                        rate_map = flat_disk_mask(rate_map)
+
                     image, n_labels, labels, centroids, field_sizes = map_blobs(spatial_spike_train, ratemap_size=ratemap_size, cylinder=cylinder)
+
+                    labels, centroids, field_sizes = _sort_filter_centroids_by_field_size(rate_map, field_sizes, labels, centroids, spatial_spike_train.arena_size)
 
                     id = str(animal.animal_id) + '_' + str(seskey) + '_' + str(cell.cluster.cluster_label)
 
@@ -638,9 +670,11 @@ def _aggregate_cell_info(study, ratemap_size=64):
 
     return max_centroid_count, blobs_dict
 
-def _sort_filter_centroids_by_field_size(field_sizes_source, field_sizes_target, blobs_map_source, blobs_map_target, centroids_prev, centroids_curr, arena_size):
+
+# def _sort_filter_centroids_by_field_size(prev, curr, field_sizes_source, field_sizes_target, blobs_map_source, blobs_map_target, centroids_prev, centroids_curr, arena_size):
+def _sort_filter_centroids_by_field_size(rate_map, field_sizes, blobs_map, centroids, arena_size):
     height, width = arena_size
-    y, x = blobs_map_source.shape
+    y, x = rate_map.shape
     heightStep = height/y
     widthStep = width/x
 
@@ -654,15 +688,49 @@ def _sort_filter_centroids_by_field_size(field_sizes_source, field_sizes_target,
     # print(np.unique(blobs_map_source), np.unique(blobs_map_target), field_sizes_source, field_sizes_target)
     # print(np.argsort(-np.array(field_sizes_source)))
 
-    sort_idx_source = np.argsort(-np.array(field_sizes_source))
-    source_labels = np.zeros(blobs_map_source.shape)
-    map_dict = {}
-    for k in np.unique(blobs_map_source):
+    # sort_idx_source = np.argsort(-np.array(field_sizes_source))
+
+    # find not nan in prev/curr 
+    row, col = np.where(np.isnan(rate_map))
+    blobs_map[row, col] = 0
+
+    # find bins for each label
+    pks = []
+    avgs = []
+    lbls = []
+    for k in np.unique(blobs_map):
         if k != 0:
-            row, col = np.where(blobs_map_source == k)
+            row, col = np.where(blobs_map == k)
+            
+            field = rate_map[row, col]
+
+            # pk_rate = np.max(field)
+
+            # get rate at centroid 
+            c_row, c_col = centroids[k-1]
+            # convert from decimals to bin by rounding to nearest int
+            c_row = int(np.round(c_row))
+            c_col = int(np.round(c_col))
+
+            pk_rate = rate_map[c_row, c_col]
+            avg_rate = np.mean(field)
+
+            pks.append(pk_rate)
+            avgs.append(avg_rate)
+            lbls.append(k-1)
+    
+    pks = np.array(pks)
+    ids = np.argsort(-pks)
+    sort_idx = np.array(lbls)[ids]
+
+    source_labels = np.zeros(blobs_map.shape)
+    map_dict = {}
+    for k in np.unique(blobs_map):
+        if k != 0:
+            row, col = np.where(blobs_map == k)
             # print(k,len(row), len(col), bin_area)
             if (len(row) + len(col)) * bin_area > 22.5:
-                idx_to_move_to = np.where(sort_idx_source == k-1)[0][0]
+                idx_to_move_to = np.where(sort_idx == k-1)[0][0]
                 # map_dict[k] = sort_idx_source[k-1] + 1
                 map_dict[k] = idx_to_move_to + 1
             else:
@@ -670,34 +738,12 @@ def _sort_filter_centroids_by_field_size(field_sizes_source, field_sizes_target,
                 map_dict[k] = 0
         else:
             map_dict[k] = 0
-    source_labels = np.vectorize(map_dict.get)(blobs_map_source)
+    source_labels = np.vectorize(map_dict.get)(blobs_map)
 
-    source_centroids = centroids_prev[sort_idx_source]
-    # print(map_dict, source_centroids)
-    # sort_idx_target = np.argsort(-np.array(field_sizes_target))
-    # target_centers = target_centers[sort_idx_target]
+    source_centroids = np.asarray(centroids)[sort_idx]
+    source_field_sizes = np.asarray(field_sizes)[sort_idx]
 
-    sort_idx_target = np.argsort(-np.array(field_sizes_target))
-    target_labels = np.zeros(blobs_map_target.shape)
-    map_dict = {}
-    for k in np.unique(blobs_map_target):
-        if k != 0:
-            row, col = np.where(blobs_map_target == k)
-            # print(k,len(row), len(col), bin_area)
-            if (len(row) + len(col)) * bin_area > 22.5:
-                # map_dict[k] = sort_idx_target[k-1] + 1
-                idx_to_move_to = np.where(sort_idx_target == k-1)[0][0]
-                # map_dict[k] = sort_idx_source[k-1] + 1
-                map_dict[k] = idx_to_move_to + 1
-            else:
-                map_dict[k] = 0
-        else:
-            map_dict[k] = 0
-    target_labels = np.vectorize(map_dict.get)(blobs_map_target)
-
-    target_centroids = centroids_curr[sort_idx_target]
-
-    return target_labels, source_labels, source_centroids, target_centroids
+    return source_labels, source_centroids, source_field_sizes
 
 def _fill_centroid_dict(centroid_dict, max_centroid_count, wass_to_add, centroid_pairs, source_map, source_labels, source_field_sizes, target_map, target_labels, target_field_sizes):
     # field_wass, centroid_wass, binary_wass = wass_args
@@ -724,7 +770,8 @@ def _fill_centroid_dict(centroid_dict, max_centroid_count, wass_to_add, centroid
             labels_curr[np.isnan(source_map)] = 0
             val_r, val_c = np.where(labels_curr == centroid_pairs[n][0])
             # take only field label = 1 = largest field = main
-            source_field_coverage = np.max(source_field_sizes)
+            # source_field_coverage = source_field_sizes[centroid_pairs[n][0]-1]
+            source_field_coverage = len(np.where(labels_curr == centroid_pairs[n][0])[0])/len(np.where(~np.isnan(source_labels))[0])
             source_field_area = len(np.where(labels_curr == centroid_pairs[n][0])[0])
             source_field_rate = np.sum(source_map[val_r, val_c])
 
@@ -732,7 +779,8 @@ def _fill_centroid_dict(centroid_dict, max_centroid_count, wass_to_add, centroid
             labels_curr[np.isnan(target_map)] = 0
             val_r, val_c = np.where(labels_curr == centroid_pairs[n][1])
             # take only field label = 1 = largest field = main
-            target_field_coverage = np.max(target_field_sizes)
+            # target_field_coverage = target_field_sizes[centroid_pairs[n][1]-1]
+            target_field_coverage = len(np.where(labels_curr == centroid_pairs[n][1])[0])/len(np.where(~np.isnan(target_labels))[0])
             target_field_area = len(np.where(labels_curr == centroid_pairs[n][1])[0])
             target_field_rate = np.sum(target_map[val_r, val_c])
 

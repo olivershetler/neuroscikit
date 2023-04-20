@@ -63,10 +63,10 @@ def _save_output(output, output_path, start_time):
     #     print(ky)
     #     print(len(output['centroid'][ky]))
 
-    if 'rate' in output:
-        df = pd.DataFrame(output['rate'])
+    if 'regular' in output:
+        df = pd.DataFrame(output['regular'])
         # df.to_csv(PROJECT_PATH + '/_prototypes/cell_remapping/output' + '/rate_remapping.csv')
-        df.to_excel(output_path + '/output/rate_remapping.xlsx')
+        df.to_excel(output_path + '/output/regular_remapping.xlsx')
     if 'object' in output:
         df = pd.DataFrame(output['object'])
         # df.to_csv(PROJECT_PATH + '/_prototypes/cell_remapping/output' + '/obj_remapping.csv')

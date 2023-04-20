@@ -26,10 +26,10 @@ settings_dict['type'] = 'object' # EDIT HERE # Currently only 'object' is suppor
 settings_dict['ratemap_dims'] = (64,64) # EDIT HERE (16,16) is default, (32,32) is slower but more accurate,
 
 """ 
-IF YOU ARE DOING WHOLE MAP REMAPPING
+IF YOU ARE DOING REGULAR REMAPPING
 """
 
-settings_dict['plotRate'] = True # EDIT HERE
+settings_dict['plotRegular'] = True # EDIT HERE
 settings_dict['normalizeRate'] = True # EDIT HERE --> NORMALIZED FOR ALL CASES 
 settings_dict['rate_scores'] = ['whole', 'binary']
 
@@ -65,7 +65,7 @@ session_comp_categories = {'morning': [1,3], 'afternoon': [2,4]} # EDIT HERE
 # NO NEED TO EDIT BELOW # 
 ##############################################################################################################################################################################
 
-rate_output = {}
+regular_output = {}
 obj_output = {}
 centroid_output = {}
 
@@ -82,7 +82,7 @@ centroid_keys = ['signature','depth', 'name', 'date','tetrode','unit_id','sessio
 # 'test_wass','centroid_wass','binary_wass']
 
 for key in keys:
-    rate_output[key] = []
+    regular_output[key] = []
 for key in obj_keys:
     obj_output[key] = []
 for key in centroid_keys:

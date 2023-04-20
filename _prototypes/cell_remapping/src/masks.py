@@ -29,7 +29,7 @@ def make_object_ratemap(object_location, rate_map_obj, new_size=(16,16)):
     if object_location == 'NO':
         cust_arena = np.ones((y,x))
         norm_arena = cust_arena / np.sum(cust_arena)
-        return norm_arena, {'x':0, 'y':0}
+        return norm_arena, {'x':int(np.floor(y/2)), 'y':int(np.floor(y/2))}
 
     else:
         # if object, pass into dictionary to get x/y coordinates of object location

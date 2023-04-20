@@ -31,7 +31,7 @@ def plot_rate_remapping(prev, curr, plot_settings, data_dir):
     """ save """
     # create a dsave and an fprefix
     # save_dir = PROJECT_PATH + '/_prototypes/cell_remapping/output/rate'
-    save_dir = data_dir + '/output/rate'
+    save_dir = data_dir + '/output/regular'
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
     fprefix = 'ratemap_cell_{}_{}_{}_unit_{}'.format(name, prev_key, curr_key, unit_id)
@@ -166,7 +166,7 @@ class FieldsTemplateFig():
         # toplot = _interpolate_matrix(labels, new_size=(256,256), cv2_interpolation_method=cv2.INTER_NEAREST)
         toplot = labels
 
-        img = ax.imshow(toplot, cmap='Greys')
+        img = ax.imshow(toplot, cmap='Greys_r')
 
         for c in centroids:
             ax.plot(c[1], c[0], 'r.', markersize=10)
