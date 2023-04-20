@@ -30,8 +30,8 @@ def plot_rate_remapping(prev, curr, plot_settings, data_dir):
 
     """ save """
     # create a dsave and an fprefix
-    # save_dir = PROJECT_PATH + '/_prototypes/cell_remapping/output/rate'
-    save_dir = data_dir + '/output/regular'
+    # save_dir = PROJECT_PATH + '/_prototypes/cell_remapping/remapping_output/rate'
+    save_dir = data_dir + '/remapping_output/regular'
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
     fprefix = 'ratemap_cell_{}_{}_{}_unit_{}'.format(name, prev_key, curr_key, unit_id)
@@ -64,8 +64,8 @@ def plot_obj_remapping(obj_rate_map, ses_rate_map, plot_settings, data_dir):
 
     """ save """
     # create a dsave and an fprefix
-    # save_dir = PROJECT_PATH + '/_prototypes/cell_remapping/output/object'
-    save_dir = data_dir + '/output/object'
+    # save_dir = PROJECT_PATH + '/_prototypes/cell_remapping/remapping_output/object'
+    save_dir = data_dir + '/remapping_output/object'
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
     fprefix = 'obj_ratemap_cell_{}_{}_{}_unit_{}'.format(name, ses_key, object_location, unit_id)
@@ -117,8 +117,8 @@ def plot_fields_remapping(label_s, label_t, spatial_spike_train_s, spatial_spike
 
     """ save """
     # create a dsave and an fprefix
-    # save_dir = PROJECT_PATH + '/_prototypes/cell_remapping/output/centroid'
-    save_dir = data_dir + '/output/centroid'
+    # save_dir = PROJECT_PATH + '/_prototypes/cell_remapping/remapping_output/centroid'
+    save_dir = data_dir + '/remapping_output/centroid'
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
     fprefix = 'fields_ratemap_cell_{}_{}_{}_unit_{}'.format(name, prev_key, curr_key, unit_id)
