@@ -218,6 +218,24 @@ def split_name_date_round_depth_angle(filename):
 
     return _check_angle(angle), depth, name, date
 
+def split_name_name_date_round_depth_angle(filename):
+    # 'NON-73-6_NON-73-6_{date}-ROUND-{depth}-{angle}'
+    angle = filename.split('-')[-1]
+    depth = filename.split('-')[-2]
+    name = filename.split('_')[0] 
+    date = filename.split('_')[-1].split('-')[0]
+
+    return _check_angle(angle), depth, name, date
+
+def split_name_name_date_round_depth_angle_int(filename):
+    # 'NON-73-6_NON-73-6_{date}-ROUND-{depth}-{angle}-{int}'
+    angle = filename.split('-')[-2]
+    depth = filename.split('-')[-3]
+    name = filename.split('_')[0] 
+    date = filename.split('_')[-1].split('-')[0]
+
+    return _check_angle(angle), depth, name, date
+
 def split_name_date_round_depth_angle_int(filename):
     # 'ANT-133a-4_{date}-ROUND-{depth}-{angle}-{int}'
     angle = filename.split('-')[-2]
@@ -441,8 +459,8 @@ LEC_naming_format = {
         'ANT-140-4':{
             'object': {
                 r'^ANT-140-4_[0-9]{8}\-ROUND\-([^-]+)\-([^-]+)$': split_name_date_round_depth_angle, # 'ANT-140-4_{date}-ROUND-{depth}-{angle}',
+                r'^ANT-140-4_[0-9]{8}\-ROUND\-([^-]+)\-([^-]+)\-[0-9]{1}$': split_name_date_round_depth_angle_int, # 'ANT-140-4_{date}-ROUND-{depth}-{angle}-{int}',
                 r'^ANT-140-4_[0-9]{8}\-ROUND\-([^-]+)\-([^-]+)\-([^-]+)$': split_name_date_round_depth_angle_angle, # 'ANT-140-4_{date}-ROUND-{depth}-{angle}-{angle}',
-                r'^ANT-140-4_[0-9]{8}\-ROUND\-([^-]+)\-([^-]+)\-([0-9]+)$': split_name_date_round_depth_angle_int, # 'ANT-140-4_{date}-ROUND-{depth}-{angle}-{int}',
             },
             'odor': {
                 r'^ANT-140-4_[0-9]{8}\-ROUND\-([^-]+)\-1[a-zA-Z]{1}2[a-zA-Z]{1}3[a-zA-Z]{1}$': split_name_date_round_depth_odor, # 'ANT-140-4_{date}-ROUND-{depth}-1{o}2{o}3{o}',
@@ -455,6 +473,9 @@ LEC_naming_format = {
                 r'^NON-73-6_[0-9]{8}\-ROUND\-([^-]+)\-([^-]+)$': split_name_date_round_depth_angle, # 'NON-73-6_{date}-ROUND-{depth}-{angle}',
                 r'^NON-73-6_[0-9]{8}\-ROUND\-([^-]+)\-([^-]+)\-([0-9]+)$': split_name_date_round_depth_angle_int, # 'NON-73-6_{date}-ROUND-{depth}-{angle}-{int}',
                 r'^NON-73-6_[0-9]{8}\-ROUND\-([^-]+)\-([^-]+)\-[0-9]{1}\-drilling$': split_name_date_round_depth_angle_int_word, # 'NON-73-6_{date}-ROUND-{depth}-{angle}-{int}-drilling',
+                r'^NON-73-6_NON-73-6_[0-9]{8}\-ROUND\-([^-]+)\-([^-]+)$': split_name_name_date_round_depth_angle, # 'NON-73-6_NON-73-6_{date}-ROUND-{depth}-{angle}',
+                r'^NON-73-6_NON-73-6_[0-9]{8}\-ROUND\-([^-]+)\-([^-]+)\-[0-9]{1}$': split_name_name_date_round_depth_angle_int, # 'NON-73-6_NON-73-6_{date}-ROUND-{depth}-{angle}',
+
             },
             'odor': {
                 r'^NON-73-6_[0-9]{8}\-ROUND\-([^-]+)\-1[a-zA-Z]{1}2[a-zA-Z]{1}3[a-zA-Z]{1}$': split_name_date_round_depth_odor, # 'NON-73-6_{date}-ROUND-{depth}-1{o}2{o}3{o}',
