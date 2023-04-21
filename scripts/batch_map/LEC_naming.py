@@ -10,9 +10,9 @@ import pandas as pd
 #     return _check_angle(angle), depth, name, date
 
 def _check_angle(angle):
-    valid_angles = ['0','90','180','270','NO','noobject','no','zero', 'NO2', 'no2', '0_2','0_1','90_2','90_1','180_2','180_1','270_2','270_1']
+    valid_angles = ['0','90','180','270','NO','noobject','no','zero', 'NO2', 'no2', '0_2','0_1','90_2','90_1','180_2','180_1','270_2','270_1', 'NO_1', 'NO_2']
     conv_angles = {'noobject': 'NO','no': 'NO','zero': '0', 'NO2': 'NO', 'no2': 'NO', 
-                   '0_2': '0', '0_1': '0', '90_2': '90', '90_1': '90', '180_2': '180', '180_1': '180', '270_2': '270', '270_1': '270'}
+                   '0_2': '0', '0_1': '0', '90_2': '90', '90_1': '90', '180_2': '180', '180_1': '180', '270_2': '270', '270_1': '270', 'NO_1': 'NO', 'NO_2': 'NO'}
 
     assert angle in valid_angles, 'Invalid angle: {}'.format(angle)
 
