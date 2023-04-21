@@ -366,6 +366,7 @@ LEC_naming_format = {
     'B6': {
             'B6-LEC1': {
                 'object': {
+                    r'^B6-LEC1_[0-9]{8}\-([0-9]+)([a-zA-Z]+)([^-]+)\-([^-]+)$': split_name_date_angle_apple_angle_angle, # 'B6-LEC1_{date}-{angle}APPLEmovedit{angle}-{angle}',
                     r'^B6-LEC1_[0-9]{8}\-cylinder\-([^-]+)$': split_name_date_word_angle, # B6-LEC1_20151211-cylinder-0
                     r'^B6-LEC1_[0-9]{8}\-[0-9]{1}\-[0-9]{1}\-([^-]+)$': split_name_date_int_int_angle, # 'B6-LEC1_{date}-{int}-{int}-{angle}': 
                     r'^B6-LEC1_[0-9]{8}\-([^-]+)\-([^-]+)$':  split_name_date_angle_angle, # split_name_date_angle_angle 'B6-LEC1_{date}-{angle}-{angle}
@@ -373,7 +374,6 @@ LEC_naming_format = {
                     r'^B6-LEC1_[0-9]{8}\-position([^-]+)$': split_name_date_position_angle, # 'B6-LEC1_{date}-position{angle}',
                     r'^B6-LEC1_[0-9]{8}\-([^-]+)\-([^-]+)\-([^-]+)$': split_name_date_angle_angle_angle, # 'B6-LEC1_{date}-{angle}-{angle}-{angle}',
                     r'^B6-LEC1_[0-9]{8}\-([0-9]+)banana$': split_name_date_angle_word, # 'B6-LEC1_{date}-{angle}banana',
-                    r'^B6-LEC1_[0-9]{8}\-([0-9]+)([a-zA-Z]+)\-([^-]+)\-([^-]+)$': split_name_date_angle_apple_angle_angle, # 'B6-LEC1_{date}-{angle}APPLEmovedit{angle}-{angle}',
                     r'^B6-LEC1_[0-9]{8}\-[0-9]{1}\-([^-]+)\-([^-]+)\-([^-]+)$': split_name_date_int_angle_angle_angle, # 'B6-LEC1_{date}-{int}-{angle}-{angle}-{angle}',
                 },
                 'odor': {
