@@ -3,6 +3,7 @@ import numpy as np
 import itertools
 import re
 import matplotlib.pyplot as plt
+import copy
 
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
@@ -57,10 +58,10 @@ def compute_remapping(study, settings, data_dir):
     
     max_centroid_count, blobs_dict = _aggregate_cell_info(study, settings)
 
-    centroid_dict = centroid_output
-    regular_dict = regular_output
-    context_dict = context_output
-    obj_dict = obj_output
+    centroid_dict = copy.deepcopy(centroid_output)
+    regular_dict = copy.deepcopy(regular_output)
+    context_dict = copy.deepcopy(context_output)
+    obj_dict = copy.deepcopy(obj_output)
 
     for animal in study.animals:
 
