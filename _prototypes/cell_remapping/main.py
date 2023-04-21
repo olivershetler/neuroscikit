@@ -53,7 +53,10 @@ def main(overwrite_settings=None):
                 output = compute_remapping(study, settings_dict, subdir)
             
             if len(study.animals) > 0 and len(study.animals[0].sessions) > 0:
+                print('SAVING OUTPUT FOR DIRECTORY ' + str(subdir))
                 _save_output(output, subdir, start_time)
+            else:
+                print('NO DATA FOR DIRECTORY ' + str(subdir))
 
         except Exception:
             print(traceback.format_exc())
@@ -62,9 +65,9 @@ def main(overwrite_settings=None):
 
 def _save_output(output, output_path, start_time):
 
-    # for ky in output['centroid']:
-    #     print(ky)
-    #     print(len(output['centroid'][ky]))
+    for ky in output['centroid']:
+        print(ky)
+        print(len(output['centroid'][ky]))
 
     if 'regular' in output:
         df = pd.DataFrame(output['regular'])

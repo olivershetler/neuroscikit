@@ -29,7 +29,7 @@ def _check_odor(odor):
     return odor
 
 def _merge_depth(name, date):
-
+    print(name)
     if name == 'B6-LEC1':
         pth = r"C:\Users\aaoun\OneDrive - cumc.columbia.edu\Desktop\HussainiLab\neuroscikit_test_data\LEC_filter_excel\B6 LEC1 depths.xlsx"
         df = pd.read_excel(pth)
@@ -322,6 +322,17 @@ def split_name_date_word_angle_depth(filename):
 
     return _check_angle(angle), depth, name, date
 
+def split_name_date_word_angle(filename):
+    # B6-LEC1_20151211-cylinder-0
+    angle = filename.split('-')[-1]
+    date = filename.split('_')[1].split('-')[0]
+    name = filename.split('_')[0]
+
+    depth = _merge_depth(name, date)
+
+    return _check_angle(angle), depth, name, date
+
+
 def extract_name(filename):
     name = filename.split('_')[0]
     print(filename, name)
@@ -337,6 +348,7 @@ LEC_naming_format = {
     'B6': {
             'B6-LEC1': {
                 'object': {
+                    r'^B6-LEC1_[0-9]{8}\-cylinder\-([^-]+)$': split_name_date_word_angle, # B6-LEC1_20151211-cylinder-0
                     r'^B6-LEC1_[0-9]{8}\-[0-9]{1}\-[0-9]{1}\-([^-]+)$': split_name_date_int_int_angle, # 'B6-LEC1_{date}-{int}-{int}-{angle}': 
                     r'^B6-LEC1_[0-9]{8}\-([^-]+)\-([^-]+)$':  split_name_date_angle_angle, # split_name_date_angle_angle 'B6-LEC1_{date}-{angle}-{angle}
                     r'^B6-LEC1_[0-9]{8}\-([^-]+)$': split_name_date_angle, # 'B6-LEC1_{date}-{angle}',
