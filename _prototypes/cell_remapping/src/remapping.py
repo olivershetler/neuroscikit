@@ -55,8 +55,9 @@ def compute_remapping(study, settings, data_dir):
     c = 0
 
     batch_map(study, tasks, ratemap_size=settings['ratemap_dims'][0])
-    
-    max_centroid_count, blobs_dict = _aggregate_cell_info(study, settings)
+
+    if settings['hasObject'] or settings['runFields']:    
+        max_centroid_count, blobs_dict = _aggregate_cell_info(study, settings)
 
     centroid_dict = copy.deepcopy(centroid_output)
     regular_dict = copy.deepcopy(regular_output)
@@ -122,7 +123,7 @@ def compute_remapping(study, settings, data_dir):
 
                     object_location = stim
                     
-                    if object_location != 'NO':
+                    if object_location != 'NO' and '_' not in object_location:
                         object_location = int(object_location)
 
                 ensemble = ses.get_cell_data()['cell_ensemble']
@@ -188,7 +189,8 @@ def compute_remapping(study, settings, data_dir):
                         
                         # ['whole', 'field', 'bin', 'centroid']
                         for obj_score in settings['object_scores']:
-
+                            true_object_pos = None
+                            true_object_ratemap = None
                             # # Possible object locations (change to get from settings)
                             # variations = [0,90,180,270,'no']
                             # compute object remapping for every object position, actual object location is store alongside wass for each object ratemap
@@ -304,7 +306,7 @@ def compute_remapping(study, settings, data_dir):
                             # Store true obj location
                             obj_dict['object_location'].append(object_location)
 
-                            # if object_pos is not None:
+
                             obj_dict['obj_pos_x'].append(true_object_pos['x'])
                             obj_dict['obj_pos_y'].append(true_object_pos['y'])
 
@@ -740,9 +742,14 @@ def _sort_filter_centroids_by_field_size(rate_map, field_sizes, blobs_map, centr
         else:
             map_dict[k] = 0
     source_labels = np.vectorize(map_dict.get)(blobs_map)
+    print(lbls, ids, sort_idx, centroids)
 
-    source_centroids = np.asarray(centroids)[sort_idx]
-    source_field_sizes = np.asarray(field_sizes)[sort_idx]
+    if len(sort_idx) > 0:
+        source_centroids = np.asarray(centroids)[sort_idx]
+        source_field_sizes = np.asarray(field_sizes)[sort_idx]
+    else:
+        source_centroids = np.asarray(centroids)
+        source_field_sizes = np.asarray(field_sizes)
 
     return source_labels, source_centroids, source_field_sizes
 
