@@ -452,7 +452,8 @@ LEC_naming_format = {
                 r'^ANT-120-4_[0-9]{8}\-([^-]+)\-object([^-]+)$': split_name_date_depth_word_angle, # 'ANT-120-4_{date}-{depth}-object{angle}',
                 r'^ANT-120-4_[0-9]{8}\-([^-]+)\-noodor-noobject$': split_name_date_depth_noodor_noobject, # 'ANT-120-4_{date}-{depth}--noodor-noobject',
                 r'^ANT-120-4_[0-9]{8}\-([^-]+)\-object([^-]+)\-foundmoved$': split_name_date_depth_word_angle_word, # 'ANT-120-4_{date}-{depth}-object{angle}-foundmoved',
-            },
+                r'^ANT-120-4_[0-9]{8}\-ROUND\-([^-]+)\-([^-]+)\-([0-9]+)$': split_name_date_round_depth_angle_int, # 'ANT-135a-7_{date}-ROUND-{depth}-{angle}-{int}',
+           },
             'odor': {
                 r'^ANT-120-4_[0-9]{8}\-([^-]+)\-odor([^-]+)$': split_name_date_depth_odor_order, # 'ANT-120-4_{date}-{depth}-odor{order}',
             },
@@ -484,8 +485,8 @@ LEC_naming_format = {
         },
         'NON-INT-01': {
             'object': {
-                r'^NON-INT-01_[0-9]{8}\-([^-]+)\-([^-]+)\-([0-9]+)$': split_name_date_angle_depth_int, # 'NON-INT-01_{date}-{angle}-{depth}-{int}',
-                r'^NON-INT-01_[0-9]{8}\-([^-]+)\-([^-]+)$': split_name_date_angle_depth, # 'NON-INT-01_{date}-{angle}-{depth}'
+                r'^NON-INT-01_[0-9]{8}\-([^-]+)\-ROUND\-([^-]+)\-([0-9]+)$': split_name_date_angle_depth_int, # 'NON-INT-01_{date}-{angle}-{depth}-{int}',
+                r'^NON-INT-01_[0-9]{8}\-ROUND\-([^-]+)\-([^-]+)$': split_name_date_angle_depth, # 'NON-INT-01_{date}-{angle}-{depth}'
             },
             'odor': {
     
@@ -493,7 +494,8 @@ LEC_naming_format = {
         },
         'NON-INT-02': {
             'object': {
-                r'^NON-INT-02_[0-9]{8}\-([^-]+)\-([^-]+)$': split_name_date_angle_depth, # 'NON-INT-02_{date}-{angle}-{depth}',
+                r'^NON-INT-02_[0-9]{8}\-([^-]+)\-ROUND\-([^-]+)\-([0-9]+)$': split_name_date_angle_depth_int, # 'NON-INT-01_{date}-{angle}-{depth}-{int}',
+                r'^NON-INT-02_[0-9]{8}\-ROUND\-([^-]+)\-([^-]+)$': split_name_date_angle_depth, # 'NON-INT-02_{date}-{angle}-{depth}',
             },
             'odor': {
     
@@ -501,8 +503,8 @@ LEC_naming_format = {
         },
         'NON-INT-03': {
             'object': {
-                r'^NON-INT-03_[0-9]{8}\-([^-]+)\-([^-]+)\-([0-9]+)$': split_name_date_angle_depth_int, # 'NON-INT-03_{date}-{angle}-{depth}-{int}',
-                r'^NON-INT-03_[0-9]{8}\-([^-]+)\-([^-]+)$': split_name_date_angle_depth,# 'NON-INT-03_{date}-{angle}-{depth}'
+                r'^NON-INT-03_[0-9]{8}\-([^-]+)\-ROUND\-([^-]+)\-([0-9]+)$': split_name_date_angle_depth_int, # 'NON-INT-03_{date}-{angle}-{depth}-{int}',
+                r'^NON-INT-03_[0-9]{8}\-ROUND\-([^-]+)\-([^-]+)$': split_name_date_angle_depth,# 'NON-INT-03_{date}-{angle}-{depth}'
             },
             'odor': {
     
