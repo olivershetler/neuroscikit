@@ -440,6 +440,7 @@ LEC_naming_format = {
         'ANT-135a-7':{
             'object': {
                 r'^ANT-135a-7_[0-9]{8}\-ROUND\-([^-]+)\-([^-]+)$': split_name_date_round_depth_angle, # 'ANT-135a-7_{date}-ROUND-{depth}-{angle}',
+                r'^ANT-135a-7_[0-9]{8}\-ROUND\-([^-]+)\-([^-]+)\-([0-9]+)$': split_name_date_round_depth_angle_int, # 'ANT-135a-7_{date}-ROUND-{depth}-{angle}-{int}',
             },
             'odor': {
                 r'^ANT-135a-7_[0-9]{8}\-ROUND\-([^-]+)\-1[a-zA-Z]{1}2[a-zA-Z]{1}3[a-zA-Z]{1}-[0-9]{1}$': split_name_date_round_depth_odor_int, # 'ANT-135a-7_{date}-ROUND-{depth}-1{o}2{o}3{o}-{int}',
