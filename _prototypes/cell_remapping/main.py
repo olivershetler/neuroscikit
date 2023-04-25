@@ -62,9 +62,9 @@ def main(overwrite_settings=None):
         except Exception:
             print(traceback.format_exc())
             print('DID NOT WORK FOR DIRECTORY ' + str(subdir))
-sys.stdout.close()
-sys.stdout = sys.__stdout__
-print('COMPLETED ALL FOLDERS')
+    sys.stdout.close()
+    sys.stdout = sys.__stdout__
+    print('COMPLETED ALL FOLDERS')
 
 def _save_output(output, output_path, start_time):
 
