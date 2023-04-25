@@ -489,8 +489,8 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None, sum_sheet_count=N
 
                     # print('Speed Score')
                     if tasks['speed_score']:
-                        if tasks['disk_arena']:
-                            s_score = speed_score(spatial_spike_train)
+                        # if tasks['disk_arena']:
+                        s_score = speed_score(spatial_spike_train)
                         cell_stats['speed_score'] = s_score
 
                     # print('Spatial Tuning Curve')
