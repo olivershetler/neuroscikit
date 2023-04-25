@@ -37,6 +37,7 @@ def main(overwrite_settings=None):
     """ OPTION 2 """
     """ RUNS EACH SUBFOLDER ONE AT A TIME """
     subdirs = np.sort([ f.path for f in os.scandir(data_dir) if f.is_dir() ])
+    sys.stdout = open(r'C:\Users\aaoun\OneDrive - cumc.columbia.edu\Desktop\HussainiLab\neuroscikit\_prototypes\unit_matcher\testlog.txt', 'w')
     for subdir in subdirs:
         try:
             study = make_study(subdir,settings_dict=settings_dict)
@@ -61,7 +62,9 @@ def main(overwrite_settings=None):
         except Exception:
             print(traceback.format_exc())
             print('DID NOT WORK FOR DIRECTORY ' + str(subdir))
-
+sys.stdout.close()
+sys.stdout = sys.__stdout__
+print('COMPLETED ALL FOLDERS')
 
 def _save_output(output, output_path, start_time):
 
