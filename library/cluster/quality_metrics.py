@@ -161,17 +161,23 @@ def isolation_distance(FD, ClusterSpikes):
 
     else:
 
-        # InClu = ClusterSpikes
-        OutClu = np.setdiff1d(np.arange(nSpikes), ClusterSpikes)
+        try:
 
-        # compute _mahalanobis distances
-        m = _mahal(FD, FD[ClusterSpikes, :])
+            # InClu = ClusterSpikes
+            OutClu = np.setdiff1d(np.arange(nSpikes), ClusterSpikes)
 
-        mNoise = m[OutClu]  # _mahal dist of all other spikes
+            # compute _mahalanobis distances
+            m = _mahal(FD, FD[ClusterSpikes, :])
 
-        # calculate point where mD of other spikes = n of this cell
-        sorted_values = np.sort(mNoise)
-        IsoDist = sorted_values[nClusterSpikes - 1]
+            mNoise = m[OutClu]  # _mahal dist of all other spikes
+
+            # calculate point where mD of other spikes = n of this cell
+            sorted_values = np.sort(mNoise)
+            IsoDist = sorted_values[nClusterSpikes - 1]
+
+        except:
+
+            IsoDist = np.nan
 
     # spike_cluster.stats_dict['cluster']['iso_dist'] = IsoDist
 
