@@ -417,7 +417,7 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None, sum_sheet_count=N
                         n_spikes = len(cell.event_times)
                         waveforms = cell.signal
                         wf_avg = np.array(waveforms).mean(axis=1)
-                        max_vals = list(map(lambda x: max(x), [wf_avg[0], wf_avg[1], wf_avg[2], wf_avg[3]]))
+                        max_vals = list(map(lambda x: max(x), [val for val in wf_avg]))
                         principal_channel_index = np.argmax(max_vals)
                         principal_waveform = wf_avg[principal_channel_index]
                         peak_index = np.argmax(principal_waveform)
