@@ -23,7 +23,7 @@ def main(overwrite_settings=None):
 
     """ OPTION 1 """
     """ RUNS EVERYTHING UNDER PARENT FOLDER (all subfolders loaded first) """
-    # if not os.path.isdir(subdir + '/remapping_output'):
+    # if not os.path.isdir(data_dir + '/remapping_output'):
     #     os.mkdir(data_dir + '/remapping_output')
     # study = make_study(data_dir,settings_dict=settings_dict)
     # study.make_animals()
