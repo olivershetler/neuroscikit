@@ -8,7 +8,7 @@ sys.path.append(PROJECT_PATH)
  
 
 import numpy as np
-from library.scores.shuffle_spikes import shuffle_spikes
+from library.shuffle_spikes import shuffle_spikes
 from openpyxl.worksheet.dimensions import ColumnDimension
 from openpyxl.utils.cell import get_column_letter
 # from library.spatial_spike_train import SpatialSpikeTrain2D

@@ -12,7 +12,7 @@ from library.lib_test_utils import make_2D_arena
 from core.core_utils import make_seconds_index_from_rate
 from core.core_utils import make_1D_timestamps
 from library.scores.rate_map_stats import rate_map_stats
-from library.scores.shuffle_spikes import shuffle_spikes
+from library.shuffle_spikes import shuffle_spikes
 
 
 def test_border_score():

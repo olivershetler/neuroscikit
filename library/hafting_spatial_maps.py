@@ -15,8 +15,7 @@ from library.map_utils import _compute_unmasked_ratemap, _temp_spike_map, _temp_
 from core.spatial import Position2D
 from library.ensemble_space import Cell
 from core.spikes import SpikeTrain
-
-
+from library.shuffle_spikes import shuffle_spikes
 
 class SpatialSpikeTrain2D():
 
@@ -49,6 +48,8 @@ class SpatialSpikeTrain2D():
         assert len(self.spike_x) == len(self.spike_y) == len(self.new_spike_times)
 
         self.stats_dict = self._init_stats_dict()
+
+    
 
     def _read_input_dict(self):
         spike_obj = None
@@ -105,7 +106,7 @@ class SpatialSpikeTrain2D():
         return map_obj
 
     #def spike_pos(ts, x, y, t, cPost, shuffleSpks, shuffleCounter=True):
-    def get_spike_positions(self):
+    def get_spike_positions(self, shuffled_spikes=None):
         # if type(self.spike_times) == list:
         #     spike_array = np.array(self.spike_times)
         # else:
@@ -137,11 +138,15 @@ class SpatialSpikeTrain2D():
         new_spike_times = np.zeros_like(spike_positions_x)
         count = -1 # need to subtract 1 because the python indices start at 0 and MATLABs at 1
 
+        if shuffled_spikes is not None:
+            spike_times = shuffled_spikes
+        else:
+            spike_times = self.spike_times
 
         for index in range(N):
 
-            tdiff = (t -self.spike_times[index])**2
-            tdiff2 = (cPost-self.spike_times[index])**2
+            tdiff = (t -spike_times[index])**2
+            tdiff2 = (cPost-spike_times[index])**2
             m = np.amin(tdiff)
             ind = np.where(tdiff == m)[0]
 
@@ -152,7 +157,7 @@ class SpatialSpikeTrain2D():
                 count += 1
                 spike_positions_x[count] = x[ind[0]]
                 spike_positions_y[count] = y[ind[0]]
-                new_spike_times[count] = self.spike_times[index]
+                new_spike_times[count] = spike_times[index]
 
         spike_positions_x = spike_positions_x[:count + 1]
         spike_positions_y = spike_positions_y[:count + 1]
@@ -276,18 +281,24 @@ class HaftingSpikeMap():
     #         assert isinstance(spatial_spike_train, SpatialSpikeTrain2D)
     #     return spatial_spike_train
 
-    def get_spike_map(self, smoothing_factor=None, new_size=None):
+    def get_spike_map(self, smoothing_factor=None, new_size=None, shuffle=False):
         if self.map_data is None or (self.map_data is not None and new_size != self.map_data.shape[0]) == True:
             if self.smoothing_factor != None:
                 smoothing_factor = self.smoothing_factor
                 assert smoothing_factor != None, 'Need to add smoothing factor to function inputs'
             else:
                 self.smoothing_factor = smoothing_factor
-            
-            if new_size is not None:
-                self.map_data, self.map_data_raw = self.compute_spike_map(self.spike_x, self.spike_y, smoothing_factor, self.arena_size, new_size=new_size)
+
+            if shuffle:
+                shuffled_spikes = shuffle_spikes(self.spatial_spike_train.spike_times,self.spike_x, self.spike_y, self.new_spike_times)
+                spike_x, spike_y, new_spike_times = self.get_spike_positions(shuffled_spikes=shuffled_spikes)
             else:
-                self.map_data, self.map_data_raw = self.compute_spike_map(self.spike_x, self.spike_y, smoothing_factor, self.arena_size)
+                spike_x, spike_y, new_spike_times = self.spike_x, self.spike_y, self.new_spike_times
+
+            if new_size is not None:
+                self.map_data, self.map_data_raw = self.compute_spike_map(spike_x, spike_y, smoothing_factor, self.arena_size, new_size=new_size)
+            else:
+                self.map_data, self.map_data_raw = self.compute_spike_map(spike_x, spike_y, smoothing_factor, self.arena_size)
 
             self.spatial_spike_train.add_map_to_stats('spike', self)
 
@@ -360,23 +371,86 @@ class HaftingRateMap():
             self.smoothing_factor = kwargs['settings']['smoothing_factor']
             print('overriding session smoothing factor for input smoothing facator')
 
-    def get_rate_map(self, smoothing_factor=None, new_size=None):
-        if self.map_data is None or (self.map_data is not None and new_size != self.map_data.shape[0]) == True:
+    def get_rate_map(self, smoothing_factor=None, new_size=None, shuffle=False):
+        if self.map_data is None or (self.map_data is not None and new_size != self.map_data.shape[0]) == True or shuffle == True:
             if self.smoothing_factor == None:
                 self.smoothing_factor = smoothing_factor
                 assert smoothing_factor != None, 'Need to add smoothing factor to function inputs'
 
             if new_size is not None:
-                self.map_data, self.raw_map_data = self.compute_rate_map(self.occ_map, self.spike_map, new_size=new_size)
+                self.map_data, self.raw_map_data = self.compute_rate_map(self.occ_map, self.spike_map, new_size=new_size, shuffle=shuffle)
             else:
-                self.map_data, self.raw_map_data = self.compute_rate_map(self.occ_map, self.spike_map)
+                self.map_data, self.raw_map_data = self.compute_rate_map(self.occ_map, self.spike_map, shuffle=shuffle)
 
             self.spatial_spike_train.add_map_to_stats('rate', self)
+        
         # elif self.map_data is not None and new_size != self.map_data.shape[0]:
+        
+        # if self.map_data is None:
+        #     self.compute_rate_map(self.occ_map, self.spike_map, new_size=new_size)
+        #     spike_times = self.spatial_spike_train.spike_times
+        #     trial_start_times = [0,60,120,180]
+        #     trial_duration = 60
+        #     # new_size = 1000
+
+        #     ses_time_bins = np.arange(0,trial_duration * len(trial_start_times), (trial_duration * len(trial_start_times)) / new_size)
+        #     trial_time_bins = np.arange(0,trial_duration, trial_duration / new_size)
+
+        #     time_map = np.zeros((len(trial_time_bins), len(ses_time_bins)))
+
+        #     def _process_single_spike(spike_time):
+                
+        #         ses_time_bin_idx = np.where(spike_time >= ses_time_bins)[0][-1]
+
+        #         trial_spike_time = spike_time % trial_duration
+
+        #         trial_time_bin_idx = np.where(trial_spike_time >= trial_time_bins)[0][-1]
+        
+        #         return [trial_time_bin_idx, ses_time_bin_idx]
+            
+        #     indices = list(map(lambda x: _process_single_spike(x), spike_times))
+
+        #     def _add_spike(spk_idx):
+        #         time_map[spk_idx[0], spk_idx[1]] += 1
+
+        #     list(map(lambda x: _add_spike(x), indices))
+
+        #     # Kernel size
+        #     kernlen = int(self.smoothing_factor*8)
+        #     # Standard deviation size
+        #     std = int(0.2*kernlen)
+
+        #     def _gkern(kernlen: int, std: int) -> np.ndarray:
+
+        #         '''
+        #             Returns a 2D Gaussian kernel array.
+
+        #             Params:
+        #                 kernlen, std (int):
+        #                     Kernel length and standard deviation
+
+        #             Returns:
+        #                 np.ndarray:
+        #                     gkern2d
+        #         '''
+
+        #         gkern1d = signal.gaussian(kernlen, std=std).reshape(kernlen, 1)
+        #         gkern2d = np.outer(gkern1d, gkern1d)
+        #         return gkern2d
+
+        #             # Normalize and smooth with scaling facotr
+            
+        #     norm_time_map = time_map / np.sum(time_map)
+        #     norm_time_map = cv2.filter2D(norm_time_map,-1,_gkern(kernlen,std))
+
+        #     self.map_data = norm_time_map
+        #     self.raw_map_data = time_map
+
+        #     self.spatial_spike_train.add_map_to_stats('rate', self)
 
         return self.map_data, self.raw_map_data
 
-    def compute_rate_map(self, occupancy_map, spike_map, new_size=None):
+    def compute_rate_map(self, occupancy_map, spike_map, new_size=None, shuffle=False):
         '''
         Parameters:
             spike_x: the x-coordinates of the spike events
@@ -393,19 +467,19 @@ class HaftingRateMap():
         if new_size is None:
             if self.smoothing_factor != None:
                 occ_map_data, raw_occ, coverage = occupancy_map.get_occupancy_map(self.smoothing_factor)
-                spike_map_data, spike_map_data_raw = spike_map.get_spike_map(self.smoothing_factor)
+                spike_map_data, spike_map_data_raw = spike_map.get_spike_map(self.smoothing_factor, shuffle=shuffle)
             else:
                 print('No smoothing factor provided, proceeding with value of 3')
                 occ_map_data, raw_occ, coverage = occupancy_map.get_occupancy_map(3)
-                spike_map_data, spike_map_data_raw = spike_map.get_spike_map(3)
+                spike_map_data, spike_map_data_raw = spike_map.get_spike_map(3, shuffle=shuffle)
         else:
             if self.smoothing_factor != None:
                 occ_map_data, raw_occ, coverage = occupancy_map.get_occupancy_map(self.smoothing_factor, new_size=new_size)
-                spike_map_data, spike_map_data_raw = spike_map.get_spike_map(self.smoothing_factor, new_size=new_size)
+                spike_map_data, spike_map_data_raw = spike_map.get_spike_map(self.smoothing_factor, new_size=new_size, shuffle=shuffle)
             else:
                 print('No smoothing factor provided, proceeding with value of 3')
                 occ_map_data, raw_occ, coverage = occupancy_map.get_occupancy_map(3, new_size=new_size)
-                spike_map_data, spike_map_data_raw = spike_map.get_spike_map(3, new_size=new_size)
+                spike_map_data, spike_map_data_raw = spike_map.get_spike_map(3, new_size=new_size, shuffle=shuffle)
 
 
         assert occ_map_data.shape == spike_map_data.shape

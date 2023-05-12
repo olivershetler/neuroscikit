@@ -66,6 +66,7 @@ def map_blobs(spatial_map: SpatialSpikeTrain2D | HaftingRateMap, **kwargs):
         cylinder = kwargs['cylinder']
         if cylinder:
             ratemap = custom_flat_disk_mask(ratemap)
+            # ???????????
 
     # Kernel size
     kernlen = int(smoothing_factor*8)
@@ -81,6 +82,8 @@ def map_blobs(spatial_map: SpatialSpikeTrain2D | HaftingRateMap, **kwargs):
     # Compute a 'low_noise' threshold where anything below the 10th percentile activity is removed
     low_noise = np.mean(ratemap_copy[ratemap_copy <= np.percentile(ratemap_copy, 20)])
     ratemap_copy[ratemap_copy <= np.percentile(ratemap_copy, 80)] = low_noise
+    # threshold = 0.2 * np.max(ratemap_copy)
+    # ratemap_copy[ratemap_copy <= threshold] = 0
 
     # Initial segmentation into blobs
     image = np.array(ratemap_copy * 255, dtype = np.uint8)

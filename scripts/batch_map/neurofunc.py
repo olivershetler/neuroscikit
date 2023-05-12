@@ -325,7 +325,10 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None, sum_sheet_count=N
                 # print(np.asarray(clust.waveforms[0]).T.shape)
                 # print(np.asarray(clust.waveforms[0]).shape)
                 clust.get_waveforms()
-                # print(np.array(clust.waveforms).shape, tet_file)
+                # print(tet_file)
+                # print(np.array(clust.waveforms).shape, np.array(clust.waveform_ids).shape)
+                # print(len(clust.waveforms), len(clust.waveforms[0]), len(clust.waveforms[0][0]))
+                # print(len(clust.waveform_ids), len(clust.waveform_ids[0]), len(clust.waveform_ids[0][0]))
                 for i in range(len(clust.waveforms)):
                     ch = np.asarray(clust.waveforms[i])
                     ch_lbl = np.asarray(clust.waveform_ids[i])

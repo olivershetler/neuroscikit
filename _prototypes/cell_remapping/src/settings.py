@@ -31,7 +31,9 @@ IF YOU ARE DOING REGULAR REMAPPING
 
 settings_dict['plotRegular'] = True # EDIT HERE
 settings_dict['normalizeRate'] = True # EDIT HERE --> NORMALIZED FOR ALL CASES 
-settings_dict['rate_scores'] = ['whole', 'binary']
+settings_dict['rate_scores'] = ['whole', 'spike_density']
+settings_dict['n_repeats'] = 300 # EDIT HERE 
+settings_dict['plotShuffled'] = True # EDIT HERE
 
 
 """ 
@@ -40,7 +42,8 @@ IF YOU ARE DOING OBJECT REMAPPING
 
 settings_dict['hasObject'] = True # EDIT HERE
 settings_dict['plotObject'] = True # EDIT HERE
-settings_dict['object_scores'] = ['whole', 'field', 'binary', 'centroid']
+settings_dict['object_scores'] = ['whole', 'field', 'binary', 'centroid', 'spike_density']
+settings_dict['grid_sample_threshold'] = 3.2 # EDIT HERE, euclidean distance
 
 variations = [0,90,180,270,'NO'] # EDIT HERE
 
@@ -48,8 +51,8 @@ variations = [0,90,180,270,'NO'] # EDIT HERE
 IF YOU ARE DOING CENTROID REMAPPING
 """
 
-settings_dict['runFields'] = True # EDIT HERE
-settings_dict['plotFields'] = True # EDIT HERE
+settings_dict['runFields'] = False # EDIT HERE
+settings_dict['plotFields'] = False # EDIT HERE
 settings_dict['centroid_scores'] = ['field', 'binary', 'centroid']
 
 """ 
@@ -69,16 +72,25 @@ regular_output = {}
 obj_output = {}
 centroid_output = {}
 
-keys = ['signature','depth', 'name', 'date', 'tetrode','unit_id', 'session_ids', 'score', 'wass']
+keys = ['signature','depth', 'name', 'date', 'tetrode','unit_id', 'session_ids', 'whole_wass',
+        't_score', 'p_value', 'shapiro_pval', 'shapiro_coeff', 'base_mean', 'base_std', 'spike_density_wass', 'avg_fr_change', 'std_fr_change', 
+        'n_repeats','arena_size','cylinder','ratemap_dims']
 #  'information', 'b_top', 'b_bottom', 'b_right', 'b_left', 'grid_score']
 
-obj_keys = ['signature','depth', 'name', 'date','tetrode','unit_id','session_id','obj_pos_x', 'obj_pos_y', 'object_location', 'score', 
-            'obj_wass_0', 'obj_wass_90', 'obj_wass_180', 'obj_wass_270', 'obj_wass_NO', 'field_count', 'bin_area',
-            'main_field_coverage', 'main_field_area', 'main_field_rate', 'cumulative_coverage', 'cumulative_area', 'cumulative_rate',]
+obj_keys = ['signature','depth', 'name', 'date','tetrode','unit_id','session_id','obj_pos','object_location', 'score', 
+            # 'centroid_coords', 'angle', 'magnitude',
+            'field_id', 'field_count',
+            'obj_wass_0', 'obj_wass_90', 'obj_wass_180', 'obj_wass_270', 'obj_wass_NO', 
+            'obj_q_0', 'obj_q_90', 'obj_q_180', 'obj_q_270', 'obj_q_NO',
+            'obj_vec_0', 'obj_vec_90', 'obj_vec_180', 'obj_vec_270', 'obj_vec_NO',
+            'bin_area', 'total_rate', 'field_peak_rate',
+            'field_coverage', 'field_area', 'field_rate', 'cumulative_coverage', 'cumulative_area', 'cumulative_rate',
+            'arena_size', 'cylinder', 'ratemap_dims', 'grid_sample_threshold', 'grid_sample_size']
 
 centroid_keys = ['signature','depth', 'name', 'date','tetrode','unit_id','session_ids','cumulative_wass',
-                 'score', 'field_count', 'bin_area', 
-                 'cumulative_coverage', 'cumulative_area', 'cumulative_rate']
+                 'score', 'field_count', 'bin_area', 'arena_size',
+                 'cumulative_coverage', 'cumulative_area', 'cumulative_rate',
+                 'arena_size', 'cylinder', 'ratemap_dims']
 # 'test_wass','centroid_wass','binary_wass']
 
 for key in keys:

@@ -27,8 +27,13 @@ def make_object_ratemap(object_location, rate_map_obj, new_size=(16,16)):
 
     # if no object, zero across all ratemap
     if object_location == 'NO':
-        cust_arena = np.ones((y,x))
-        norm_arena = cust_arena / np.sum(cust_arena)
+        # even everywehre
+        # cust_arena = np.ones((y,x))
+        # norm_arena = cust_arena / np.sum(cust_arena)
+
+        # obj inn middle
+        norm_arena = np.zeros((y,x))
+        norm_arena[int(np.floor(y/2)), int(np.floor(x/2))] = 1
         return norm_arena, {'x':int(np.floor(y/2)), 'y':int(np.floor(y/2))}
 
     else:

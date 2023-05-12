@@ -94,6 +94,7 @@ def compute_centroid_remapping(label_t, label_s, spatial_spike_train_t, spatial_
     test_field_wass = []
     centroid_wass = []
     bin_field_wass = []
+    centroid_coords = []
 
     permute_dict = {}
     cumulative_dict = {}
@@ -101,11 +102,6 @@ def compute_centroid_remapping(label_t, label_s, spatial_spike_train_t, spatial_
     unq_s = np.unique(label_s)
     unq_t = np.unique(label_t)
     # drop nan from disk mask
-    # if cylinder:
-    #     unq_s = unq_s[~np.isnan(unq_s)]
-    #     unq_t = unq_t[~np.isnan(unq_t)]
-    # print(unq_s, np.unique(label_s), unq_t, np.unique(label_t))
-    # print(unq_s, unq_t)
 
     # for every unique blob label in source and target maps, compute wass
     # 1: to reemove 0 label
@@ -135,7 +131,6 @@ def compute_centroid_remapping(label_t, label_s, spatial_spike_train_t, spatial_
 
 
             # sliced wass on source pts and target pts (y,x) coordinates
-            # print(len(source_pts), len(target_pts), len(source_weights), len(target_weights))
             wass = pot_sliced_wasserstein(source_pts, target_pts, source_weights, target_weights, n_projections=settings['n_projections'])
             # sliced wass on source pts and target pts (y,x) coordinates
             bin_wass = pot_sliced_wasserstein(source_pts, target_pts, n_projections=settings['n_projections'])
@@ -144,6 +139,7 @@ def compute_centroid_remapping(label_t, label_s, spatial_spike_train_t, spatial_
             # bin_target_map[rows, cols] = 1
 
             centroid_pairs.append([i,j])
+            centroid_coords.append([centroids_s[i-1], centroids_t[j-1]])
 
             # euclidean distance between points
             c_wass = np.linalg.norm(np.array((centroids_t[j-1][0], centroids_t[j-1][1])) - np.array((centroids_s[i-1][0],centroids_s[i-1][1])))
@@ -178,7 +174,6 @@ def compute_centroid_remapping(label_t, label_s, spatial_spike_train_t, spatial_
     height_source_pts = height_bucket_midpoints[rows]
     width_source_pts = width_bucket_midpoints[cols]
     target_pts = np.array([height_source_pts, width_source_pts]).T
-    # print(np.unique(label_t), rows, cols, target_pts, label_t, target_ids)
     # bin_target_map = np.zeros(target_map.shape)
     # bin_target_map[rows, cols] = 1
 
@@ -198,6 +193,7 @@ def compute_centroid_remapping(label_t, label_s, spatial_spike_train_t, spatial_
 
     permute_dict['field_wass'] = np.array(field_wass)
     permute_dict['pairs'] = np.array(centroid_pairs)
+    permute_dict['coords'] = np.array(centroid_coords)
     # permute_dict['test_field_wass'] = np.array(test_field_wass)
     permute_dict['centroid_wass'] = np.array(centroid_wass)
     permute_dict['binary_wass'] = np.array(bin_field_wass)
@@ -207,7 +203,7 @@ def compute_centroid_remapping(label_t, label_s, spatial_spike_train_t, spatial_
     return permute_dict, cumulative_dict
 
 
-def single_point_wasserstein(object_coords, rate_map, arena_size, ids=None):
+def single_point_wasserstein(object_coords, rate_map, arena_size, ids=None, density=False, density_map=None):
     """
     Computes wass distancees for map relative to single point coordinate
 
@@ -233,16 +229,23 @@ def single_point_wasserstein(object_coords, rate_map, arena_size, ids=None):
         obj_y = height_bucket_midpoints[object_coords[0]]
         obj_x = width_bucket_midpoints[object_coords[1]]
 
-    # Batch apply euclidean distance metric, use itertools for permutations
-    if ids is None:
-        weighted_dists = list(map(lambda x: np.linalg.norm(np.array((obj_y, obj_x)) - np.array((height_bucket_midpoints[x[0]], width_bucket_midpoints[x[1]]))) * rate_map[x[0],x[1]], list(itertools.product(np.arange(0,y,1),np.arange(0,x,1)))))
-    else:
-        pdct = itertools.product(np.arange(0,y,1),np.arange(0,x,1))
-        new_ids = set(list(pdct)).intersection(tuple(map(tuple, ids)))
+    if density:
+        assert ids is None, "Cannot pass in ids with density=True as spike density is all raw spike positions not ratemap ids"
 
-        # normalize only ids mask to 1
-        rate_map[ids[:,0], ids[:,1]] = rate_map[ids[:,0], ids[:,1]] / np.sum(rate_map[ids[:,0], ids[:,1]])
-        weighted_dists = list(map(lambda x, y: np.linalg.norm(np.array((obj_y, obj_x)) - np.array((height_bucket_midpoints[x], width_bucket_midpoints[y]))) * rate_map[x,y], np.array(list(new_ids)).T[0], np.array(list(new_ids)).T[1]))
+    if not density:
+        # Batch apply euclidean distance metric, use itertools for permutations
+        if ids is None:
+            weighted_dists = list(map(lambda x: np.linalg.norm(np.array((obj_y, obj_x)) - np.array((height_bucket_midpoints[x[0]], width_bucket_midpoints[x[1]]))) * rate_map[x[0],x[1]], list(itertools.product(np.arange(0,y,1),np.arange(0,x,1)))))
+        else:
+            pdct = itertools.product(np.arange(0,y,1),np.arange(0,x,1))
+            new_ids = set(list(pdct)).intersection(tuple(map(tuple, ids)))
+
+            # normalize only ids mask to 1
+            rate_map[ids[:,0], ids[:,1]] = rate_map[ids[:,0], ids[:,1]] / np.sum(rate_map[ids[:,0], ids[:,1]])
+            weighted_dists = list(map(lambda x, y: np.linalg.norm(np.array((obj_y, obj_x)) - np.array((height_bucket_midpoints[x], width_bucket_midpoints[y]))) * rate_map[x,y], np.array(list(new_ids)).T[0], np.array(list(new_ids)).T[1]))
+    elif density:
+        weighted_dists = list(map(lambda x: np.linalg.norm(np.array((obj_y, obj_x)) - np.array((x[0], x[1]))) * 1/len(density_map), density_map))
+
 
     return np.sum(weighted_dists)
 

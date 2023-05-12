@@ -4,18 +4,22 @@ import itertools
 import re
 import matplotlib.pyplot as plt
 import copy
+from scipy.spatial.distance import euclidean
+from scipy import stats
 
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
 
 from library.hafting_spatial_maps import SpatialSpikeTrain2D
-from _prototypes.cell_remapping.src.rate_map_plots import plot_obj_remapping, plot_rate_remapping, plot_fields_remapping
+from _prototypes.cell_remapping.src.rate_map_plots import plot_obj_remapping, plot_regular_remapping, plot_fields_remapping, plot_shuffled_regular_remapping
 from _prototypes.cell_remapping.src.wasserstein_distance import sliced_wasserstein, single_point_wasserstein, pot_sliced_wasserstein, compute_centroid_remapping, _get_ratemap_bucket_midpoints
 from _prototypes.cell_remapping.src.masks import make_object_ratemap, check_disk_arena, flat_disk_mask
 from library.maps import map_blobs
 from scripts.batch_map.batch_map import batch_map 
 from _prototypes.cell_remapping.src.settings import obj_output, centroid_output, tasks, session_comp_categories, regular_output, context_output, variations
 from scripts.batch_map.LEC_naming import LEC_naming_format, extract_name
+from library.shuffle_spikes import shuffle_spikes
+
 
 """
 
@@ -43,11 +47,39 @@ TODO (in order of priority)
 
 """
 
+# adapted from https://gis.stackexchange.com/questions/436908/selecting-n-samples-uniformly-from-a-grid-points
+def _sample_grid(ids, threshold=3):
+    first = True
+    valid = []
+
+    # def _sample_pt(point, first, valid):
+    for point in ids:
+        if first:
+            # print('first')
+            valid.append([point[0], point[1]])
+            first = False
+        else:                    
+            point = [point[0], point[1]]
+            if any((euclidean(point, point_ok) < threshold for point_ok in valid)):
+                # print('rejected')
+                pass
+            else:
+                valid.append(point)
+
+    return np.array(valid)
                                 
 def _check_single_format(filename, format, fxn):
-    print(str(format), str(filename))
     if re.match(str(format), str(filename)) is not None:
         return fxn(filename)
+    
+def _single_shuffled_sample(spatial_spike_train, settings):
+    norm, raw = spatial_spike_train.get_map('rate').get_rate_map(new_size = settings['ratemap_dims'][0], shuffle=True)
+    if settings['normalizeRate']:
+        rate_map = norm
+        # rate_map = rate_map / np.sum(rate_map)
+    else:
+        rate_map = raw        
+    return rate_map  
     
 
 def compute_remapping(study, settings, data_dir):
@@ -58,6 +90,17 @@ def compute_remapping(study, settings, data_dir):
 
     if settings['hasObject'] or settings['runFields']:    
         max_centroid_count, blobs_dict = _aggregate_cell_info(study, settings)
+
+        ratemap_size = settings['ratemap_dims'][0]
+
+        non_disk_ids = list(itertools.product(np.arange(0, ratemap_size), np.arange(0, ratemap_size)))
+        fake_map = np.zeros((ratemap_size, ratemap_size))
+        fake_map = flat_disk_mask(fake_map)
+        row, col = np.where(~np.isnan(fake_map))
+        valid_disk_indices = np.array([row, col]).T
+
+        non_disk_grid_sample = _sample_grid(non_disk_ids, settings['grid_sample_threshold'])
+        disk_grid_sample = _sample_grid(valid_disk_indices, settings['grid_sample_threshold'])
 
     centroid_dict = copy.deepcopy(centroid_output)
     regular_dict = copy.deepcopy(regular_output)
@@ -74,11 +117,6 @@ def compute_remapping(study, settings, data_dir):
 
         max_matched_cell_count = max(list(map(lambda x: max(animal.sessions[x].get_cell_data()['cell_ensemble'].get_label_ids()), animal.sessions)))
 
-        # print('max matched cell count: ' + str(max_matched_cell_count))
-        # for x in animal.sessions:
-        #     print(x)
-        #     print('ensemble label ids: ' + str(animal.sessions[x].get_cell_data()['cell_ensemble'].get_label_ids()))
-
         # len(session) - 1 bcs thats number of comparisons. e.g. 3 session: ses1-ses2, ses2-ses3 so 2 distances will be given for remapping
         remapping_distances = np.zeros((len(list(animal.sessions.keys()))-1, max_matched_cell_count))
         remapping_indices = [[] for k in range(max_matched_cell_count)]
@@ -91,8 +129,8 @@ def compute_remapping(study, settings, data_dir):
 
             # prev ratemap
             prev = None
-            # comp_prev = None
-
+            curr_shuffled = None
+            
             # for every session
             for i in range(len(list(animal.sessions.keys()))):
                 seskey = 'session_' + str(i+1)
@@ -137,6 +175,7 @@ def compute_remapping(study, settings, data_dir):
                     spatial_spike_train = cell.stats_dict['cell_stats']['spatial_spike_train']
 
                     rate_map_obj = spatial_spike_train.get_map('rate')
+
                     if settings['normalizeRate']:
                         rate_map, _ = rate_map_obj.get_rate_map(new_size = settings['ratemap_dims'][0])
                     else:
@@ -169,13 +208,7 @@ def compute_remapping(study, settings, data_dir):
                                     
                         labels_curr = np.copy(labels)
                         labels_curr[np.isnan(curr)] = 0
-                        val_r, val_c = np.where(labels_curr == 1)
                         c_count = len(np.unique(labels_curr)) - 1
-
-                        # take only field label = 1 = largest field = main
-                        main_field_coverage = len(np.where(labels_curr == 1)[0])/len(np.where(~np.isnan(curr))[0])
-                        main_field_area = len(np.where(labels_curr == 1)[0])
-                        main_field_rate = np.sum(curr[val_r, val_c])
 
                         # make all field labels = 1
                         labels_curr[labels_curr != 0] = 1
@@ -186,150 +219,306 @@ def compute_remapping(study, settings, data_dir):
                         cumulative_rate = np.sum(curr[val_r, val_c])
 
                         height_bucket_midpoints, width_bucket_midpoints = _get_ratemap_bucket_midpoints(rate_map_obj.arena_size, y, x)
+
+                        # n_repeats = 100
+
+                        if cylinder:
+                            # row, col = np.where(~np.isnan(curr))
+                            # disk_ids = np.array([row, col]).T
+                            # # resampled_positions = list(map(lambda x: disk_ids[np.random.choice(np.arange(len(disk_ids)),size=1)[0]] , np.arange(0, n_repeats)))
+                            # # resampled_positions = disk_ids[np.random.choice(np.arange(len(disk_ids)),size=n_repeats, replace=True)]
+                            # resampled_positions = _sample_grid(disk_ids, 3)
+                            resampled_positions = disk_grid_sample
+                        else:
+                            # options = list(itertools.product(np.arange(0, curr.shape[0]), np.arange(0, curr.shape[1])))
+                            # # resampled_positions = list(map(lambda x: options[np.random.choice(np.arange(len(options)),size=1)[0]] , np.arange(0, n_repeats)))
+                            # # resampled_positions = np.array(options)[np.random.choice(np.arange(len(options)),size=n_repeats, replace=True)]
+                            # resampled_positions = _sample_grid(options, 3)
+                            resampled_positions = non_disk_grid_sample
+
+                        print('Resampled positions: ', len(resampled_positions), len(resampled_positions[0]))
+
+                        obj_map_dict = {}
+                        for var in variations:
+                            object_ratemap, object_pos = make_object_ratemap(var, rate_map_obj, new_size=settings['ratemap_dims'][0])
+
+                            if cylinder:
+                                object_ratemap = flat_disk_mask(object_ratemap)
+                                disk_ids = valid_disk_indices
+                                # ids where not nan
+                            #     row, col = np.where(~np.isnan(object_ratemap))
+                            #     disk_ids = np.array([row, col]).T
+                            else:
+                                disk_ids = None
+
+                            obj_map_dict[var] = [object_ratemap, object_pos, disk_ids]
                         
                         # ['whole', 'field', 'bin', 'centroid']
                         for obj_score in settings['object_scores']:
-                            true_object_pos = None
-                            true_object_ratemap = None
-                            # # Possible object locations (change to get from settings)
-                            # variations = [0,90,180,270,'no']
-                            # compute object remapping for every object position, actual object location is store alongside wass for each object ratemap
-                            for var in variations:
-                                obj_wass_key = 'obj_wass_' + str(var)
+                            unq_labels = np.unique(labels)[1:]
+                            for lid in range(len(unq_labels)):
+                                label_id = unq_labels[lid]
+                                true_object_pos = None
+                                true_object_ratemap = None
+                                # # Possible object locations (change to get from settings)
+                                # variations = [0,90,180,270,'no']
+                                # compute object remapping for every object position, actual object location is store alongside wass for each object ratemap
+                                resampled_wass = None
+                                for var in variations:
+                                    obj_wass_key = 'obj_wass_' + str(var)
+                                    obj_vector_key = 'obj_vec_' + str(var)
+                                    obj_quantile_key = 'obj_q_' + str(var)
 
-                                object_ratemap, object_pos = make_object_ratemap(var, rate_map_obj, new_size=settings['ratemap_dims'][0])
+                                    object_ratemap, object_pos, disk_ids = obj_map_dict[var]
 
-                                if cylinder:
-                                    object_ratemap = flat_disk_mask(object_ratemap)
-                                    # ids where not nan
-                                    row, col = np.where(~np.isnan(object_ratemap))
-                                    disk_ids = np.array([row, col]).T
-                                else:
-                                    disk_ids = None
+                                    if var == object_location:
+                                        true_object_pos = object_pos
+                                        true_object_ratemap = object_ratemap
 
-                                if var == object_location:
-                                    true_object_pos = object_pos
-                                    true_object_ratemap = object_ratemap
-
-                                if isinstance(object_pos, dict):
-                                    obj_x = width_bucket_midpoints[object_pos['x']]
-                                    obj_y = height_bucket_midpoints[object_pos['y']]
-                                else:
-                                    obj_y = height_bucket_midpoints[object_pos[0]]
-                                    obj_x = width_bucket_midpoints[object_pos[1]] 
-
-                                if var == 'no':
-                                    y, x = object_ratemap.shape
-                                    # find indices of not nan 
-                                    row_prev, col_prev = np.where(~np.isnan(object_ratemap))
-                                    row_curr, col_curr = np.where(~np.isnan(curr))
-
-                                    assert row_prev.all() == row_curr.all() and col_prev.all() == col_curr.all(), 'Nans in different places'
-
-                                    height_bucket_midpoints, width_bucket_midpoints = _get_ratemap_bucket_midpoints(curr_spatial_spike_train.arena_size, y, x)
-                                    height_bucket_midpoints = height_bucket_midpoints[row_curr]
-                                    width_bucket_midpoints = width_bucket_midpoints[col_curr]
-                                    source_weights = np.array(list(map(lambda x, y: object_ratemap[x,y], row_curr, col_curr)))
-                                    target_weights = np.array(list(map(lambda x, y: curr[x,y], row_curr, col_curr)))
-                                    source_weights = source_weights / np.sum(source_weights)
-                                    target_weights = target_weights / np.sum(target_weights)
-                                    coord_buckets = np.array(list(map(lambda x, y: [height_bucket_midpoints[x],width_bucket_midpoints[y]], row_curr, col_curr)))
-                
-                                # EMD on norm/unnorm ratemap + object map for OBJECT remapping
-                                if obj_score == 'whole':
-                                    if var == 'no':
-                                        obj_wass = pot_sliced_wasserstein(coord_buckets, coord_buckets, source_weights, target_weights, n_projections=settings['n_projections'])
+                                    if isinstance(object_pos, dict):
+                                        obj_x = width_bucket_midpoints[object_pos['x']]
+                                        obj_y = height_bucket_midpoints[object_pos['y']]
                                     else:
+                                        obj_y = height_bucket_midpoints[object_pos[0]]
+                                        obj_x = width_bucket_midpoints[object_pos[1]] 
+
+                                    y, x = object_ratemap.shape
+                                    height_bucket_midpoints, width_bucket_midpoints = _get_ratemap_bucket_midpoints(curr_spatial_spike_train.arena_size, y, x)
+
+                                    # EMD on norm/unnorm ratemap + object map for OBJECT remapping
+                                    if obj_score == 'whole' and lid == 0:
+                                        # if var == 'no':
+                                        #     obj_wass = pot_sliced_wasserstein(coord_buckets, coord_buckets, source_weights, target_weights, n_projections=settings['n_projections'])
+                                        # else:
                                         obj_wass = single_point_wasserstein(object_pos, curr, rate_map_obj.arena_size, ids=disk_ids)
 
-                                elif obj_score == 'field':
+                                        # n_repeats = 1000
+                                        # if disk_ids is not None:
+                                        #     resampled_positions = list(map(lambda x: disk_ids[np.random.choice(np.arange(len(disk_ids)),size=1)[0]] , np.arange(0, n_repeats)))
+                                        # else:
+                                        #     options = list(itertools.product(np.arange(0, y), np.arange(0, x)))
+                                        #     resampled_positions = list(map(lambda x: options[np.random.choice(np.arange(len(options)),size=1)[0]] , np.arange(0, n_repeats)))
+                                        
+                                        # compute EMD on resamples
+                                        if resampled_wass is None:
+                                            resampled_wass = list(map(lambda x: single_point_wasserstein(x, curr, rate_map_obj.arena_size, ids=disk_ids), resampled_positions))
+                                        quantile = (resampled_wass < obj_wass).mean()
 
-                                    # field ids is ids of binary field/map blolb
+                                        # find row col of peak firing rate bin
+                                        r, c = np.where(curr == np.nanmax(curr))
+                                        # print(obj_y, obj_x, r, c)
+                                        r = height_bucket_midpoints[r[0]]
+                                        c = width_bucket_midpoints[c[0]]
+                                        mag = np.linalg.norm(np.array((obj_y, obj_x)) - np.array((r, c)))
+                                        pt1 = (obj_y, obj_x)
+                                        pt2 = (r, c)
+                                        angle = np.degrees(np.math.atan2(np.linalg.det([pt1,pt2]),np.dot(pt1,pt2)))
 
-                                    # TAKE ONLY MAIN FIELD --> already sorted by size
-                                    row, col = np.where(labels_curr == 1)
-                                    field_ids = np.array([row, col]).T
+                                    elif obj_score == 'field':
 
-                                    # take ids that are both in disk and in field
-                                    field_disk_ids = np.array([x for x in field_ids if x in disk_ids])
-                                    
-                                    if var == 'no':
-                                        obj_wass = pot_sliced_wasserstein(coord_buckets, coord_buckets[field_disk_ids], source_weights, target_weights[field_disk_ids], n_projections=settings['n_projections'])
-                                    else:
+                                        # field ids is ids of binary field/map blolb
+
+                                        # TAKE ONLY MAIN FIELD --> already sorted by size
+                                        row, col = np.where(labels == label_id)
+                                        field_ids = np.array([row, col]).T
+                                        if cylinder:
+                                            # take ids that are both in disk and in field
+                                            print('IT IS A CYLINDER, TAKING ONLY IDS IN FIELD AND IN DISK')
+                                            field_disk_ids = np.array([x for x in field_ids if x in disk_ids])
+                                        else:
+                                            field_disk_ids = field_ids
+                                        
+                                        # if var == 'no':
+                                        #     obj_wass = pot_sliced_wasserstein(coord_buckets, coord_buckets[field_disk_ids], source_weights, target_weights[field_disk_ids], n_projections=settings['n_projections'])
+                                        # else:
                                         # NEED TO NORMALIZE FIELD NOT WHOLE MAP
                                         # save total mass in firing field, save area for each field
                                         # remember long format
                                         obj_wass = single_point_wasserstein(object_pos, curr, rate_map_obj.arena_size, ids=field_disk_ids)
+                                    
+                                        # n_repeats = 1000
+                                        # resampled_positions = list(map(lambda x: field_disk_ids[np.random.choice(np.arange(len(field_disk_ids)),size=1)[0]] , np.arange(0, n_repeats)))
+                                        # compute EMD on resamples
+                                        if resampled_wass is None:
+                                            resampled_wass = list(map(lambda x: single_point_wasserstein(x, curr, rate_map_obj.arena_size, ids=field_disk_ids), resampled_positions))
+                                        quantile = (resampled_wass < obj_wass).mean()
 
-                                elif obj_score == 'binary':
-                                    # obj_bin_wass = single_point_wasserstein(object_pos, labels_curr, rate_map_obj.arena_size, ids=field_ids)
 
-                                    if var == 'no':
-                                        row, col = np.where(~np.isnan(object_ratemap))
-                                        height_source_pts = height_bucket_midpoints[row]
-                                        width_source_pts = width_bucket_midpoints[col]
-                                        source_pts = np.array([height_source_pts, width_source_pts]).T
+                                        # x,y bins of peak firing rate
+                                        # idx = np.where(source_weights == np.max(source_weights))[0]
+                                        # r, c = field_disk_ids[idx]
+                                        r, c = centroids[0]
+                                        # print(r, c)
+                                        r = height_bucket_midpoints[int(np.round(r))]
+                                        c = width_bucket_midpoints[int(np.round(c))]
+                                        mag = np.linalg.norm(np.array((obj_y, obj_x)) - np.array((r, c)))
+                                        pt1 = (obj_y, obj_x)
+                                        pt2 = (r, c)
+                                        angle = np.degrees(np.math.atan2(np.linalg.det([pt1,pt2]),np.dot(pt1,pt2)))
+
+                                    elif obj_score == 'spike_density' and lid == 0:
+                                        # obj_bin_wass = single_point_wasserstein(object_pos, labels_curr, rate_map_obj.arena_size, ids=field_ids)
+
+                                        curr_spike_pos_x, curr_spike_pos_y, _ = curr_spatial_spike_train.get_spike_positions()
+                                        curr_spike_pos_x *= -1
+                                        # spiekx an spikey are negative and positive, make positive
+                                        curr_spike_pos_x += np.abs(np.min(curr_spike_pos_x))
+                                        curr_spike_pos_y += np.abs(np.min(curr_spike_pos_y))
+                                
+                                        curr_pts = np.array([curr_spike_pos_y, curr_spike_pos_x]).T
+                                        # source_pts = np.array([[obj_y], [obj_x]]).T
+
+                                        # obj_wass = pot_sliced_wasserstein(source_pts, curr_pts, n_projections=settings['n_projections'])
+                                        obj_wass = single_point_wasserstein(object_pos, curr, rate_map_obj.arena_size, density=True, density_map=curr_pts)
+
+                                        # if var == 'NO':
+                                        #     plt.scatter(curr_pts[:,1], curr_pts[:,0], s=2, c='k', alpha=1)
+                                        #     plt.show()
+                                            
+                                        # if disk_ids is not None:
+                                        #     resampled_positions = list(map(lambda x: disk_ids[np.random.choice(np.arange(len(disk_ids)),size=1)[0]] , np.arange(0, n_repeats)))
+                                        # else:
+                                        #     options = list(itertools.product(np.arange(0, y), np.arange(0, x)))
+                                        #     resampled_positions = list(map(lambda x: options[np.random.choice(np.arange(len(options)),size=1)[0]] , np.arange(0, n_repeats)))
+
+                                        # n_repeats = 1000
+                                        # compute EMD on resamples
+                                        if resampled_wass is None:
+                                            resampled_wass = list(map(lambda x: single_point_wasserstein(x, curr, rate_map_obj.arena_size, density=True, density_map=curr_pts), resampled_positions))
+                                        quantile = (resampled_wass < obj_wass).mean()
+
+                                        # avg across all points
+                                        r = np.mean(curr_spike_pos_y)
+                                        c = np.mean(curr_spike_pos_x)
+                                        mag = np.linalg.norm(np.array((obj_y, obj_x)) - np.array((r, c)))
+                                        pt1 = (obj_y, obj_x)
+                                        pt2 = (r, c)
+                                        angle = np.degrees(np.math.atan2(np.linalg.det([pt1,pt2]),np.dot(pt1,pt2)))
+
+                                    elif obj_score == 'binary':
+
+                                        # if var == 'no':
+                                        #     row, col = np.where(~np.isnan(object_ratemap))
+                                        # else:
+                                        #     # TAKE ONLY MAIN FIELD --> already sorted by size
+                                        row, col = np.where(labels == label_id)
+                                        
+                                        field_ids = np.array([row, col]).T
+
+                                        if cylinder:
+                                            # take ids that are both in disk and in field
+                                            print('IT IS A CYLINDER, TAKING ONLY IDS IN FIELD AND IN DISK')
+                                            field_disk_ids = np.array([x for x in field_ids if x in disk_ids])
+                                        else:
+                                            field_disk_ids = field_ids
+
+                                        curr_masked = np.zeros((curr.shape))
+                                        curr_masked[field_disk_ids[:,0], field_disk_ids[:,1]] = 1
+
+                                        obj_wass = single_point_wasserstein(object_pos, curr_masked, rate_map_obj.arena_size, ids=field_disk_ids)
+
+                                        # n_repeats = 1000
+                                        # resampled_positions = list(map(lambda x: field_disk_ids[np.random.choice(np.arange(len(field_disk_ids)),size=1)[0]] , np.arange(0, n_repeats)))
+                                        # compute EMD on resamples
+                                        if resampled_wass is None:
+                                            resampled_wass = list(map(lambda x: single_point_wasserstein(x, curr_masked, rate_map_obj.arena_size, ids=field_disk_ids), resampled_positions))
+                                        quantile = (resampled_wass < obj_wass).mean()
+
+                                        r = np.mean(field_disk_ids[:,0])
+                                        c = np.mean(field_disk_ids[:,1])
+                                        r = height_bucket_midpoints[int(np.round(r))]
+                                        c = width_bucket_midpoints[int(np.round(c))]
+                                        mag = np.linalg.norm(np.array((obj_y, obj_x)) - np.array((r, c)))
+                                        pt1 = (obj_y, obj_x)
+                                        pt2 = (r, c)
+                                        angle = np.degrees(np.math.atan2(np.linalg.det([pt1,pt2]),np.dot(pt1,pt2)))
+
+                                    elif obj_score == 'centroid':
+
+                                        # TAKE ONLY MAIN FIELD --> already sorted by size
+                                        main_centroid = centroids[lid]
+                                        # row, col = np.where(labels_curr == 1)
+                                        # field_ids = np.array([row, col]).T
+
+                                        # euclidean distance between point
+                                        obj_wass = np.linalg.norm(np.array((obj_y, obj_x)) - np.array((main_centroid[0],main_centroid[1])))
+                                        
+                                        if resampled_wass is None:
+                                            resampled_wass = list(map(lambda x: np.linalg.norm(np.array((obj_y, obj_x)) - np.array((x[0],x[1]))), resampled_positions))
+                                        quantile = (resampled_wass < obj_wass).mean()
+
+                                        # its saving only last angle (NO), either do each or one for true obj pos or one for true and trace
+                                        r, c = main_centroid
+                                        r = height_bucket_midpoints[int(np.round(r))]
+                                        c = width_bucket_midpoints[int(np.round(c))]
+                                        mag = np.linalg.norm(np.array((obj_y, obj_x)) - np.array((r, c)))
+                                        pt1 = (obj_y, obj_x)
+                                        pt2 = (r, c)
+                                        angle = np.degrees(np.math.atan2(np.linalg.det([pt1,pt2]),np.dot(pt1,pt2)))
+
+                                    if lid != 0 and (obj_score == 'whole' or obj_score == 'spike_density') == True:
+                                        pass 
                                     else:
-                                        source_pts = np.array([obj_y, obj_x]).reshape(1,2)
+                                        # obj_dict[obj_wass_key].append([obj_wass, obj_field_wass, obj_bin_wass, c_wass])
+                                        obj_dict[obj_wass_key].append(obj_wass)
+                                        obj_dict[obj_quantile_key].append(quantile)
+                                        obj_dict[obj_vector_key].append([pt1, pt2, mag, angle])
 
-                                    curr_spike_pos_x, curr_spike_pos_y, _ = curr_spatial_spike_train.get_spike_positions()
-                                    curr_pts = np.array([curr_spike_pos_x, curr_spike_pos_y]).T
+                                # if first centroid label, we can save whole map annd spike density scores, if second or later label, we don't want to resave
+                                # the whole map and spike density scores
+                                if lid != 0 and (obj_score == 'whole' or obj_score == 'spike_density') == True:
+                                    pass 
+                                else:
+                                    val_r, val_c = np.where(labels == label_id)
+                                    field_coverage = len(val_r)/len(np.where(~np.isnan(curr))[0])
+                                    field_area = len(val_r)
+                                    field_rate = np.sum(curr[val_r, val_c])
+                                    total_rate = np.sum(curr)
+                                    field_peak_rate = np.max(curr[val_r, val_c])
 
-                                    obj_wass = pot_sliced_wasserstein(source_pts, curr_pts, n_projections=settings['n_projections'])
+                                    if obj_score == 'whole' or obj_score == 'spike_density':
+                                        obj_dict['field_id'].append('all')
+                                    else:
+                                        obj_dict['field_id'].append(label_id)
 
-                                elif obj_score == 'centroid':
-                                    # if c_count > 1:
-                                    #     cumulative_centroid = np.mean(centroids, axis=0)
-                                    # else:
-
-                                    # TAKE ONLY MAIN FIELD --> already sorted by size
-                                    main_centroid = centroids[0]
-
-                                    # print(cumulative_centroid, centroids, c_count)
-
-                                    # euclidean distance between point
-                                    obj_wass = np.linalg.norm(np.array((obj_y, obj_x)) - np.array((main_centroid[0],main_centroid[1])))
-
-                                # obj_dict[obj_wass_key].append([obj_wass, obj_field_wass, obj_bin_wass, c_wass])
-                                obj_dict[obj_wass_key].append(obj_wass)
-                            
-                            obj_dict['score'].append(obj_score)
-                            obj_dict['main_field_coverage'].append(main_field_coverage)
-                            obj_dict['main_field_area'].append(main_field_area)
-                            obj_dict['main_field_rate'].append(main_field_rate)
-                            obj_dict['cumulative_coverage'].append(cumulative_coverage)
-                            obj_dict['cumulative_area'].append(cumulative_area)
-                            obj_dict['cumulative_rate'].append(cumulative_rate)
-                            obj_dict['field_count'].append(c_count)
-                            obj_dict['bin_area'].append(bin_area[0])
-
-                            # Store true obj location
-                            obj_dict['object_location'].append(object_location)
-
-
-                            obj_dict['obj_pos_x'].append(true_object_pos['x'])
-                            obj_dict['obj_pos_y'].append(true_object_pos['y'])
-
-                            obj_dict['signature'].append(curr_path)
-                            obj_dict['name'].append(name)
-                            obj_dict['date'].append(date)
-                            obj_dict['depth'].append(depth)
-                            obj_dict['unit_id'].append(cell_label)
-                            obj_dict['tetrode'].append(animal.animal_id.split('tet')[-1])
-                            obj_dict['session_id'].append(seskey)
+                                    obj_dict['score'].append(obj_score)
+                                    obj_dict['field_peak_rate'].append(field_peak_rate)
+                                    obj_dict['total_rate'].append(total_rate)
+                                    obj_dict['field_coverage'].append(field_coverage)
+                                    obj_dict['field_area'].append(field_area)
+                                    obj_dict['field_rate'].append(field_rate)
+                                    obj_dict['cumulative_coverage'].append(cumulative_coverage)
+                                    obj_dict['cumulative_area'].append(cumulative_area)
+                                    obj_dict['cumulative_rate'].append(cumulative_rate)
+                                    obj_dict['field_count'].append(c_count)
+                                    obj_dict['bin_area'].append(bin_area[0])
+                                    obj_dict['object_location'].append(object_location)
+                                    obj_dict['obj_pos'].append((true_object_pos['x'], true_object_pos['y']))
+                                    obj_dict['signature'].append(curr_path)
+                                    obj_dict['name'].append(name)
+                                    obj_dict['date'].append(date)
+                                    obj_dict['depth'].append(depth)
+                                    obj_dict['unit_id'].append(cell_label)
+                                    obj_dict['tetrode'].append(animal.animal_id.split('tet')[-1])
+                                    obj_dict['session_id'].append(seskey)
+                                    obj_dict['arena_size'].append(curr_spatial_spike_train.arena_size)
+                                    obj_dict['cylinder'].append(cylinder)
+                                    obj_dict['ratemap_dims'].append(curr.shape)
+                                    obj_dict['grid_sample_threshold'].append(settings['grid_sample_threshold'])
+                                    obj_dict['grid_sample_size'].append(len(resampled_positions))
 
                         if settings['plotObject']:
-                            plot_obj_remapping(true_object_ratemap, curr, obj_dict, data_dir)
+                            plot_obj_remapping(true_object_ratemap, curr, labels, centroids, obj_dict, data_dir)
 
                     # If prev ratemap is not None (= we are at session2 or later, session1 has no prev session to compare)
                     if prev is not None:
 
                         # get x and y pts for spikes in pair of sessions (prev and curr) for a given comparison
 
-                        prev_spike_pos_x, prev_spike_pos_y, _ = prev_spatial_spike_train.get_spike_positions()
+                        prev_spike_pos_x, prev_spike_pos_y, prev_spike_pos_t = prev_spatial_spike_train.get_spike_positions()
                         prev_pts = np.array([prev_spike_pos_x, prev_spike_pos_y]).T
 
-                        curr_spike_pos_x, curr_spike_pos_y, _ = curr_spatial_spike_train.get_spike_positions()
+                        curr_spike_pos_x, curr_spike_pos_y, curr_spike_pos_t = curr_spatial_spike_train.get_spike_positions()
                         curr_pts = np.array([curr_spike_pos_x, curr_spike_pos_y]).T
 
                         y, x = prev.shape
@@ -337,73 +526,77 @@ def compute_remapping(study, settings, data_dir):
                         row_prev, col_prev = np.where(~np.isnan(prev))
                         row_curr, col_curr = np.where(~np.isnan(curr))
 
+                        # for first map
+                        if prev_shuffled is None:  
+                            prev_shuffled_samples = list(map(lambda x: _single_shuffled_sample(prev_spatial_spike_train, settings), np.arange(settings['n_repeats'])))
+                            prev_shuffled = list(map(lambda sample: np.array(list(map(lambda x, y: sample[x,y], row_prev, col_prev))), prev_shuffled_samples))
+
+                        curr_shuffled_samples = list(map(lambda x: _single_shuffled_sample(curr_spatial_spike_train, settings), np.arange(settings['n_repeats'])))
+                        curr_shuffled = list(map(lambda sample: np.array(list(map(lambda x, y: sample[x,y], row_curr, col_curr))), curr_shuffled_samples))
+
                         assert row_prev.all() == row_curr.all() and col_prev.all() == col_curr.all(), 'Nans in different places'
 
                         height_bucket_midpoints, width_bucket_midpoints = _get_ratemap_bucket_midpoints(prev_spatial_spike_train.arena_size, y, x)
                         height_bucket_midpoints = height_bucket_midpoints[row_curr]
                         width_bucket_midpoints = width_bucket_midpoints[col_curr]
-                        source_weights = np.array(list(map(lambda x, y: prev[x,y], row_curr, col_curr)))
+                        source_weights = np.array(list(map(lambda x, y: prev[x,y], row_prev, col_prev)))
                         target_weights = np.array(list(map(lambda x, y: curr[x,y], row_curr, col_curr)))
                         source_weights = source_weights / np.sum(source_weights)
                         target_weights = target_weights / np.sum(target_weights)
                         coord_buckets = np.array(list(map(lambda x, y: [height_bucket_midpoints[x],width_bucket_midpoints[y]], row_curr, col_curr)))
 
-                        # source_coords = np.array(list(map(lambda x: prev[x[0],x[1]], coord_buckets)))
-                        # target_coords = np.array(list(map(lambda x: curr[x[0],x[1]], coord_buckets)))
-
-                        # # Use cts to 'weigh' number of (x,y) pts contributed by each spike
-                        # prev_coords = list(map(lambda i,j: [[height_bucket_midpoints[i], width_bucket_midpoints[j]] for x in range(int(prev_pts_ct[i,j]))], np.arange(0,prev_pts_ct.shape[0],1), np.arange(0,prev_pts_ct.shape[1],1)))
-                        # curr_coords = list(map(lambda i,j: [[height_bucket_midpoints[i], width_bucket_midpoints[j]] for x in range(int(curr_pts_ct[i,j]))], np.arange(0,curr_pts_ct.shape[0],1), np.arange(0,curr_pts_ct.shape[1],1)))
-
-                        # prev_coords = list(itertools.chain.from_iterable(prev_coords))
-                        # curr_coords = list(itertools.chain.from_iterable(curr_coords))
-
-                        # print(coord_buckets.shape, source_weights.shape, target_weights.shape)
-
-                        for rate_score in settings['rate_scores']:
-
-                            if rate_score == 'binary':
-                                # This is EMD on whole map (binary) 
-                                wass = pot_sliced_wasserstein(prev_pts, curr_pts, n_projections=settings['n_projections'])
-                            elif rate_score == 'whole':
+                        spike_dens_wass = pot_sliced_wasserstein(prev_pts, curr_pts, n_projections=settings['n_projections'])
+                            # elif rate_score == 'whole':
                                 # This is EMD on whole map for normalized/unnormalized rate remapping
-                                wass = pot_sliced_wasserstein(coord_buckets, coord_buckets, source_weights, target_weights, n_projections=settings['n_projections'])
-                                                    
-                            regular_dict['signature'].append([prev_path, curr_path])
-                            regular_dict['name'].append(name)
-                            regular_dict['date'].append(date)
-                            regular_dict['depth'].append(depth)
-                            regular_dict['unit_id'].append(cell_label)
-                            regular_dict['tetrode'].append(animal.animal_id.split('tet')[-1])
-                            regular_dict['session_ids'].append([prev_key, curr_key])
-                            # regular_dict['session_paths'].append([prev_path, curr_path])
-                            # regular_dict['sliced_wass'].append(sliced_wass)
-                            # regular_dict['bin_wass'].append(wass)
-                            regular_dict['score'].append(rate_score)
-                            regular_dict['wass'].append(wass)
+                        wass = pot_sliced_wasserstein(coord_buckets, coord_buckets, source_weights, target_weights, n_projections=settings['n_projections'])
+                        ref_wass_dist = list(map(lambda x, y: pot_sliced_wasserstein(coord_buckets, coord_buckets, x/np.sum(x), y/np.sum(y), n_projections=settings['n_projections']), prev_shuffled, curr_shuffled))
+                        ref_wass_mean = np.mean(ref_wass_dist)
+                        ref_wass_std = np.std(ref_wass_dist)
+                        t_score = (wass - ref_wass_mean) / (ref_wass_std)
+   
+                        pvalue = stats.t.cdf(t_score, len(ref_wass_dist)-1)
+                        # pvalue for wass, 2 sided
+                        # pvalue = 2 * stats.t.cdf(-np.abs(t_score), len(ref_wass_dist)-1)
+                        # pvalue = 2 * stats.norm.cdf(-np.abs(t_score))
 
+                        prev_shapiro_coeff, prev_shapiro_pval = stats.shapiro(prev_shuffled)
+                        curr_shapiro_coeff, curr_shapiro_pval = stats.shapiro(curr_shuffled)
+
+                        regular_dict['signature'].append([prev_path, curr_path])
+                        regular_dict['name'].append(name)
+                        regular_dict['date'].append(date)
+                        regular_dict['depth'].append(depth)
+                        regular_dict['unit_id'].append(cell_label)
+                        regular_dict['tetrode'].append(animal.animal_id.split('tet')[-1])
+                        regular_dict['session_ids'].append([prev_key, curr_key])
+                        regular_dict['whole_wass'].append(wass)
+                        regular_dict['spike_density_wass'].append(spike_dens_wass)
+                        regular_dict['t_score'].append(t_score)
+                        regular_dict['p_value'].append(pvalue)
+                        regular_dict['shapiro_pval'].append([prev_shapiro_pval, curr_shapiro_pval])
+                        regular_dict['shapiro_coeff'].append([prev_shapiro_coeff, curr_shapiro_coeff])
+                        regular_dict['base_mean'].append(ref_wass_mean)
+                        regular_dict['base_std'].append(ref_wass_std)
+                        regular_dict['avg_fr_change'].append(np.float64(np.mean(target_weights) - np.mean(source_weights)))
+                        regular_dict['std_fr_change'].append(np.float64(np.std(target_weights) - np.std(source_weights)))
+                        regular_dict['n_repeats'].append(settings['n_repeats'])
+                        regular_dict['arena_size'].append([prev_spatial_spike_train.arena_size, curr_spatial_spike_train.arena_size])
+                        regular_dict['cylinder'].append(cylinder)
+                        assert prev.shape == curr.shape
+                        regular_dict['ratemap_dims'].append(curr.shape)
 
                         if settings['plotRegular']:
-                            plot_rate_remapping(prev, curr, regular_dict, data_dir)
+                            plot_regular_remapping(prev, curr, regular_dict, data_dir)
+
+                        if settings['plotShuffled']:
+                            plot_shuffled_regular_remapping(prev_shuffled, curr_shuffled, ref_wass_dist, prev_shuffled_samples, curr_shuffled_samples, regular_dict, data_dir)
 
                         if settings['runFields']:
-                            # blobs_dict_curr = curr_cell.stats['field_size_data']
-                            # blobs_dict_prev = prev_cell.stats['field_size_data']
 
                             image_prev, n_labels_prev, source_labels, source_centroids, field_sizes_prev = blobs_dict[prev_id]
 
                             image_curr, n_labels_curr, target_labels, target_centroids, field_sizes_curr = blobs_dict[curr_id]
 
-                            # target_labels, source_labels, source_centroids, target_centroids = _sort_filter_centroids_by_field_size(prev, curr, field_sizes_prev, field_sizes_curr, labels_prev, labels_curr, centroids_prev, centroids_curr, prev_spatial_spike_train.arena_size)
-
-                            # assert np.unique(target_labels).all() == np.unique(labels_curr).all()
-                            # assert np.unique(source_labels).all() == np.unique(labels_prev).all()
-
-                            # prev spatial spike train is source spatial spike train
-                            # field_wass, field_pairs, cumulative_wass, test_wass, centroid_wass, binary_wass = compute_centroid_remapping(target_labels, source_labels, curr_spatial_spike_train, prev_spatial_spike_train, target_centroids, source_centroids)
-                            # cumulative_wass = compute_cumulative_centroid_remapping(target_centers, source_labels, prev_spatial_spike_train, field_sizes_curr)
-                            # print(animal.animal_id, cell_label, animal.animal_id.split('tet')[-1], [prev_key, curr_key])
-                            
                             if len(np.unique(target_labels)) > 1 and len(np.unique(source_labels)) > 1:
 
                                 """
@@ -439,6 +632,9 @@ def compute_remapping(study, settings, data_dir):
                                     centroid_dict['tetrode'].append(animal.animal_id.split('tet')[-1])
                                     centroid_dict['session_ids'].append([prev_key, curr_key])
                                     centroid_dict['signature'].append([prev_path, curr_path])
+                                    centroid_dict['arena_size'].append(curr_spatial_spike_train.arena_size)
+                                    centroid_dict['cylinder'].append(cylinder)
+                                    centroid_dict['ratemap_dims'].append(curr.shape)
 
                                     # field wass is weighed, centroid wass is centre pts, binary wass is unweighed (as if was bianry map with even weight so one pt per position in map)
                                     # centroid_dict['cumulative_wass'].append([cumulative_dict['field_wass'], cumulative_dict['centroid_wass'], cumulative_dict['binary_wass']])
@@ -480,7 +676,7 @@ def compute_remapping(study, settings, data_dir):
                                     # centroid_dict['test_wass'].append(test_wass)
                                     # centroid_dict['centroid_wass'].append(centroid_wass)
 
-                                    centroid_dict = _fill_centroid_dict(centroid_dict, max_centroid_count, wass_to_add, permute_dict['pairs'], prev, source_labels, field_sizes_prev, curr, target_labels, field_sizes_curr)
+                                    centroid_dict = _fill_centroid_dict(centroid_dict, max_centroid_count, wass_to_add, permute_dict['pairs'], permute_dict['coords'], prev, source_labels, field_sizes_prev, curr, target_labels, field_sizes_curr)
 
                                 if settings['plotFields']:
                                     if cylinder:
@@ -500,6 +696,7 @@ def compute_remapping(study, settings, data_dir):
                     prev_cell = curr_cell
                     prev_key = curr_key
                     prev_path = curr_path
+                    prev_shuffled = curr_shuffled
                     # prev_plot = curr_plot
             
             # If there are context specific or otherwise specific groups to compare, can set those ids in settings
@@ -666,7 +863,6 @@ def _aggregate_cell_info(study, settings):
                 
 
                     if prev_field_size_len is not None:
-                        # print(len(field_sizes))
                         max_centroid_count = max(max_centroid_count, len(field_sizes) * prev_field_size_len)
                     else:
                         prev_field_size_len = len(field_sizes)
@@ -686,12 +882,6 @@ def _sort_filter_centroids_by_field_size(rate_map, field_sizes, blobs_map, centr
     if type(bin_area) == list:
         assert len(bin_area) == 1
         bin_area = bin_area[0]
-
-    # print('HEREEE')
-    # print(np.unique(blobs_map_source), np.unique(blobs_map_target), field_sizes_source, field_sizes_target)
-    # print(np.argsort(-np.array(field_sizes_source)))
-
-    # sort_idx_source = np.argsort(-np.array(field_sizes_source))
 
     # find not nan in prev/curr 
     row, col = np.where(np.isnan(rate_map))
@@ -715,8 +905,11 @@ def _sort_filter_centroids_by_field_size(rate_map, field_sizes, blobs_map, centr
             c_row = int(np.round(c_row))
             c_col = int(np.round(c_col))
 
-            pk_rate = rate_map[c_row, c_col]
+            # pk_rate = rate_map[c_row, c_col]  
+            # pk_rate = np.max(field)
+
             avg_rate = np.mean(field)
+            pk_rate = np.sum(field)
 
             pks.append(pk_rate)
             avgs.append(avg_rate)
@@ -728,21 +921,24 @@ def _sort_filter_centroids_by_field_size(rate_map, field_sizes, blobs_map, centr
 
     source_labels = np.zeros(blobs_map.shape)
     map_dict = {}
+    # source_centroids = []
+    # source_field_sizes = []
     for k in np.unique(blobs_map):
         if k != 0:
             row, col = np.where(blobs_map == k)
-            # print(k,len(row), len(col), bin_area)
             if (len(row) + len(col)) * bin_area > 22.5:
                 idx_to_move_to = np.where(sort_idx == k-1)[0][0]
                 # map_dict[k] = sort_idx_source[k-1] + 1
                 map_dict[k] = idx_to_move_to + 1
+                # source_centroids.append(centroids[k-1])
             else:
                 print('Blob filtered out with size less than 22.5 cm^2')
                 map_dict[k] = 0
+                # remove from sort_idx
+                sort_idx = sort_idx[np.where(sort_idx != k-1)[0]]
         else:
             map_dict[k] = 0
     source_labels = np.vectorize(map_dict.get)(blobs_map)
-    print(lbls, ids, sort_idx, centroids)
 
     if len(sort_idx) > 0:
         source_centroids = np.asarray(centroids)[sort_idx]
@@ -751,14 +947,17 @@ def _sort_filter_centroids_by_field_size(rate_map, field_sizes, blobs_map, centr
         source_centroids = np.asarray(centroids)
         source_field_sizes = np.asarray(field_sizes)
 
+    assert len(np.unique(source_labels)) - 1 == len(source_centroids) == len(source_field_sizes)
+
     return source_labels, source_centroids, source_field_sizes
 
-def _fill_centroid_dict(centroid_dict, max_centroid_count, wass_to_add, centroid_pairs, source_map, source_labels, source_field_sizes, target_map, target_labels, target_field_sizes):
+def _fill_centroid_dict(centroid_dict, max_centroid_count, wass_to_add, centroid_pairs, centroid_coords, source_map, source_labels, source_field_sizes, target_map, target_labels, target_field_sizes):
     # field_wass, centroid_wass, binary_wass = wass_args
     # to_add = wass_args
     for n in range(max_centroid_count):
         wass_key = 'c_wass_'+str(n+1)
         id_key = 'c_ids_'+str(n+1)
+        vector_key = 'c_vector_'+str(n+1)
         coverage_key = 'c_coverage_'+str(n+1)
         area_key = 'c_area_'+str(n+1)
         rate_key = 'c_rate_'+str(n+1)
@@ -769,6 +968,7 @@ def _fill_centroid_dict(centroid_dict, max_centroid_count, wass_to_add, centroid
             centroid_dict[coverage_key] = []
             centroid_dict[area_key] = []
             centroid_dict[rate_key] = []
+            centroid_dict[vector_key] = []
 
         if n < len(wass_to_add):
             centroid_dict[wass_key].append(wass_to_add[n])
@@ -792,31 +992,18 @@ def _fill_centroid_dict(centroid_dict, max_centroid_count, wass_to_add, centroid
             target_field_area = len(np.where(labels_curr == centroid_pairs[n][1])[0])
             target_field_rate = np.sum(target_map[val_r, val_c])
 
-
-            # row, col = np.where(~np.isnan(source_map))
-            # disk_ids = np.array([row, col]).T
-            # source_field_coverage = np.max(source_field_sizes)
-            # source_field_area = len(np.where(source_labels == centroid_pairs[n][0])[0])
-            # row, col = np.where(source_labels == 1)
-            # whole_map_ids = np.array([row, col]).T
-            # map_disk_ids = set(map(tuple, filter(lambda x: np.all(np.isin(tuple(x), whole_map_ids)), disk_ids))) 
-            # source_field_rate = np.sum(source_map[np.array(list(map_disk_ids))[:,0], np.array(list(map_disk_ids))[:,1]])
-
-            # row, col = np.where(~np.isnan(target_map))
-            # disk_ids = np.array([row, col]).T
-            # target_field_coverage = np.max(target_field_sizes)
-            # target_field_area = len(np.where(target_labels == centroid_pairs[n][1])[0])
-            # row, col = np.where(target_labels == 1)
-            # whole_map_ids = np.array([row, col]).T
-            # map_disk_ids = set(map(tuple, filter(lambda x: np.all(np.isin(tuple(x), whole_map_ids)), disk_ids))) 
-            # # target_field_rate = np.sum(target_map[row, col])
-            # target_field_rate = np.sum(target_map[np.array(list(map_disk_ids))[:,0], np.array(list(map_disk_ids))[:,1]])
+            source_r, source_c = centroid_coords[n][0]
+            target_r, target_c = centroid_coords[n][1]
+            mag = np.linalg.norm(np.array((source_r, source_c)) - np.array((target_r, target_c)))
+            pt1 = (source_r, source_c)
+            pt2 = (target_r, target_c)
+            angle = np.degrees(np.math.atan2(np.linalg.det([pt1,pt2]),np.dot(pt1,pt2)))
 
             
-            # print(len(disk_ids), len(whole_map_ids), len(np.array(list(map_disk_ids))))
             centroid_dict[coverage_key].append([source_field_coverage, target_field_coverage])
             centroid_dict[area_key].append([source_field_area, target_field_area])
             centroid_dict[rate_key].append([source_field_rate, target_field_rate])
+            centroid_dict[vector_key].append([pt1, pt2, mag, angle])
             
         else:
             centroid_dict[wass_key].append(np.nan)
@@ -824,6 +1011,7 @@ def _fill_centroid_dict(centroid_dict, max_centroid_count, wass_to_add, centroid
             centroid_dict[coverage_key].append([np.nan, np.nan])
             centroid_dict[area_key].append([np.nan, np.nan])
             centroid_dict[rate_key].append([np.nan, np.nan])
+            centroid_dict[vector_key].append([np.nan, np.nan, np.nan, np.nan])
 
         # if wass_key not in centroid_dict:
         #     centroid_dict[wass_key] = []
