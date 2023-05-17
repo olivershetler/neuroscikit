@@ -39,7 +39,7 @@ def plot_regular_remapping(prev, curr, plot_settings, data_dir):
     fprefix = 'ratemap_cell_{}_tet_{}_ses_{}_{}_unit_{}'.format(name, tetrode, prev_key, curr_key, unit_id)
 
     ftemplate_short = "{}.{}"
-    fshort = ftemplate_short.format(fprefix, 'pdf')
+    fshort = ftemplate_short.format(fprefix, 'png')
     fp = os.path.join(save_dir, fshort)
     fig.f.savefig(fp, dpi=360.)
     plt.close(fig.f)
@@ -87,7 +87,7 @@ def plot_shuffled_regular_remapping(prev, curr, ref_wass_dist, prev_sample, curr
     fprefix = 'baseeline_cell_{}_tet_{}_ses_{}_{}_unit_{}'.format(name, tetrode, prev_key, curr_key, unit_id)
 
     ftemplate_short = "{}.{}"
-    fshort = ftemplate_short.format(fprefix, 'pdf')
+    fshort = ftemplate_short.format(fprefix, 'png')
     fp = os.path.join(save_dir, fshort)
     fig.f.savefig(fp)
     plt.close(fig.f)
@@ -128,7 +128,7 @@ def plot_obj_remapping(obj_rate_map, ses_rate_map, labels, centroids, plot_setti
     fprefix = 'obj_ratemap_cell_{}_tet_{}_ses_{}_{}_unit_{}'.format(name, tetrode, ses_key, object_location, unit_id)
 
     ftemplate_short = "{}.{}"
-    fshort = ftemplate_short.format(fprefix, 'pdf')
+    fshort = ftemplate_short.format(fprefix, 'png')
     fp = os.path.join(save_dir, fshort)
     fig.f.savefig(fp, dpi=360.)
     plt.close(fig.f)
@@ -182,7 +182,7 @@ def plot_fields_remapping(label_s, label_t, spatial_spike_train_s, spatial_spike
     fprefix = 'fields_ratemap_cell_{}_tet_{}_ses_{}_{}_unit_{}'.format(name, tetrode, prev_key, curr_key, unit_id)
 
     ftemplate_short = "{}.{}"
-    fshort = ftemplate_short.format(fprefix, 'pdf')
+    fshort = ftemplate_short.format(fprefix, 'png')
     fp = os.path.join(save_dir, fshort)
     fig.f.savefig(fp, dpi=360.)
     plt.close(fig.f)
