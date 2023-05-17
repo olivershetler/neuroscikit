@@ -16,7 +16,7 @@ GLOBAL SETTINGS
 """
 
 settings_dict['session']['channel_count'] = 4
-settings_dict['ppm'] = None # EDIT HERE (will auto read from file if None, otherwise will override with this value)
+settings_dict['ppm'] = 485 # EDIT HERE (will auto read from file if None, otherwise will override with this value)
 settings_dict['smoothing_factor'] = 3 # EDIT HERE (for plotting)
 settings_dict['useMatchedCut'] = True # EDIT HERE (NECESSARY TO BE TRUE OR TO HAVE MANUALLY MATCHED CUT FILES)
 settings_dict['n_projections'] = 10**2 # EDIT HERE (10**3 is slow,  50 (default) is faster but less accurate, 10**2 is middle ground --> look paper)

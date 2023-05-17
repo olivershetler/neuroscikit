@@ -118,11 +118,12 @@ def _arena_config(posx, posy, ppm, center, flip_y=True):
     positions due to the camera position. However in the virtualmaze you might not want to flip y values.
     :return:
     """
+    print('PPM HERE: ', ppm)
     center = center
     conversion = ppm
 
     posx = 100 * (posx - center[0]) / conversion
-
+    
     if flip_y:
         # flip the y axis
         posy = 100 * (-posy + center[1]) / conversion
@@ -178,9 +179,13 @@ def _get_position(pos_fpath, ppm=None, method='', flip_y=True):
                 timebase = (line.decode(encoding='UTF-8')[len('timebase '):]).split(' ')[0]
                 headers += line.decode(encoding='UTF-8')
             elif 'pixels_per_metre' in str(line):
-                # print('READING PIXELS PER METRE FROM FILE')
-                ppm = float(line.decode(encoding='UTF-8')[len('pixels_per_metre '):])
+                new_ppm = float(line.decode(encoding='UTF-8')[len('pixels_per_metre '):])
                 headers += line.decode(encoding='UTF-8')
+                if ppm is None:
+                    print('DECODING PPM FROM FILE')
+                    ppm = new_ppm
+                else:
+                    print('USING PPM YOU SET IN SETTINGS')
             elif 'min_x' in str(line) and 'window' not in str(line):
                 min_x = int(line.decode(encoding='UTF-8')[len('min_x '):])
                 headers += line.decode(encoding='UTF-8')

@@ -213,6 +213,8 @@ def compute_remapping(study, settings, data_dir):
 
                     y, x = curr.shape
                     h, w = rate_map_obj.arena_size
+                    print('SEARCHTHIS')
+                    print(h, w)
                     bin_area = h/y * w/x
 
                     # If object used in experiment 
