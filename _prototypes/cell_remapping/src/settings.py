@@ -29,10 +29,10 @@ settings_dict['ratemap_dims'] = (64,64) # EDIT HERE (16,16) is default, (32,32) 
 IF YOU ARE DOING REGULAR REMAPPING
 """
 
-settings_dict['plotRegular'] = True # EDIT HERE
+settings_dict['plotRegular'] = False # EDIT HERE
 settings_dict['normalizeRate'] = True # EDIT HERE --> NORMALIZED FOR ALL CASES 
 settings_dict['rate_scores'] = ['whole', 'spike_density']
-settings_dict['n_repeats'] = 300 # EDIT HERE 
+settings_dict['n_repeats'] = 250 # EDIT HERE 
 settings_dict['plotShuffled'] = True # EDIT HERE
 
 
@@ -43,7 +43,12 @@ IF YOU ARE DOING OBJECT REMAPPING
 settings_dict['hasObject'] = True # EDIT HERE
 settings_dict['plotObject'] = True # EDIT HERE
 settings_dict['object_scores'] = ['whole', 'field', 'binary', 'centroid', 'spike_density']
-settings_dict['grid_sample_threshold'] = 3.2 # EDIT HERE, euclidean distance
+# settings_dict['grid_sample_threshold'] = 3.2 # EDIT HERE, euclidean distance
+settings_dict['spacing'] = 3.2 # EDIT HERE, same unit as arena height and width
+settings_dict['hexagonal'] = True # EDIT HERE, sampling scheme, hexagonal=True or rectangular=True (so hexagonal=False)
+
+settings_dict['downsample'] = True # EDIT HERE
+settings_dict['downsample_factor'] = 2 # EDIT HERE
 
 variations = [0,90,180,270,'NO'] # EDIT HERE
 
@@ -85,7 +90,7 @@ obj_keys = ['signature','depth', 'name', 'date','tetrode','unit_id','session_id'
             'obj_vec_0', 'obj_vec_90', 'obj_vec_180', 'obj_vec_270', 'obj_vec_NO',
             'bin_area', 'total_rate', 'field_peak_rate',
             'field_coverage', 'field_area', 'field_rate', 'cumulative_coverage', 'cumulative_area', 'cumulative_rate',
-            'arena_size', 'cylinder', 'ratemap_dims', 'grid_sample_threshold', 'grid_sample_size']
+            'arena_size', 'cylinder', 'ratemap_dims', 'spacing', 'hexagonal', 'sample_size']
 
 centroid_keys = ['signature','depth', 'name', 'date','tetrode','unit_id','session_ids','cumulative_wass',
                  'score', 'field_count', 'bin_area', 'arena_size',

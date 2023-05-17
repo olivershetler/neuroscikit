@@ -28,27 +28,130 @@ def shuffle_spikes(ts: np.ndarray, pos_x: np.ndarray,
                 Array where columns are shuffled x and y spike coordinates respectively.
     '''
 
-    spike_x = np.zeros((1,len(ts)))
-    spike_y = np.zeros((1,len(ts)))
-    shuffled_spike_xy = np.zeros((2,len(ts)))
+    # spike_x = np.zeros((1,len(ts)))
+    # spike_y = np.zeros((1,len(ts)))
+    # shuffled_spike_xy = np.zeros((2,len(ts)))
     # Compute a shuffling between 20 and 100
 
-    shuffled_times = _shuffle(ts, 20, 100, t_start=min(ts), t_stop = max(ts))[0]
+    # shuffled_times = _shuffle(ts, 20, 1, t_start=min(ts), t_stop = max(ts))[0]
 
-    shuffled_spikes = []
+    # shuffled_spikes = []
+    # # For each shuffled time, find and place the corresponding
+    # # spike x and y coordinates into the shuffled_spikes array
+    # for i, single_shuffled_time in enumerate(shuffled_times):
+    #     for j, time in enumerate(single_shuffled_time):
+    #         index = np.abs(pos_t - time).argmin()
+    #         spike_x[0][j] = pos_x[index]
+    #         spike_y[0][j] = pos_y[index]
+
+    #     shuffled_spike_xy[0] = spike_x
+    #     shuffled_spike_xy[1] = spike_y
+    #     shuffled_spikes.append(shuffled_spike_xy.copy())
+
+    shuffled_times = _single_shuffle(ts, 20, t_start=min(ts), t_stop = max(ts))[0]
+
+    # shuffled_spikes = []
+    spike_x = []
+    spike_y = []
     # For each shuffled time, find and place the corresponding
     # spike x and y coordinates into the shuffled_spikes array
-    for i, single_shuffled_time in enumerate(shuffled_times):
-        for j, time in enumerate(single_shuffled_time):
-            index = np.abs(pos_t - time).argmin()
-            spike_x[0][j] = pos_x[index]
-            spike_y[0][j] = pos_y[index]
+    for j, time in enumerate(shuffled_times):
+        index = np.abs(pos_t - time).argmin()
+        spike_x.append(pos_x[index])
+        spike_y.append(pos_y[index])
 
-        shuffled_spike_xy[0] = spike_x
-        shuffled_spike_xy[1] = spike_y
-        shuffled_spikes.append(shuffled_spike_xy.copy())
+    # shuffled_spike_xy[0] = spike_x
+    # shuffled_spike_xy[1] = spike_y
+    # shuffled_spikes.append(shuffled_spike_xy.copy())
 
-    return shuffled_spikes
+    assert len(shuffled_times.squeeze()) == len(ts), 'Shuffled times {} and original times {} are not the same length'.format(len(shuffled_times), len(ts))
+
+    return np.array(spike_x).squeeze(), np.array(spike_y).squeeze(), shuffled_times.squeeze()
+
+def _single_shuffle(times, offset_lim, t_start, t_stop):
+    iterations = 1
+
+    if offset_lim >= 0.5 * (t_stop - t_start):
+        offset_lim = int(0.5 * (t_stop - t_start))
+        if offset_lim == 0.5 * (t_stop - t_start):
+            offset_lim -= 1
+
+    # Argument checking begins here
+    if not isinstance(times, np.ndarray):
+        raise errors.ArgumentError(
+            "`times` must be 1 Numpy array ({})".format(type(times))
+        )
+    if not times.ndim == 1:
+        raise errors.ArgumentError("`times` must be a 1D array ({})".format(times.ndim))
+    if not np.isfinite(times).all():
+        raise errors.ArgumentError("`times` cannot include non-finite or NaN values")
+
+    if offset_lim <= 0:
+        raise errors.ArgumentError(
+            "`offset_lim` must be greater than zero ({}".format(offset_lim)
+        )
+    if not np.isfinite(offset_lim):
+        raise errors.ArgumentError(
+            "`offset_lim` must be finite ({})".format(offset_lim)
+        )
+
+    if not np.isfinite(iterations):
+        raise errors.ArgumentError("`iterations` must be finite".format(iterations))
+
+    if not np.isfinite(t_start):
+        raise errors.ArgumentError("`t_start` must be finite".format(t_start))
+    if not np.isfinite(t_stop):
+        raise errors.ArgumentError("`t_stop` must be finite".format(t_stop))
+
+    if t_start is None:
+        t_start = min(times)
+    if t_stop is None:
+        t_stop = max(times)
+
+    if t_start > min(times):
+        raise errors.ArgumentError(
+            "`t_start` must be greater than or equal to `min(times)`"
+        )
+    if t_stop < max(times):
+        raise errors.ArgumentError(
+            "`t_stop` must be less than or equal to `max(times)`"
+        )
+
+    if t_start == t_stop:
+        raise errors.ArgumentError(
+            "`t_start` and `t_stop` cannot be identical ({})".format(t_start)
+        )
+
+    if offset_lim >= 0.5 * (t_stop - t_start):
+        raise errors.ArgumentError(
+            "`offset_lim` must be less than half of the time span ({}, {})".format(
+                offset_lim, t_stop - t_start
+            )
+        )
+    # argument checking ends here
+
+    # Main logic begins here
+    increments_base = np.random.RandomState().rand(
+        iterations
+    )  # uniformly distributed in [0,1]
+    increments = (
+        t_start + offset_lim + (increments_base * (t_stop - t_start - 2 * offset_lim))
+    )
+
+    output = times + increments
+    output = output.squeeze()
+
+    # Circularising: i.e. folding times outside the boundary back inside the
+    # boundary, and then re-ordering by the updated, refolded times
+    out_of_bounds = output > t_stop
+    output[out_of_bounds] = output[out_of_bounds] - (t_stop - t_start)
+
+    assert len(output.shape) == 1, "output.shape is not 1D ({})".format(output.shape)
+    # output.sort(axis=1)  # sort along each row independently of all other rows.
+    output = np.sort(output)
+
+    return output, increments
+
 
 """"""""""""""""""""""""""" From Opexebo https://pypi.org/project/opexebo/ """""""""""""""""""""""""""
 

@@ -4,16 +4,17 @@ import itertools
 import re
 import matplotlib.pyplot as plt
 import copy
-from scipy.spatial.distance import euclidean
 from scipy import stats
+from skimage.measure import block_reduce
+import cv2
 
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
 
 from library.hafting_spatial_maps import SpatialSpikeTrain2D
-from _prototypes.cell_remapping.src.rate_map_plots import plot_obj_remapping, plot_regular_remapping, plot_fields_remapping, plot_shuffled_regular_remapping
+from _prototypes.cell_remapping.src.rate_map_plots import plot_obj_remapping, plot_regular_remapping, plot_fields_remapping, plot_shuffled_regular_remapping, plot_matched_sesssion_waveforms
 from _prototypes.cell_remapping.src.wasserstein_distance import sliced_wasserstein, single_point_wasserstein, pot_sliced_wasserstein, compute_centroid_remapping, _get_ratemap_bucket_midpoints
-from _prototypes.cell_remapping.src.masks import make_object_ratemap, check_disk_arena, flat_disk_mask
+from _prototypes.cell_remapping.src.masks import make_object_ratemap, check_disk_arena, flat_disk_mask, generate_grid, _sample_grid
 from library.maps import map_blobs
 from scripts.batch_map.batch_map import batch_map 
 from _prototypes.cell_remapping.src.settings import obj_output, centroid_output, tasks, session_comp_categories, regular_output, context_output, variations
@@ -46,28 +47,7 @@ TODO (in order of priority)
 - Implement globabl remapping? Just average ratemaps across all cells in session and use average ratemap of each session in sliced wass
 
 """
-
-# adapted from https://gis.stackexchange.com/questions/436908/selecting-n-samples-uniformly-from-a-grid-points
-def _sample_grid(ids, threshold=3):
-    first = True
-    valid = []
-
-    # def _sample_pt(point, first, valid):
-    for point in ids:
-        if first:
-            # print('first')
-            valid.append([point[0], point[1]])
-            first = False
-        else:                    
-            point = [point[0], point[1]]
-            if any((euclidean(point, point_ok) < threshold for point_ok in valid)):
-                # print('rejected')
-                pass
-            else:
-                valid.append(point)
-
-    return np.array(valid)
-                                
+                    
 def _check_single_format(filename, format, fxn):
     if re.match(str(format), str(filename)) is not None:
         return fxn(filename)
@@ -78,13 +58,28 @@ def _single_shuffled_sample(spatial_spike_train, settings):
         rate_map = norm
         # rate_map = rate_map / np.sum(rate_map)
     else:
-        rate_map = raw        
-    return rate_map  
+        rate_map = raw   
+
+    # check no nans
+    assert np.isnan(rate_map).any() == False, "rate map contains nans pre downsampling"
+
+    if settings['downsample']:
+        rate_map = _downsample(rate_map, settings['downsample_factor'])
+
+    # check no nans
+    assert np.isnan(rate_map).any() == False, "rate map contains nans post downsampling"
+    
+
+    return rate_map 
+
+def _downsample(img, downsample_factor):
+    downsampled = block_reduce(img, downsample_factor) 
+    return downsampled
     
 
 def compute_remapping(study, settings, data_dir):
 
-    c = 0
+    # c = 0
 
     batch_map(study, tasks, ratemap_size=settings['ratemap_dims'][0])
 
@@ -93,14 +88,21 @@ def compute_remapping(study, settings, data_dir):
 
         ratemap_size = settings['ratemap_dims'][0]
 
-        non_disk_ids = list(itertools.product(np.arange(0, ratemap_size), np.arange(0, ratemap_size)))
-        fake_map = np.zeros((ratemap_size, ratemap_size))
-        fake_map = flat_disk_mask(fake_map)
-        row, col = np.where(~np.isnan(fake_map))
-        valid_disk_indices = np.array([row, col]).T
+        # non_disk_ids = list(itertools.product(np.arange(0, ratemap_size), np.arange(0, ratemap_size)))
+        # fake_map = np.random.random((ratemap_size, ratemap_size))
+        # if settings['downsample']:
+        #     fake_map = _downsample(fake_map, settings['downsample_factor'])
+        #     # fake_map = np.random.random((ratemap_size // settings['downsample_factor'], ratemap_size // settings['downsample_factor']))
+        # fake_map = flat_disk_mask(fake_map)
+        # row, col = np.where(~np.isnan(fake_map))
+        # valid_disk_indices = np.array([row, col]).T
 
-        non_disk_grid_sample = _sample_grid(non_disk_ids, settings['grid_sample_threshold'])
-        disk_grid_sample = _sample_grid(valid_disk_indices, settings['grid_sample_threshold'])
+        # non_disk_grid_sample = _sample_grid(non_disk_ids, settings['grid_sample_threshold'])
+        # disk_grid_sample = _sample_grid(valid_disk_indices, settings['grid_sample_threshold'])?
+
+        # non_disk_grid_sample = generate_grid()
+
+        
 
     centroid_dict = copy.deepcopy(centroid_output)
     regular_dict = copy.deepcopy(regular_output)
@@ -130,6 +132,7 @@ def compute_remapping(study, settings, data_dir):
             # prev ratemap
             prev = None
             curr_shuffled = None
+            cell_session_appearances = []
             
             # for every session
             for i in range(len(list(animal.sessions.keys()))):
@@ -169,6 +172,7 @@ def compute_remapping(study, settings, data_dir):
                 # Check if cell id we're iterating through is present in the ensemble of this sessions
                 if cell_label in ensemble.get_cell_label_dict():
                     cell = ensemble.get_cell_by_id(cell_label)
+                    cell_session_appearances.append(cell)
 
                     # spatial_spike_train = ses.make_class(SpatialSpikeTrain2D, {'cell': cell, 'position': pos_obj})
 
@@ -186,10 +190,20 @@ def compute_remapping(study, settings, data_dir):
                     # Disk mask ratemap
                     if cylinder:
                         curr = flat_disk_mask(rate_map)
-                        # curr_plot = disk_mask(rate_map)
+                        if settings['downsample']:
+                            curr_ratemap = _downsample(rate_map, settings['downsample_factor'])
+                            curr_ratemap = flat_disk_mask(curr_ratemap)
+                        else:
+                            curr_ratemap = curr
+                        row, col = np.where(~np.isnan(curr_ratemap))
+                        disk_ids = np.array([row, col]).T
                     else:
                         curr = rate_map
-                        # curr_plot = curr
+                        if settings['downsample']:
+                            curr_ratemap = _downsample(rate_map, settings['downsample_factor']) 
+                        else:
+                            curr_ratemap = curr
+                        disk_ids = None
                     
                     curr_cell = cell
                     curr_spatial_spike_train = spatial_spike_train
@@ -206,50 +220,74 @@ def compute_remapping(study, settings, data_dir):
 
                         _, _, labels, centroids, field_sizes = blobs_dict[curr_id]
                                     
-                        labels_curr = np.copy(labels)
-                        labels_curr[np.isnan(curr)] = 0
-                        c_count = len(np.unique(labels_curr)) - 1
+                        labels_copy = np.copy(labels)
+                        labels_copy[np.isnan(curr)] = 0
+                        c_count = len(np.unique(labels_copy)) - 1
 
                         # make all field labels = 1
-                        labels_curr[labels_curr != 0] = 1
-                        val_r, val_c = np.where(labels_curr == 1)
+                        labels_copy[labels_copy != 0] = 1
+                        val_r, val_c = np.where(labels_copy == 1)
                         # cumulative_coverage = np.max(field_sizes)
-                        cumulative_coverage = len(np.where(labels_curr != 0)[0])/len(np.where(~np.isnan(curr))[0])
-                        cumulative_area = len(np.where(labels_curr == 1)[0])
+                        cumulative_coverage = len(np.where(labels_copy != 0)[0])/len(np.where(~np.isnan(curr))[0])
+                        cumulative_area = len(np.where(labels_copy == 1)[0])
                         cumulative_rate = np.sum(curr[val_r, val_c])
 
                         height_bucket_midpoints, width_bucket_midpoints = _get_ratemap_bucket_midpoints(rate_map_obj.arena_size, y, x)
 
+                        if settings['downsample']:
+                            # labels = _downsample(labels, settings['downsample_factor'])
+                            dfactor = settings['downsample_factor']
+                            labels_resized = cv2.resize(labels, (labels.shape[1]//dfactor, labels.shape[0]//dfactor), interpolation=cv2.INTER_NEAREST)
+                            curr_labels = np.array(labels_resized).astype('uint8')
+                            # check no nans
+                            assert np.isnan(curr_labels).all() == False, 'Downsampling error curr labels {}'.format(np.unique(curr_labels))
+                            curr_labels = flat_disk_mask(curr_labels)
+                            # re-add nans for disk mask
+                            # rnan, cnan = np.where(np.isnan(labels))
+                            # curr_labels = np.copy(labels_resized).astype('float')
+                            # curr_labels[rnan, cnan] = np.nan
+
+                            assert np.unique(curr_labels[~np.isnan(curr_labels)]).all() == np.unique(labels).all(), 'Downsampling error curr labels {} vs labels {}'.format(np.unique(curr_labels), np.unique(labels))
+                        else:
+                            curr_labels = labels
+
                         # n_repeats = 100
 
-                        if cylinder:
-                            # row, col = np.where(~np.isnan(curr))
-                            # disk_ids = np.array([row, col]).T
-                            # # resampled_positions = list(map(lambda x: disk_ids[np.random.choice(np.arange(len(disk_ids)),size=1)[0]] , np.arange(0, n_repeats)))
-                            # # resampled_positions = disk_ids[np.random.choice(np.arange(len(disk_ids)),size=n_repeats, replace=True)]
-                            # resampled_positions = _sample_grid(disk_ids, 3)
-                            resampled_positions = disk_grid_sample
-                        else:
-                            # options = list(itertools.product(np.arange(0, curr.shape[0]), np.arange(0, curr.shape[1])))
-                            # # resampled_positions = list(map(lambda x: options[np.random.choice(np.arange(len(options)),size=1)[0]] , np.arange(0, n_repeats)))
-                            # # resampled_positions = np.array(options)[np.random.choice(np.arange(len(options)),size=n_repeats, replace=True)]
-                            # resampled_positions = _sample_grid(options, 3)
-                            resampled_positions = non_disk_grid_sample
+                        # if cylinder:
+                        #     # row, col = np.where(~np.isnan(curr))
+                        #     # disk_ids = np.array([row, col]).T
+                        #     # # resampled_positions = list(map(lambda x: disk_ids[np.random.choice(np.arange(len(disk_ids)),size=1)[0]] , np.arange(0, n_repeats)))
+                        #     # # resampled_positions = disk_ids[np.random.choice(np.arange(len(disk_ids)),size=n_repeats, replace=True)]
+                        #     # resampled_positions = _sample_grid(disk_ids, 3)
+                        #     resampled_positions = disk_grid_sample
+                        # else:
+                        #     # options = list(itertools.product(np.arange(0, curr.shape[0]), np.arange(0, curr.shape[1])))
+                        #     # # resampled_positions = list(map(lambda x: options[np.random.choice(np.arange(len(options)),size=1)[0]] , np.arange(0, n_repeats)))
+                        #     # # resampled_positions = np.array(options)[np.random.choice(np.arange(len(options)),size=n_repeats, replace=True)]
+                        #     # resampled_positions = _sample_grid(options, 3)
+                        #     resampled_positions = non_disk_grid_sample
+
+                        resampled_positions = generate_grid(rate_map_obj.arena_size[0], rate_map_obj.arena_size[1], 
+                                                                settings['spacing'], is_hexagonal=settings['hexagonal'], is_cylinder=cylinder)
 
                         print('Resampled positions: ', len(resampled_positions), len(resampled_positions[0]))
 
                         obj_map_dict = {}
                         for var in variations:
-                            object_ratemap, object_pos = make_object_ratemap(var, rate_map_obj, new_size=settings['ratemap_dims'][0])
+
+                            if settings['downsample']:
+                                object_ratemap, object_pos = make_object_ratemap(var, new_size=int(settings['ratemap_dims'][0]/settings['downsample_factor']))
+                            else:
+                                object_ratemap, object_pos = make_object_ratemap(var, new_size=settings['ratemap_dims'][0])
 
                             if cylinder:
                                 object_ratemap = flat_disk_mask(object_ratemap)
-                                disk_ids = valid_disk_indices
+                                # disk_ids = valid_disk_indices
                                 # ids where not nan
                             #     row, col = np.where(~np.isnan(object_ratemap))
                             #     disk_ids = np.array([row, col]).T
-                            else:
-                                disk_ids = None
+                            # else:
+                                # disk_ids = None
 
                             obj_map_dict[var] = [object_ratemap, object_pos, disk_ids]
                         
@@ -282,7 +320,7 @@ def compute_remapping(study, settings, data_dir):
                                         obj_y = height_bucket_midpoints[object_pos[0]]
                                         obj_x = width_bucket_midpoints[object_pos[1]] 
 
-                                    y, x = object_ratemap.shape
+                                    y, x = curr.shape
                                     height_bucket_midpoints, width_bucket_midpoints = _get_ratemap_bucket_midpoints(curr_spatial_spike_train.arena_size, y, x)
 
                                     # EMD on norm/unnorm ratemap + object map for OBJECT remapping
@@ -290,8 +328,13 @@ def compute_remapping(study, settings, data_dir):
                                         # if var == 'no':
                                         #     obj_wass = pot_sliced_wasserstein(coord_buckets, coord_buckets, source_weights, target_weights, n_projections=settings['n_projections'])
                                         # else:
-                                        obj_wass = single_point_wasserstein(object_pos, curr, rate_map_obj.arena_size, ids=disk_ids)
 
+                                        obj_wass = single_point_wasserstein(object_pos, curr_ratemap, rate_map_obj.arena_size, ids=disk_ids)
+
+                                        # if obj_wass != obj_wass:
+                                        #     print('NAN OBJ WASS')
+                                        #     print(curr_ratemap.shape, disk_ids)
+                                        #     print(curr_ratemap)
                                         # n_repeats = 1000
                                         # if disk_ids is not None:
                                         #     resampled_positions = list(map(lambda x: disk_ids[np.random.choice(np.arange(len(disk_ids)),size=1)[0]] , np.arange(0, n_repeats)))
@@ -301,8 +344,13 @@ def compute_remapping(study, settings, data_dir):
                                         
                                         # compute EMD on resamples
                                         if resampled_wass is None:
-                                            resampled_wass = list(map(lambda x: single_point_wasserstein(x, curr, rate_map_obj.arena_size, ids=disk_ids), resampled_positions))
+                                            resampled_wass = list(map(lambda x: single_point_wasserstein(x, curr_ratemap, rate_map_obj.arena_size, ids=disk_ids, use_pos_directly=True), resampled_positions))
                                         quantile = (resampled_wass < obj_wass).mean()
+
+                                        # if quantile != quantile:
+                                        #     print('NAN QUANTILE')
+                                        #     print(resampled_wass)
+                                        #     print(obj_wass)
 
                                         # find row col of peak firing rate bin
                                         r, c = np.where(curr == np.nanmax(curr))
@@ -319,7 +367,8 @@ def compute_remapping(study, settings, data_dir):
                                         # field ids is ids of binary field/map blolb
 
                                         # TAKE ONLY MAIN FIELD --> already sorted by size
-                                        row, col = np.where(labels == label_id)
+                                        row, col = np.where(curr_labels == label_id)
+
                                         field_ids = np.array([row, col]).T
                                         if cylinder:
                                             # take ids that are both in disk and in field
@@ -334,13 +383,26 @@ def compute_remapping(study, settings, data_dir):
                                         # NEED TO NORMALIZE FIELD NOT WHOLE MAP
                                         # save total mass in firing field, save area for each field
                                         # remember long format
-                                        obj_wass = single_point_wasserstein(object_pos, curr, rate_map_obj.arena_size, ids=field_disk_ids)
+                                        obj_wass = single_point_wasserstein(object_pos, curr_ratemap, rate_map_obj.arena_size, ids=field_disk_ids)
+
+                                        # if label_id == 1 or label_id == 2:
+                                        #     print('LABEL ID: ', label_id)
+                                        #     print(len(row), len(col), len(field_disk_ids), len(disk_ids))
+                                        #     if len(row) == 0:
+                                        #         print('NO FIELD FOR LABEL: ', label_id)
+                                        #     print(np.unique(curr_labels), np.unique(labels))
+                                        #     print(curr_labels)
+                                        #     print(obj_wass)
+                                        #     print(np.sum(curr_ratemap), np.sum(curr))
+                                        #     print(np.sum(curr_ratemap[disk_ids[:,0],disk_ids[:,1]]), np.sum(curr[disk_ids[:,0],disk_ids[:,1]]))
+                                        #     print(np.sum(curr_ratemap[field_disk_ids[:,0], field_disk_ids[:,1]]), np.sum(curr[field_disk_ids[:,0], field_disk_ids[:,1]]))
+                                        #     print(curr_ratemap[field_disk_ids[:,0], field_disk_ids[:,1]])
                                     
                                         # n_repeats = 1000
                                         # resampled_positions = list(map(lambda x: field_disk_ids[np.random.choice(np.arange(len(field_disk_ids)),size=1)[0]] , np.arange(0, n_repeats)))
                                         # compute EMD on resamples
                                         if resampled_wass is None:
-                                            resampled_wass = list(map(lambda x: single_point_wasserstein(x, curr, rate_map_obj.arena_size, ids=field_disk_ids), resampled_positions))
+                                            resampled_wass = list(map(lambda x: single_point_wasserstein(x, curr_ratemap, rate_map_obj.arena_size, ids=field_disk_ids, use_pos_directly=True), resampled_positions))
                                         quantile = (resampled_wass < obj_wass).mean()
 
 
@@ -369,7 +431,7 @@ def compute_remapping(study, settings, data_dir):
                                         # source_pts = np.array([[obj_y], [obj_x]]).T
 
                                         # obj_wass = pot_sliced_wasserstein(source_pts, curr_pts, n_projections=settings['n_projections'])
-                                        obj_wass = single_point_wasserstein(object_pos, curr, rate_map_obj.arena_size, density=True, density_map=curr_pts)
+                                        obj_wass = single_point_wasserstein(object_pos, curr_ratemap, rate_map_obj.arena_size, density=True, density_map=curr_pts, use_pos_directly=False)
 
                                         # if var == 'NO':
                                         #     plt.scatter(curr_pts[:,1], curr_pts[:,0], s=2, c='k', alpha=1)
@@ -384,7 +446,7 @@ def compute_remapping(study, settings, data_dir):
                                         # n_repeats = 1000
                                         # compute EMD on resamples
                                         if resampled_wass is None:
-                                            resampled_wass = list(map(lambda x: single_point_wasserstein(x, curr, rate_map_obj.arena_size, density=True, density_map=curr_pts), resampled_positions))
+                                            resampled_wass = list(map(lambda x: single_point_wasserstein(x, curr_ratemap, rate_map_obj.arena_size, density=True, density_map=curr_pts, use_pos_directly=True), resampled_positions))
                                         quantile = (resampled_wass < obj_wass).mean()
 
                                         # avg across all points
@@ -401,7 +463,7 @@ def compute_remapping(study, settings, data_dir):
                                         #     row, col = np.where(~np.isnan(object_ratemap))
                                         # else:
                                         #     # TAKE ONLY MAIN FIELD --> already sorted by size
-                                        row, col = np.where(labels == label_id)
+                                        row, col = np.where(curr_labels == label_id)
                                         
                                         field_ids = np.array([row, col]).T
 
@@ -412,7 +474,7 @@ def compute_remapping(study, settings, data_dir):
                                         else:
                                             field_disk_ids = field_ids
 
-                                        curr_masked = np.zeros((curr.shape))
+                                        curr_masked = np.zeros((curr_labels.shape))
                                         curr_masked[field_disk_ids[:,0], field_disk_ids[:,1]] = 1
 
                                         obj_wass = single_point_wasserstein(object_pos, curr_masked, rate_map_obj.arena_size, ids=field_disk_ids)
@@ -421,7 +483,7 @@ def compute_remapping(study, settings, data_dir):
                                         # resampled_positions = list(map(lambda x: field_disk_ids[np.random.choice(np.arange(len(field_disk_ids)),size=1)[0]] , np.arange(0, n_repeats)))
                                         # compute EMD on resamples
                                         if resampled_wass is None:
-                                            resampled_wass = list(map(lambda x: single_point_wasserstein(x, curr_masked, rate_map_obj.arena_size, ids=field_disk_ids), resampled_positions))
+                                            resampled_wass = list(map(lambda x: single_point_wasserstein(x, curr_masked, rate_map_obj.arena_size, ids=field_disk_ids, use_pos_directly=True), resampled_positions))
                                         quantile = (resampled_wass < obj_wass).mean()
 
                                         r = np.mean(field_disk_ids[:,0])
@@ -504,8 +566,10 @@ def compute_remapping(study, settings, data_dir):
                                     obj_dict['arena_size'].append(curr_spatial_spike_train.arena_size)
                                     obj_dict['cylinder'].append(cylinder)
                                     obj_dict['ratemap_dims'].append(curr.shape)
-                                    obj_dict['grid_sample_threshold'].append(settings['grid_sample_threshold'])
-                                    obj_dict['grid_sample_size'].append(len(resampled_positions))
+                                    # obj_dict['grid_sample_threshold'].append(settings['grid_sample_threshold'])
+                                    obj_dict['spacing'].append(settings['spacing'])
+                                    obj_dict['hexagonal'].append(settings['hexagonal'])
+                                    obj_dict['sample_size'].append(len(resampled_positions))
 
                         if settings['plotObject']:
                             plot_obj_remapping(true_object_ratemap, curr, labels, centroids, obj_dict, data_dir)
@@ -521,10 +585,10 @@ def compute_remapping(study, settings, data_dir):
                         curr_spike_pos_x, curr_spike_pos_y, curr_spike_pos_t = curr_spatial_spike_train.get_spike_positions()
                         curr_pts = np.array([curr_spike_pos_x, curr_spike_pos_y]).T
 
-                        y, x = prev.shape
+                        y, x = prev_ratemap.shape
                         # find indices of not nan 
-                        row_prev, col_prev = np.where(~np.isnan(prev))
-                        row_curr, col_curr = np.where(~np.isnan(curr))
+                        row_prev, col_prev = np.where(~np.isnan(prev_ratemap))
+                        row_curr, col_curr = np.where(~np.isnan(curr_ratemap))
 
                         # for first map
                         if prev_shuffled is None:  
@@ -539,8 +603,8 @@ def compute_remapping(study, settings, data_dir):
                         height_bucket_midpoints, width_bucket_midpoints = _get_ratemap_bucket_midpoints(prev_spatial_spike_train.arena_size, y, x)
                         height_bucket_midpoints = height_bucket_midpoints[row_curr]
                         width_bucket_midpoints = width_bucket_midpoints[col_curr]
-                        source_weights = np.array(list(map(lambda x, y: prev[x,y], row_prev, col_prev)))
-                        target_weights = np.array(list(map(lambda x, y: curr[x,y], row_curr, col_curr)))
+                        source_weights = np.array(list(map(lambda x, y: prev_ratemap[x,y], row_prev, col_prev)))
+                        target_weights = np.array(list(map(lambda x, y: curr_ratemap[x,y], row_curr, col_curr)))
                         source_weights = source_weights / np.sum(source_weights)
                         target_weights = target_weights / np.sum(target_weights)
                         coord_buckets = np.array(list(map(lambda x, y: [height_bucket_midpoints[x],width_bucket_midpoints[y]], row_curr, col_curr)))
@@ -688,9 +752,10 @@ def compute_remapping(study, settings, data_dir):
 
                         remapping_session_ids[cell_label-1].append([i-1,i])
 
-                        c += 1
-
+                        # c += 1
+                            
                     prev = curr
+                    prev_ratemap = curr_ratemap
                     prev_spatial_spike_train = curr_spatial_spike_train
                     prev_id = curr_id
                     prev_cell = curr_cell
@@ -766,8 +831,8 @@ def compute_remapping(study, settings, data_dir):
                             prev_key = curr_key
                             prev_path = curr_path
                             
-
-            c += 1
+            plot_matched_sesssion_waveforms(cell_session_appearances, settings, regular_dict, data_dir)
+            # c += 1
 
     return {'regular': regular_dict, 'object': obj_dict, 'centroid': centroid_dict, 'context': context_dict}
 

@@ -203,7 +203,7 @@ def compute_centroid_remapping(label_t, label_s, spatial_spike_train_t, spatial_
     return permute_dict, cumulative_dict
 
 
-def single_point_wasserstein(object_coords, rate_map, arena_size, ids=None, density=False, density_map=None):
+def single_point_wasserstein(object_coords, rate_map, arena_size, ids=None, density=False, density_map=None, use_pos_directly=False):
     """
     Computes wass distancees for map relative to single point coordinate
 
@@ -212,9 +212,12 @@ def single_point_wasserstein(object_coords, rate_map, arena_size, ids=None, dens
 
     # gets rate map dimensions (64, 64)
     y, x = rate_map.shape
+    # print(x, y, arena_size)
 
     height_bucket_midpoints, width_bucket_midpoints = _get_ratemap_bucket_midpoints(arena_size, y, x)
     # rate_map, _ = rate_map_obj.get_rate_map()
+    # print(height_bucket_midpoints.shape, width_bucket_midpoints.shape)
+    # print(height_bucket_midpoints, width_bucket_midpoints)
 
     # normalize rate map
     total_mass = np.sum(rate_map[rate_map == rate_map])
@@ -222,12 +225,16 @@ def single_point_wasserstein(object_coords, rate_map, arena_size, ids=None, dens
         rate_map = rate_map / total_mass
 
     # these are the coordinates of the object on a 64,64 array so e.g. (0,32)
-    if isinstance(object_coords, dict):
-        obj_x = width_bucket_midpoints[object_coords['x']]
-        obj_y = height_bucket_midpoints[object_coords['y']]
+    if not use_pos_directly:
+        if isinstance(object_coords, dict):
+            obj_x = width_bucket_midpoints[object_coords['x']]
+            obj_y = height_bucket_midpoints[object_coords['y']]
+        else:
+            obj_y = height_bucket_midpoints[object_coords[0]]
+            obj_x = width_bucket_midpoints[object_coords[1]]
     else:
-        obj_y = height_bucket_midpoints[object_coords[0]]
-        obj_x = width_bucket_midpoints[object_coords[1]]
+        obj_y = object_coords[0]
+        obj_x = object_coords[1]
 
     if density:
         assert ids is None, "Cannot pass in ids with density=True as spike density is all raw spike positions not ratemap ids"
@@ -237,12 +244,12 @@ def single_point_wasserstein(object_coords, rate_map, arena_size, ids=None, dens
         if ids is None:
             weighted_dists = list(map(lambda x: np.linalg.norm(np.array((obj_y, obj_x)) - np.array((height_bucket_midpoints[x[0]], width_bucket_midpoints[x[1]]))) * rate_map[x[0],x[1]], list(itertools.product(np.arange(0,y,1),np.arange(0,x,1)))))
         else:
-            pdct = itertools.product(np.arange(0,y,1),np.arange(0,x,1))
-            new_ids = set(list(pdct)).intersection(tuple(map(tuple, ids)))
+            # pdct = itertools.product(np.arange(0,y,1),np.arange(0,x,1))
+            # new_ids = set(list(pdct)).intersection(tuple(map(tuple, ids)))
 
             # normalize only ids mask to 1
             rate_map[ids[:,0], ids[:,1]] = rate_map[ids[:,0], ids[:,1]] / np.sum(rate_map[ids[:,0], ids[:,1]])
-            weighted_dists = list(map(lambda x, y: np.linalg.norm(np.array((obj_y, obj_x)) - np.array((height_bucket_midpoints[x], width_bucket_midpoints[y]))) * rate_map[x,y], np.array(list(new_ids)).T[0], np.array(list(new_ids)).T[1]))
+            weighted_dists = list(map(lambda x, y: np.linalg.norm(np.array((obj_y, obj_x)) - np.array((height_bucket_midpoints[x], width_bucket_midpoints[y]))) * rate_map[x,y], np.array(list(ids)).T[0], np.array(list(ids)).T[1]))
     elif density:
         weighted_dists = list(map(lambda x: np.linalg.norm(np.array((obj_y, obj_x)) - np.array((x[0], x[1]))) * 1/len(density_map), density_map))
 

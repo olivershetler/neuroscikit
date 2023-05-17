@@ -290,11 +290,15 @@ class HaftingSpikeMap():
                 self.smoothing_factor = smoothing_factor
 
             if shuffle:
-                shuffled_spikes = shuffle_spikes(self.spatial_spike_train.spike_times,self.spike_x, self.spike_y, self.new_spike_times)
-                spike_x, spike_y, new_spike_times = self.get_spike_positions(shuffled_spikes=shuffled_spikes)
+                spike_x, spike_y, new_spike_times = shuffle_spikes(self.spatial_spike_train.spike_times,self.spike_x, self.spike_y, self.new_spike_times)
+                # assert np.asarray(shuffled_spikes).shape == np.asarray(self.spatial_spike_train.spike_times).shape,'Shuffled spikes {} are not the same shape as original spikes {}'.format(np.asarray(shuffled_spikes).shape, np.asarray(self.spatial_spike_train.spike_times).shape)
+                # spike_x, spike_y, new_spike_times = self.spatial_spike_train.get_spike_positions(shuffled_spikes=shuffled_spikes)
             else:
                 spike_x, spike_y, new_spike_times = self.spike_x, self.spike_y, self.new_spike_times
 
+            # print('comehere')
+            # print(spike_x.shape, spike_y.shape, new_spike_times.shape)
+            # print(self.spike_x.shape, self.spike_y.shape, self.new_spike_times.shape)
             if new_size is not None:
                 self.map_data, self.map_data_raw = self.compute_spike_map(spike_x, spike_y, smoothing_factor, self.arena_size, new_size=new_size)
             else:

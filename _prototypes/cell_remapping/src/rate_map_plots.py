@@ -50,11 +50,15 @@ def plot_shuffled_regular_remapping(prev, curr, ref_wass_dist, prev_sample, curr
 
     fig = ShuffledTemplateFig()
 
-    fig.histogram_plot(prev, fig.ax['1'])
-    fig.histogram_plot(curr, fig.ax['2'])
+    ylabel = 'Count'
+    xlabel1 = 'Firing Rate'
+    xlabel2 = 'Wasserstein Distance'
+
+    fig.histogram_plot(prev, xlabel1, ylabel, fig.ax['1'])
+    fig.histogram_plot(curr, xlabel1, ylabel, fig.ax['2'])
     # fig.scatter_plot(prev, fig.ax['1'])
     # fig.scatter_plot(curr, fig.ax['2'])
-    fig.histogram_plot(ref_wass_dist, fig.ax['3'])
+    fig.histogram_plot(ref_wass_dist, xlabel2, ylabel, fig.ax['3'])
     fig.qq_plot(ref_wass_dist, fig.ax['4'])
 
     # random map from shuffles
@@ -183,6 +187,91 @@ def plot_fields_remapping(label_s, label_t, spatial_spike_train_s, spatial_spike
     fig.f.savefig(fp, dpi=360.)
     plt.close(fig.f)
 
+def plot_matched_sesssion_waveforms(cell_ses_appearances, settings, plot_settings, data_dir):
+    n_sessions = len(cell_ses_appearances)
+
+    save_dir = data_dir + '/remapping_output/waveforms'
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+
+    for i in range(n_sessions):
+        cell = cell_ses_appearances[i]
+
+        unit_id = plot_settings['unit_id'][-1]
+        name = plot_settings['name'][-1]
+        tetrode = plot_settings['tetrode'][-1]
+
+        save_dir = data_dir + '/remapping_output/waveforms' + '/' + str(name)
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+        save_dir = data_dir + '/remapping_output/waveforms' + '/' + str(name) + '/tetrode_' + str(tetrode)
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+        save_dir = data_dir + '/remapping_output/waveforms' + '/' + str(name) + '/tetrode_' + str(tetrode) + '/unit_' + str(unit_id)
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+
+        plot_cell_waveform(cell, save_dir, name, unit_id, tetrode, i+1)
+
+    
+def plot_cell_waveform(cell, data_dir, animal, unit, tet, session):
+
+    fig = WaveformTemplateFig()
+
+    for i in range(4):
+        ch = cell.signal[:,i,:]
+        idx = np.random.choice(len(ch), size=200)
+        waves = ch[idx, :]
+        avg_wave = np.mean(ch, axis=0)
+
+        fig.waveform_channel_plot(waves, avg_wave, str(i+1), fig.ax[str(i+1)])
+
+
+    title = str(animal) + '_tetrode_' + str(tet) + '_session_' + str(session) + '_unit_' + str(unit)
+
+    fig.f.suptitle(title, ha='center', fontweight='bold', fontsize='large')
+
+    """ save """
+    # create a dsave and an fprefix
+    # save_dir = data_dir + r'/output/' + str(animal) + r'/' + str(session) + r'/'
+    save_dir = data_dir
+    fprefix = r'animal_{}_tetrode_{}_unit_{}_session_{}'.format(animal, tet,unit,session)
+
+    ftemplate_short = "{}.{}"
+    fshort = ftemplate_short.format(fprefix, r'png')
+    fp = os.path.join(save_dir, fshort)
+    fig.f.savefig(fp, dpi=360.)
+    plt.close(fig.f)
+
+
+class WaveformTemplateFig():
+    def __init__(self):
+        self.f = plt.figure(figsize=(12, 6))
+        # mpl.rc('font', **{'size': 20})
+
+
+        self.gs = {
+            'all': gridspec.GridSpec(1, 4, left=0.05, right=0.95, bottom=0.1, top=0.85, figure=self.f),
+        }
+
+        self.ax = {
+            '1': self.f.add_subplot(self.gs['all'][:, :1]),
+            '2': self.f.add_subplot(self.gs['all'][:, 1:2]),
+            '3': self.f.add_subplot(self.gs['all'][:, 2:3]),
+            '4': self.f.add_subplot(self.gs['all'][:, 3:]),
+        }
+
+    def waveform_channel_plot(self, waveforms, avg_waveform, channel, ax):
+
+        ax.plot(waveforms.T, color='grey')
+
+        ax.plot(avg_waveform, c='k', lw=2)
+
+        ax.set_title('Channel ' + str(int(channel)))
+
+
+
+
 class FieldsTemplateFig():
     def __init__(self):
         self.f = plt.figure(figsize=(10, 18))
@@ -258,18 +347,28 @@ class ShuffledTemplateFig():
             '6': self.f.add_subplot(self.gs['all'][2:3, 1:2]),
         }
 
-    def histogram_plot(self, to_plot, ax):
+    def histogram_plot(self, to_plot, xlabel, ylabel, ax):
+        
+        to_plot = np.array(to_plot)
+        to_plot = to_plot.flatten()
+        to_plot = to_plot[to_plot == to_plot]
+        print('to_plot: ', str(to_plot.shape))
+        ct, bins = np.histogram(to_plot, bins=200, density=False)
+        ax.bar(bins[:-1], ct, color='k')
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(ylabel)
 
-        ct, bins = np.histogram(to_plot, bins=100)
-        l1 = ax.bar(bins[:-1], ct, color='k', width=0.1, label='unnorm')
+        # ax.hist(ct, bins[:-1], alpha=0.5, color='k')
 
-        ct, bins = np.histogram(to_plot/np.sum(to_plot), bins=100, density=True)
-        ax2 = ax.twinx().twiny()
-        l2 = ax2.bar(bins[:-1], ct, color='r', width=0.1, label='norm')
+        # ct, bins = np.histogram(to_plot, bins=30, density=False)
+        # ax2 = ax.twinx().twiny()
+        # # l2 = ax2.bar(bins[:-1], ct, color='r', width=0.1, label='norm')
+        # ax.hist(ct, bins[:-1], alpha=0.5, color='r', label='norm')
 
-        lns = [l1, l2]
-        labs = [l.get_label() for l in lns]
-        ax.legend(lns, labs, loc=0)
+        # lns = [l1, l2]
+        # labs = [l.get_label() for l in lns]
+        # ax.legend(lns, labs, loc=0)
+        # ax.legend()
 
     def qq_plot(self, to_plot, ax):
 
