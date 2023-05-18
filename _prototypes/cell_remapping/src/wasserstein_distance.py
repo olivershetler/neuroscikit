@@ -246,10 +246,12 @@ def single_point_wasserstein(object_coords, rate_map, arena_size, ids=None, dens
         else:
             # pdct = itertools.product(np.arange(0,y,1),np.arange(0,x,1))
             # new_ids = set(list(pdct)).intersection(tuple(map(tuple, ids)))
-
+            # print(len(ids), len(list(new_ids)))
             # normalize only ids mask to 1
             rate_map[ids[:,0], ids[:,1]] = rate_map[ids[:,0], ids[:,1]] / np.sum(rate_map[ids[:,0], ids[:,1]])
-            weighted_dists = list(map(lambda x, y: np.linalg.norm(np.array((obj_y, obj_x)) - np.array((height_bucket_midpoints[x], width_bucket_midpoints[y]))) * rate_map[x,y], np.array(list(ids)).T[0], np.array(list(ids)).T[1]))
+            # old_weighted_dists = list(map(lambda x, y: np.linalg.norm(np.array((obj_y, obj_x)) - np.array((height_bucket_midpoints[x], width_bucket_midpoints[y]))) * rate_map[x,y], np.array(list(new_ids)).T[0], np.array(list(new_ids)).T[1]))
+            weighted_dists = list(map(lambda x, y: np.linalg.norm(np.array((obj_y, obj_x)) - np.array((height_bucket_midpoints[x], width_bucket_midpoints[y]))) * rate_map[x,y], ids[:,0], ids[:,1]))
+            # assert np.array(old_weighted_dists).all() == np.array(weighted_dists).all(), "Something went wrong with the ids mask"
     elif density:
         weighted_dists = list(map(lambda x: np.linalg.norm(np.array((obj_y, obj_x)) - np.array((x[0], x[1]))) * 1/len(density_map), density_map))
 

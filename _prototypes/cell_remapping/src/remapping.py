@@ -22,31 +22,17 @@ from scripts.batch_map.LEC_naming import LEC_naming_format, extract_name
 from library.shuffle_spikes import shuffle_spikes
 
 
-"""
+def compute_modified_zscore(x, ref_dist):
+    # Compute the median of the data
+    median = np.median(ref_dist)
 
-TODO (in order of priority)
+    # Compute the Median Absolute Deviation (MAD)
+    mad = stats.median_abs_deviation(ref_dist, scale='normal')
 
-- Pull out POT dependecies for sliced wass - DONE
-- take all spikes in cell, get (x,y) position, make sure they are scaled properly (i.e. in cm/inches) at file loading part - DONE
-- read ppm from position file ('pixels_per_meter' word search) and NOT settings.py file - DONE
-- check ppm can bet set at file loading, you likely gave that option if 'ppm' not present in settings - DONE
+    # Compute the Modified Z-score, adjusting for division by zero
+    modified_zscore = 0.6745 * (x - median) / (mad if mad else 1)
 
-- Use map blobs to get fields - DONE
-- get idx in fields and calculate euclidean distance for all permutations of possible field combinations - DONE
-- can start with only highest density fields - DONE
-- refactor identified + appropriate areas into helper functions (especially map blobs related code) to simplify - DONE
-
-- add comments 
-- MUST revisit map blobs and how the 90th percentile is being done 
-- Reconcile definition of fields with papers Abid shared in #code to make field definition for our case concrete
-- visualize selected fields (plot ratemap + circle/highlight in diff color idx of each field, can plot binary + ratemap below to show true density in field)
-
-- Implement rotation remapping, get ready for case where from session to session field map is rotated by 0/90/180 etc instead of object location
-- Will have to do the same as object case where you do every rotation permutation and store the true rotation angle to look at wass distances 
-
-- Implement globabl remapping? Just average ratemaps across all cells in session and use average ratemap of each session in sliced wass
-
-"""
+    return modified_zscore    
                     
 def _check_single_format(filename, format, fxn):
     if re.match(str(format), str(filename)) is not None:
@@ -142,8 +128,10 @@ def compute_remapping(study, settings, data_dir):
                 path = ses.session_metadata.file_paths['tet']
                 fname = path.split('/')[-1].split('.')[0]
 
-                # Check if cylinder
-                cylinder, true_var = check_disk_arena(fname)
+                if settings['disk_arena']: 
+                    cylinder = True
+                else:
+                    cylinder, _ = check_disk_arena(fname)
 
                 group, name = extract_name(fname)
 
@@ -221,6 +209,9 @@ def compute_remapping(study, settings, data_dir):
                     if settings['hasObject']:
 
                         _, _, labels, centroids, field_sizes = blobs_dict[curr_id]
+
+                        # print(np.unique(labels), centroids, field_sizes)
+                        assert len(np.unique(labels)[1:]) == len(centroids) == len(field_sizes), 'Mismatch in number of labels, centroids and field sizes'
                                     
                         labels_copy = np.copy(labels)
                         labels_copy[np.isnan(curr)] = 0
@@ -236,22 +227,27 @@ def compute_remapping(study, settings, data_dir):
 
                         height_bucket_midpoints, width_bucket_midpoints = _get_ratemap_bucket_midpoints(rate_map_obj.arena_size, y, x)
 
-                        if settings['downsample']:
+                        # from collections import Counter
+                        # print(Counter(labels.flatten()))
+                        # if settings['downsample']:
                             # labels = _downsample(labels, settings['downsample_factor'])
-                            dfactor = settings['downsample_factor']
-                            labels_resized = cv2.resize(labels, (labels.shape[1]//dfactor, labels.shape[0]//dfactor), interpolation=cv2.INTER_NEAREST)
-                            curr_labels = np.array(labels_resized).astype('uint8')
+                            # dfactor = settings['downsample_factor']
+                            # labels_resized = cv2.resize(labels, (labels.shape[1]//dfactor, labels.shape[0]//dfactor), interpolation=cv2.INTER_NEAREST)
+                            # curr_labels = np.array(labels_resized).astype('uint8')
+                            # print(Counter(curr_labels.flatten()))
                             # check no nans
-                            assert np.isnan(curr_labels).all() == False, 'Downsampling error curr labels {}'.format(np.unique(curr_labels))
-                            curr_labels = flat_disk_mask(curr_labels)
+                            # assert np.isnan(curr_labels).all() == False, 'Downsampling error curr labels {}'.format(np.unique(curr_labels))
+                            # curr_labels = flat_disk_mask(curr_labels)
+                            # print(Counter(curr_labels.flatten()))
                             # re-add nans for disk mask
                             # rnan, cnan = np.where(np.isnan(labels))
                             # curr_labels = np.copy(labels_resized).astype('float')
                             # curr_labels[rnan, cnan] = np.nan
 
-                            assert np.unique(curr_labels[~np.isnan(curr_labels)]).all() == np.unique(labels).all(), 'Downsampling error curr labels {} vs labels {}'.format(np.unique(curr_labels), np.unique(labels))
-                        else:
-                            curr_labels = labels
+                            # assert np.unique(curr_labels[~np.isnan(curr_labels)]).all() == np.unique(labels).all(), 'Downsampling error curr labels {} vs labels {}'.format(np.unique(curr_labels), np.unique(labels))
+                        # else:
+                            # curr_labels = labels
+                        curr_labels = labels
 
                         # n_repeats = 100
 
@@ -370,7 +366,8 @@ def compute_remapping(study, settings, data_dir):
 
                                         # TAKE ONLY MAIN FIELD --> already sorted by size
                                         row, col = np.where(curr_labels == label_id)
-
+                                        # print('LABEL ID: ', label_id)
+                                        # print('ROW COL: ', row, col)
                                         field_ids = np.array([row, col]).T
                                         if cylinder:
                                             # take ids that are both in disk and in field
@@ -379,6 +376,9 @@ def compute_remapping(study, settings, data_dir):
                                         else:
                                             field_disk_ids = field_ids
                                         
+                                        # print('FIELD DISK IDS: ', field_disk_ids)
+                                        # print('DISK IDS: ', disk_ids)
+                                        # print('FIELD IDS: ', field_ids)
                                         # if var == 'no':
                                         #     obj_wass = pot_sliced_wasserstein(coord_buckets, coord_buckets[field_disk_ids], source_weights, target_weights[field_disk_ids], n_projections=settings['n_projections'])
                                         # else:
@@ -573,11 +573,16 @@ def compute_remapping(study, settings, data_dir):
                                     obj_dict['hexagonal'].append(settings['hexagonal'])
                                     obj_dict['sample_size'].append(len(resampled_positions))
 
+                                    if settings['downsample']:
+                                        obj_dict['downsample_factor'].append(settings['downsample_factor'])
+                                    else:
+                                        obj_dict['downsample_factor'].append(1)
+
                         if settings['plotObject']:
                             plot_obj_remapping(true_object_ratemap, curr, labels, centroids, obj_dict, data_dir)
 
                     # If prev ratemap is not None (= we are at session2 or later, session1 has no prev session to compare)
-                    if prev is not None:
+                    if prev is not None and settings['runRegular']:
 
                         # get x and y pts for spikes in pair of sessions (prev and curr) for a given comparison
 
@@ -618,9 +623,12 @@ def compute_remapping(study, settings, data_dir):
                         ref_wass_dist = list(map(lambda x, y: pot_sliced_wasserstein(coord_buckets, coord_buckets, x/np.sum(x), y/np.sum(y), n_projections=settings['n_projections']), prev_shuffled, curr_shuffled))
                         ref_wass_mean = np.mean(ref_wass_dist)
                         ref_wass_std = np.std(ref_wass_dist)
-                        t_score = (wass - ref_wass_mean) / (ref_wass_std)
+                        # t_score = (wass - ref_wass_mean) / (ref_wass_std)
+                        z_score = compute_modified_zscore(wass, ref_wass_dist)
+
+                        assert len(ref_wass_dist) == settings['n_repeats'], 'n_repeats does not match length of ref_wass_dist'
    
-                        pvalue = stats.t.cdf(t_score, len(ref_wass_dist)-1)
+                        pvalue = stats.t.cdf(z_score, len(ref_wass_dist)-1)
                         # pvalue for wass, 2 sided
                         # pvalue = 2 * stats.t.cdf(-np.abs(t_score), len(ref_wass_dist)-1)
                         # pvalue = 2 * stats.norm.cdf(-np.abs(t_score))
@@ -637,19 +645,35 @@ def compute_remapping(study, settings, data_dir):
                         regular_dict['session_ids'].append([prev_key, curr_key])
                         regular_dict['whole_wass'].append(wass)
                         regular_dict['spike_density_wass'].append(spike_dens_wass)
-                        regular_dict['t_score'].append(t_score)
+                        regular_dict['z_score'].append(z_score)
                         regular_dict['p_value'].append(pvalue)
                         regular_dict['shapiro_pval'].append([prev_shapiro_pval, curr_shapiro_pval])
                         regular_dict['shapiro_coeff'].append([prev_shapiro_coeff, curr_shapiro_coeff])
                         regular_dict['base_mean'].append(ref_wass_mean)
                         regular_dict['base_std'].append(ref_wass_std)
-                        regular_dict['avg_fr_change'].append(np.float64(np.mean(target_weights) - np.mean(source_weights)))
-                        regular_dict['std_fr_change'].append(np.float64(np.std(target_weights) - np.std(source_weights)))
+
+                        curr_fr_rate = len(curr_pts) / (curr_spike_pos_t[-1] - curr_spike_pos_t[0])
+                        prev_fr_rate = len(prev_pts) / (prev_spike_pos_t[-1] - prev_spike_pos_t[0])
+                        fr_rate_ratio = curr_fr_rate / prev_fr_rate
+                        fr_rate_change = curr_fr_rate - prev_fr_rate
+
+                        regular_dict['fr_rate'].append([prev_fr_rate, curr_fr_rate])
+                        regular_dict['fr_rate_ratio'].append(fr_rate_ratio)
+                        regular_dict['fr_rate_change'].append(fr_rate_change)
+
+                        # regular_dict['total_fr_change'].append(np.nansum(curr_ratemap) - np.nansum(prev_ratemap))
+                        # regular_dict['avg_fr_change'].append(np.nanmean(target_weights) - np.mean(source_weights))
+                        # regular_dict['std_fr_change'].append(np.float64(np.std(target_weights) - np.std(source_weights)))
+
                         regular_dict['n_repeats'].append(settings['n_repeats'])
                         regular_dict['arena_size'].append([prev_spatial_spike_train.arena_size, curr_spatial_spike_train.arena_size])
                         regular_dict['cylinder'].append(cylinder)
                         assert prev.shape == curr.shape
                         regular_dict['ratemap_dims'].append(curr.shape)
+                        if settings['downsample']:
+                            regular_dict['downsample_factor'].append(settings['downsample_factor'])
+                        else:
+                            regular_dict['downsample_factor'].append(1)
 
                         if settings['plotRegular']:
                             plot_regular_remapping(prev, curr, regular_dict, data_dir)
@@ -782,7 +806,11 @@ def compute_remapping(study, settings, data_dir):
                         ses = animal.sessions[seskey]
                         path = ses.session_metadata.file_paths['tet']
                         fname = path.split('/')[-1].split('.')[0]
-                        cylinder, true_var = check_disk_arena(fname)
+                        
+                        if settings['disk_arena']: 
+                            cylinder = True
+                        else:
+                            cylinder, _ = check_disk_arena(fname)
 
                         ensemble = ses.get_cell_data()['cell_ensemble']
 
@@ -832,8 +860,9 @@ def compute_remapping(study, settings, data_dir):
                             comp_prev_cell = comp_curr_cell
                             prev_key = curr_key
                             prev_path = curr_path
-                            
-            plot_matched_sesssion_waveforms(cell_session_appearances, settings, regular_dict, data_dir)
+
+            if settings['plotMatchedWaveforms'] and settings['runRegular']:     
+                plot_matched_sesssion_waveforms(cell_session_appearances, settings, regular_dict, data_dir)
             # c += 1
 
     return {'regular': regular_dict, 'object': obj_dict, 'centroid': centroid_dict, 'context': context_dict}
@@ -895,7 +924,11 @@ def _aggregate_cell_info(study, settings):
                 fname = path.split('/')[-1].split('.')[0]
 
                 # Check if cylinder
-                cylinder, true_var = check_disk_arena(fname)
+                if settings['disk_arena']: 
+                    cylinder = True
+                else:
+                    cylinder, _ = check_disk_arena(fname)
+
                 if cell_label in ensemble.get_cell_label_dict():
                     cell = ensemble.get_cell_by_id(cell_label)
                     # if 'spatial_spike_train' in cell.stats_dict['cell_stats']:
@@ -913,10 +946,13 @@ def _aggregate_cell_info(study, settings):
 
                     assert rate_map.shape == (settings['ratemap_dims'][0], settings['ratemap_dims'][1]), 'Wrong ratemap shape {} vs settings shape {}'.format(rate_map.shape, (settings['ratemap_dims'][0], settings['ratemap_dims'][1]))
                     
+                    if settings['downsample']:
+                        rate_map = _downsample(rate_map, settings['downsample_factor'])
                     if cylinder:
                         rate_map = flat_disk_mask(rate_map)
+                        
 
-                    image, n_labels, labels, centroids, field_sizes = map_blobs(spatial_spike_train, ratemap_size=ratemap_size, cylinder=cylinder)
+                    image, n_labels, labels, centroids, field_sizes = map_blobs(spatial_spike_train, ratemap_size=ratemap_size, cylinder=cylinder, downsample=settings['downsample'], downsample_factor=settings['downsample_factor'])
 
                     labels, centroids, field_sizes = _sort_filter_centroids_by_field_size(rate_map, field_sizes, labels, centroids, spatial_spike_train.arena_size)
 
@@ -990,14 +1026,23 @@ def _sort_filter_centroids_by_field_size(rate_map, field_sizes, blobs_map, centr
     map_dict = {}
     # source_centroids = []
     # source_field_sizes = []
+    all_filtered_out = True
+    largest_label_id = None
+    largest_field_area = 0
     for k in np.unique(blobs_map):
         if k != 0:
             row, col = np.where(blobs_map == k)
-            if (len(row) + len(col)) * bin_area > 22.5:
+            field_area = (len(row) + len(col)) * bin_area
+            if field_area > largest_field_area:
+                    largest_label_id = k
+                    largest_field_area = field_area
+
+            if field_area > 22.5:
                 idx_to_move_to = np.where(sort_idx == k-1)[0][0]
                 # map_dict[k] = sort_idx_source[k-1] + 1
                 map_dict[k] = idx_to_move_to + 1
                 # source_centroids.append(centroids[k-1])
+                all_filtered_out = False
             else:
                 print('Blob filtered out with size less than 22.5 cm^2')
                 map_dict[k] = 0
@@ -1014,6 +1059,18 @@ def _sort_filter_centroids_by_field_size(rate_map, field_sizes, blobs_map, centr
         source_centroids = np.asarray(centroids)
         source_field_sizes = np.asarray(field_sizes)
 
+    if all_filtered_out:
+        assert largest_label_id is not None
+        map_dict[largest_label_id] = 1
+        source_labels = np.vectorize(map_dict.get)(blobs_map)
+        source_centroids = [np.asarray(centroids)[largest_label_id-1]]
+        source_field_sizes = [np.asarray(field_sizes)[largest_label_id-1]]
+
+    # print('blobshere')
+    # print('all_filtered_out: ' + str(all_filtered_out))
+    # print(pks, ids, lbls, sort_idx)
+    # print(np.unique(source_labels), len(source_centroids), len(source_field_sizes))
+    # print(map_dict, np.unique(blobs_map))
     assert len(np.unique(source_labels)) - 1 == len(source_centroids) == len(source_field_sizes)
 
     return source_labels, source_centroids, source_field_sizes

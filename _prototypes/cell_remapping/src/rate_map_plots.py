@@ -353,10 +353,23 @@ class ShuffledTemplateFig():
         to_plot = to_plot.flatten()
         to_plot = to_plot[to_plot == to_plot]
         print('to_plot: ', str(to_plot.shape))
-        ct, bins = np.histogram(to_plot, bins=200, density=False)
-        ax.bar(bins[:-1], ct, color='k')
+        # if len(to_plot) >= 100000:
+        #     bns = 100
+        #     ct, bins = np.histogram(to_plot, bins=bns, density=False)
+        # elif len(to_plot) >= 10000:
+        #     bns = 1000
+        #     ct, bins = np.histogram(to_plot, bins=bns, density=False)
+        if len(to_plot) >= 1000:
+            bns = 100
+            ct, bins = np.histogram(to_plot, bins=bns, density=False)
+        else:
+            bns = 30
+            ct, bins = np.histogram(to_plot, bins=bns, density=False)
+        ax.bar(bins[:-1], ct, color='k', width=bins[1]-bins[0])
         ax.set_xlabel(xlabel)
         ax.set_ylabel(ylabel)
+        title = 'Samples in hist: ' + str(len(to_plot)) + ', n_bins: ' + str(bns)
+        ax.set_title(title)
 
         # ax.hist(ct, bins[:-1], alpha=0.5, color='k')
 

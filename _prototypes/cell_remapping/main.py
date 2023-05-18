@@ -65,6 +65,7 @@ def main(overwrite_settings=None):
     sys.stdout.close()
     sys.stdout = sys.__stdout__
     print('COMPLETED ALL FOLDERS')
+    print('Total run time: ' + str(time.time() - start_time))
 
 def _save_output(output, output_path, start_time):
 

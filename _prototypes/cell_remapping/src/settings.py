@@ -23,32 +23,34 @@ settings_dict['n_projections'] = 10**2 # EDIT HERE (10**3 is slow,  50 (default)
 settings_dict['type'] = 'object' # EDIT HERE # Currently only 'object' is supported so no need to change (will add e.g. angle later)
 # Type is used to read angle or other (e.g. odor) from filename
 ##### ratemap size setting (16,16) --> tradeoff between speed and accuracy
-settings_dict['ratemap_dims'] = (64,64) # EDIT HERE (16,16) is default, (32,32) is slower but more accurate,
+settings_dict['ratemap_dims'] = (32,32) # EDIT HERE (16,16) is default, (32,32) is slower but more accurate,
+settings_dict['disk_arena'] = True # EDIT HERE. IF TRUE WILL FORCE DISK. IF FALSE WILL CHECK FILE NAME TO SEE IF TRUE OR NOT
+settings_dict['normalizeRate'] = True # EDIT HERE --> NORMALIZED FOR ALL CASES 
 
 """ 
 IF YOU ARE DOING REGULAR REMAPPING
 """
 
+settings_dict['runRegular'] = False # EDIT HERE
 settings_dict['plotRegular'] = False # EDIT HERE
-settings_dict['normalizeRate'] = True # EDIT HERE --> NORMALIZED FOR ALL CASES 
 settings_dict['rate_scores'] = ['whole', 'spike_density']
-settings_dict['n_repeats'] = 250 # EDIT HERE 
-settings_dict['plotShuffled'] = True # EDIT HERE
-
+settings_dict['n_repeats'] = 1000 # EDIT HERE 
+settings_dict['plotShuffled'] = False # EDIT HERE
+settings_dict['plotMatchedWaveforms'] = False # EDIT HERE
 
 """ 
 IF YOU ARE DOING OBJECT REMAPPING
 """
 
 settings_dict['hasObject'] = True # EDIT HERE
-settings_dict['plotObject'] = True # EDIT HERE
+settings_dict['plotObject'] = False # EDIT HERE
 settings_dict['object_scores'] = ['whole', 'field', 'binary', 'centroid', 'spike_density']
 # settings_dict['grid_sample_threshold'] = 3.2 # EDIT HERE, euclidean distance
-settings_dict['spacing'] = 3.2 # EDIT HERE, same unit as arena height and width
+settings_dict['spacing'] = 2 # EDIT HERE, same unit as arena height and width
 settings_dict['hexagonal'] = True # EDIT HERE, sampling scheme, hexagonal=True or rectangular=True (so hexagonal=False)
 
-settings_dict['downsample'] = True # EDIT HERE
-settings_dict['downsample_factor'] = 2 # EDIT HERE
+settings_dict['downsample'] = False # EDIT HERE
+settings_dict['downsample_factor'] = 1 # EDIT HERE
 
 variations = [0,90,180,270,'NO'] # EDIT HERE
 
@@ -78,8 +80,8 @@ obj_output = {}
 centroid_output = {}
 
 keys = ['signature','depth', 'name', 'date', 'tetrode','unit_id', 'session_ids', 'whole_wass',
-        't_score', 'p_value', 'shapiro_pval', 'shapiro_coeff', 'base_mean', 'base_std', 'spike_density_wass', 'avg_fr_change', 'std_fr_change', 
-        'n_repeats','arena_size','cylinder','ratemap_dims']
+        'z_score', 'p_value', 'shapiro_pval', 'shapiro_coeff', 'base_mean', 'base_std', 'spike_density_wass', 'fr_rate', 'fr_rate_ratio', 'fr_rate_change', 
+        'n_repeats','arena_size','cylinder','ratemap_dims','downsample_factor']
 #  'information', 'b_top', 'b_bottom', 'b_right', 'b_left', 'grid_score']
 
 obj_keys = ['signature','depth', 'name', 'date','tetrode','unit_id','session_id','obj_pos','object_location', 'score', 
@@ -90,7 +92,7 @@ obj_keys = ['signature','depth', 'name', 'date','tetrode','unit_id','session_id'
             'obj_vec_0', 'obj_vec_90', 'obj_vec_180', 'obj_vec_270', 'obj_vec_NO',
             'bin_area', 'total_rate', 'field_peak_rate',
             'field_coverage', 'field_area', 'field_rate', 'cumulative_coverage', 'cumulative_area', 'cumulative_rate',
-            'arena_size', 'cylinder', 'ratemap_dims', 'spacing', 'hexagonal', 'sample_size']
+            'arena_size', 'cylinder', 'ratemap_dims', 'spacing', 'hexagonal', 'sample_size', 'downsample_factor']
 
 centroid_keys = ['signature','depth', 'name', 'date','tetrode','unit_id','session_ids','cumulative_wass',
                  'score', 'field_count', 'bin_area', 'arena_size',

@@ -11,11 +11,16 @@ from library.maps.map_utils import _gkern
 from library.hafting_spatial_maps import HaftingRateMap, SpatialSpikeTrain2D
 # from library.spatial_spike_train import SpatialSpikeTrain2D
 from library.maps.map_utils import disk_mask
+from skimage.measure import block_reduce
 
 def custom_flat_disk_mask(rate_map):
     masked_rate_map = disk_mask(rate_map)
     masked_rate_map.data[masked_rate_map.mask] = 0
     return  masked_rate_map.data
+
+def _downsample(img, downsample_factor):
+    downsampled = block_reduce(img, downsample_factor) 
+    return downsampled
 
 # Taken from https://stackoverflow.com/questions/59144828/opencv-getting-all-blob-pixels
 #public
@@ -62,11 +67,16 @@ def map_blobs(spatial_map: SpatialSpikeTrain2D | HaftingRateMap, **kwargs):
         elif isinstance(spatial_map, SpatialSpikeTrain2D):
             ratemap, _ = spatial_map.get_map('rate').get_rate_map(smoothing_factor)
 
+    if 'downsample' in kwargs:
+        if kwargs['downsample']:
+            ratemap = _downsample(ratemap, kwargs['downsample_factor'])
+
     if 'cylinder' in kwargs:
         cylinder = kwargs['cylinder']
         if cylinder:
             ratemap = custom_flat_disk_mask(ratemap)
-            # ???????????
+
+    
 
     # Kernel size
     kernlen = int(smoothing_factor*8)
