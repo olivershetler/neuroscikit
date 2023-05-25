@@ -352,6 +352,7 @@ class ShuffledTemplateFig():
         to_plot = np.array(to_plot)
         to_plot = to_plot.flatten()
         to_plot = to_plot[to_plot == to_plot]
+        to_plot = to_plot / np.sum(to_plot)
         print('to_plot: ', str(to_plot.shape))
         # if len(to_plot) >= 100000:
         #     bns = 100

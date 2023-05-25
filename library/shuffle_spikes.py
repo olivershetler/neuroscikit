@@ -76,6 +76,10 @@ def _single_shuffle(times, offset_lim, t_start, t_stop):
         if offset_lim == 0.5 * (t_stop - t_start):
             offset_lim -= 1
 
+        print( "`offset_lim` must be less than half of the time span ({}, {}). Using closest int offset_lim is set to {}".format(
+                offset_lim, t_stop - t_start, offset_lim
+            ))
+
     # Argument checking begins here
     if not isinstance(times, np.ndarray):
         raise errors.ArgumentError(
@@ -138,6 +142,7 @@ def _single_shuffle(times, offset_lim, t_start, t_stop):
         t_start + offset_lim + (increments_base * (t_stop - t_start - 2 * offset_lim))
     )
 
+    
     output = times + increments
     output = output.squeeze()
 

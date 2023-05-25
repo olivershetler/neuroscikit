@@ -4,7 +4,7 @@ import itertools
 import re
 import matplotlib.pyplot as plt
 import copy
-from scipy import stats
+from scipy import stats, ndimage
 from skimage.measure import block_reduce
 import cv2
 
@@ -18,9 +18,10 @@ from _prototypes.cell_remapping.src.masks import make_object_ratemap, check_disk
 from library.maps import map_blobs
 from scripts.batch_map.batch_map import batch_map 
 from _prototypes.cell_remapping.src.settings import obj_output, centroid_output, tasks, session_comp_categories, regular_output, context_output, variations
-from scripts.batch_map.LEC_naming import LEC_naming_format, extract_name
+from scripts.batch_map.LEC_naming import LEC_naming_format, extract_name_lec
+from _prototypes.cell_remapping.src.MEC_naming import MEC_naming_format, extract_name_mec
+from _prototypes.cell_remapping.src.LC_naming import LC_naming_format, extract_name_lc
 from library.shuffle_spikes import shuffle_spikes
-
 
 def compute_modified_zscore(x, ref_dist):
     # Compute the median of the data
@@ -32,9 +33,10 @@ def compute_modified_zscore(x, ref_dist):
     # Compute the Modified Z-score, adjusting for division by zero
     modified_zscore = 0.6745 * (x - median) / (mad if mad else 1)
 
-    return modified_zscore    
+    return modified_zscore, median, mad   
                     
 def _check_single_format(filename, format, fxn):
+    print(filename, format, fxn)
     if re.match(str(format), str(filename)) is not None:
         return fxn(filename)
     
@@ -132,10 +134,19 @@ def compute_remapping(study, settings, data_dir):
                     cylinder = True
                 else:
                     cylinder, _ = check_disk_arena(fname)
+                    if not cylinder:
+                        print('Not cylinder for {}'.format(fname))
+                
 
-                group, name = extract_name(fname)
-
-                formats = LEC_naming_format[group][name][settings['type']]
+                if settings['naming_type'] == 'LEC':
+                    group, name = extract_name_lec(fname)
+                    formats = LEC_naming_format[group][name][settings['type']]
+                elif settings['naming_type'] == 'MEC':
+                    name = extract_name_mec(fname)
+                    formats = MEC_naming_format
+                elif settings['naming_type'] == 'LC':
+                    name = extract_name_lc(fname)
+                    formats = LC_naming_format
 
                 for format in list(formats.keys()):
                     checked = _check_single_format(fname, format, formats[format])
@@ -143,7 +154,7 @@ def compute_remapping(study, settings, data_dir):
                         break
                     else:
                         continue
-
+                
                 stim, depth, name, date = checked
 
                 ### TEMPORARY WAY TO READ OBJ LOC FROM FILE NAME ###
@@ -592,6 +603,18 @@ def compute_remapping(study, settings, data_dir):
                         curr_spike_pos_x, curr_spike_pos_y, curr_spike_pos_t = curr_spatial_spike_train.get_spike_positions()
                         curr_pts = np.array([curr_spike_pos_x, curr_spike_pos_y]).T
 
+                        if settings['rotate_evening']:
+                            if 'evening' in curr_path.lower() or 'rotated' in curr_path.lower():
+                                curr_ratemap = ndimage.rotate(curr_ratemap, settings['rotate_angle'])
+
+                                if settings['rotate_angle'] == 90:
+                                    curr_pts = np.array([curr_pts[:,1], -curr_pts[:,0]]).T
+                                    print('rotating 90 degrees for {}'.format(curr_path))
+                                else:
+                                    raise ValueError('Rotation angle not supported {}'.format(settings['rotate_angle']))
+                            else:
+                                print('not rotating for {}'.format(curr_path))
+
                         y, x = prev_ratemap.shape
                         # find indices of not nan 
                         row_prev, col_prev = np.where(~np.isnan(prev_ratemap))
@@ -600,12 +623,16 @@ def compute_remapping(study, settings, data_dir):
                         # for first map
                         if prev_shuffled is None:  
                             prev_shuffled_samples = list(map(lambda x: _single_shuffled_sample(prev_spatial_spike_train, settings), np.arange(settings['n_repeats'])))
+                            if cylinder:
+                                prev_shuffled_samples = list(map(lambda x: flat_disk_mask(x), prev_shuffled_samples))
                             prev_shuffled = list(map(lambda sample: np.array(list(map(lambda x, y: sample[x,y], row_prev, col_prev))), prev_shuffled_samples))
 
                         curr_shuffled_samples = list(map(lambda x: _single_shuffled_sample(curr_spatial_spike_train, settings), np.arange(settings['n_repeats'])))
+                        if cylinder:
+                            curr_shuffled_samples = list(map(lambda x: flat_disk_mask(x), curr_shuffled_samples))   
                         curr_shuffled = list(map(lambda sample: np.array(list(map(lambda x, y: sample[x,y], row_curr, col_curr))), curr_shuffled_samples))
 
-                        assert row_prev.all() == row_curr.all() and col_prev.all() == col_curr.all(), 'Nans in different places'
+                        # assert row_prev.all() == row_curr.all() and col_prev.all() == col_curr.all(), 'Nans in different places'
 
                         height_bucket_midpoints, width_bucket_midpoints = _get_ratemap_bucket_midpoints(prev_spatial_spike_train.arena_size, y, x)
                         height_bucket_midpoints = height_bucket_midpoints[row_curr]
@@ -614,21 +641,23 @@ def compute_remapping(study, settings, data_dir):
                         target_weights = np.array(list(map(lambda x, y: curr_ratemap[x,y], row_curr, col_curr)))
                         source_weights = source_weights / np.sum(source_weights)
                         target_weights = target_weights / np.sum(target_weights)
-                        coord_buckets = np.array(list(map(lambda x, y: [height_bucket_midpoints[x],width_bucket_midpoints[y]], row_curr, col_curr)))
+                        coord_buckets_curr = np.array(list(map(lambda x, y: [height_bucket_midpoints[x],width_bucket_midpoints[y]], row_curr, col_curr)))
+                        coord_buckets_prev = np.array(list(map(lambda x, y: [height_bucket_midpoints[x],width_bucket_midpoints[y]], row_prev, col_prev)))
 
                         spike_dens_wass = pot_sliced_wasserstein(prev_pts, curr_pts, n_projections=settings['n_projections'])
                             # elif rate_score == 'whole':
                                 # This is EMD on whole map for normalized/unnormalized rate remapping
-                        wass = pot_sliced_wasserstein(coord_buckets, coord_buckets, source_weights, target_weights, n_projections=settings['n_projections'])
-                        ref_wass_dist = list(map(lambda x, y: pot_sliced_wasserstein(coord_buckets, coord_buckets, x/np.sum(x), y/np.sum(y), n_projections=settings['n_projections']), prev_shuffled, curr_shuffled))
+                        wass = pot_sliced_wasserstein(coord_buckets_prev, coord_buckets_curr, source_weights, target_weights, n_projections=settings['n_projections'])
+                        ref_wass_dist = list(map(lambda x, y: pot_sliced_wasserstein(coord_buckets_prev, coord_buckets_curr, x/np.sum(x), y/np.sum(y), n_projections=settings['n_shuffle_projections']), prev_shuffled, curr_shuffled))
                         ref_wass_mean = np.mean(ref_wass_dist)
                         ref_wass_std = np.std(ref_wass_dist)
-                        # t_score = (wass - ref_wass_mean) / (ref_wass_std)
-                        z_score = compute_modified_zscore(wass, ref_wass_dist)
+                        z_score = (wass - ref_wass_mean) / (ref_wass_std)
+                        mod_z_score, median, mad = compute_modified_zscore(wass, ref_wass_dist)
 
                         assert len(ref_wass_dist) == settings['n_repeats'], 'n_repeats does not match length of ref_wass_dist'
    
                         pvalue = stats.t.cdf(z_score, len(ref_wass_dist)-1)
+                        mod_pvalue = stats.t.cdf(mod_z_score, len(ref_wass_dist)-1)
                         # pvalue for wass, 2 sided
                         # pvalue = 2 * stats.t.cdf(-np.abs(t_score), len(ref_wass_dist)-1)
                         # pvalue = 2 * stats.norm.cdf(-np.abs(t_score))
@@ -646,11 +675,15 @@ def compute_remapping(study, settings, data_dir):
                         regular_dict['whole_wass'].append(wass)
                         regular_dict['spike_density_wass'].append(spike_dens_wass)
                         regular_dict['z_score'].append(z_score)
+                        regular_dict['mod_z_score'].append(mod_z_score)
                         regular_dict['p_value'].append(pvalue)
+                        regular_dict['mod_p_value'].append(mod_pvalue)
                         regular_dict['shapiro_pval'].append([prev_shapiro_pval, curr_shapiro_pval])
                         regular_dict['shapiro_coeff'].append([prev_shapiro_coeff, curr_shapiro_coeff])
                         regular_dict['base_mean'].append(ref_wass_mean)
                         regular_dict['base_std'].append(ref_wass_std)
+                        regular_dict['median'].append(median)
+                        regular_dict['mad'].append(mad)
 
                         curr_fr_rate = len(curr_pts) / (curr_spike_pos_t[-1] - curr_spike_pos_t[0])
                         prev_fr_rate = len(prev_pts) / (prev_spike_pos_t[-1] - prev_spike_pos_t[0])
@@ -795,14 +828,15 @@ def compute_remapping(study, settings, data_dir):
             if settings['runUniqueGroups']:
                 # for category group (group of session ids)
                 for categ in session_comp_categories:
-                    comp_categories = session_comp_categories[categ]
+                    categories = session_comp_categories[categ]
                     prev_key = None 
-                    comp_prev = None 
-                    comp_prev_cell = None
+                    prev = None 
+                    prev_spatial = None
+                    prev_cell = None
 
                     # For session in that category
-                    for comp_ses in comp_categories:
-                        seskey = 'session_' + str(comp_ses)
+                    for ses in categories:
+                        seskey = 'session_' + str(ses)
                         ses = animal.sessions[seskey]
                         path = ses.session_metadata.file_paths['tet']
                         fname = path.split('/')[-1].split('.')[0]
@@ -819,45 +853,151 @@ def compute_remapping(study, settings, data_dir):
 
                             spatial_spike_train = cell.stats_dict['cell_stats']['spatial_spike_train']
 
-                            comp_curr = spatial_spike_train
-                            comp_curr_cell = cell
+                            rate_map_obj = spatial_spike_train.get_map('rate')
+
+                            if settings['normalizeRate']:
+                                rate_map, _ = rate_map_obj.get_rate_map(new_size = settings['ratemap_dims'][0])
+                            else:
+                                _, rate_map = rate_map_obj.get_rate_map(new_size = settings['ratemap_dims'][0])
+
+                            assert rate_map.shape == (settings['ratemap_dims'][0], settings['ratemap_dims'][1]), 'Wrong ratemap shape {} vs settings shape {}'.format(rate_map.shape, (settings['ratemap_dims'][0], settings['ratemap_dims'][1]))
+                            
+                            # Disk mask ratemap
+                            if cylinder:
+                                curr = flat_disk_mask(rate_map)
+                                if settings['downsample']:
+                                    curr_ratemap = _downsample(rate_map, settings['downsample_factor'])
+                                    curr_ratemap = flat_disk_mask(curr_ratemap)
+                                else:
+                                    curr_ratemap = curr
+                                row, col = np.where(~np.isnan(curr_ratemap))
+                                disk_ids = np.array([row, col]).T
+                            else:
+                                curr = rate_map
+                                if settings['downsample']:
+                                    curr_ratemap = _downsample(rate_map, settings['downsample_factor']) 
+                                else:
+                                    curr_ratemap = curr
+                                disk_ids = None
+
+                            curr_spatial = spatial_spike_train
+                            curr_cell = cell
                             curr_key = seskey
                             curr_path = ses.session_metadata.file_paths['tet'].split('/')[-1].split('.')[0]
 
-                            if comp_prev is not None:
-                                prev_spike_pos_x, prev_spike_pos_y, _ = comp_prev.get_spike_positions()
-                                # prev_pts = np.array([prev_spike_pos_x, prev_spike_pos_y]).reshape((-1,2))
+                            if prev is not None:
+                                # get x and y pts for spikes in pair of sessions (prev and curr) for a given comparison
+
+                                prev_spike_pos_x, prev_spike_pos_y, prev_spike_pos_t = prev_spatial.get_spike_positions()
                                 prev_pts = np.array([prev_spike_pos_x, prev_spike_pos_y]).T
 
-                                curr_spike_pos_x, curr_spike_pos_y, _ = comp_curr.get_spike_positions()
-                                # curr_pts = np.array([curr_spike_pos_x, curr_spike_pos_y]).reshape((-1,2))
+                                curr_spike_pos_x, curr_spike_pos_y, curr_spike_pos_t = curr_spatial.get_spike_positions()
                                 curr_pts = np.array([curr_spike_pos_x, curr_spike_pos_y]).T
 
-                                sliced_wass = pot_sliced_wasserstein(prev_pts, curr_pts, n_projections=settings['n_projections'])
+                                if settings['rotate_evening']:
+                                    if 'evening' or 'rotated' in curr_path.lower():
+                                        prev_ratemap = ndimage.rotate(prev_ratemap, settings['rotate_angle'])
+                                        curr_ratemap = ndimage.rotate(curr_ratemap, settings['rotate_angle'])
 
-                                context_dict[categ]['signature'].append(curr_path)
+                                        if settings['rotate_angle'] == 90:
+                                            prev_pts = np.array([prev_pts[:,1], -prev_pts[:,0]]).T
+                                            curr_pts = np.array([curr_pts[:,1], -curr_pts[:,0]]).T
+                                            print('rotating 90 degrees for {}'.format(curr_path))
+                                        else:
+                                            raise ValueError('Rotation angle not supported {}'.format(settings['rotate_angle']))
+
+                                y, x = prev_ratemap.shape
+                                # find indices of not nan 
+                                row_prev, col_prev = np.where(~np.isnan(prev_ratemap))
+                                row_curr, col_curr = np.where(~np.isnan(curr_ratemap))
+
+                                # for first map
+                                if prev_shuffled is None:  
+                                    prev_shuffled_samples = list(map(lambda x: _single_shuffled_sample(prev_spatial_spike_train, settings), np.arange(settings['n_repeats'])))
+                                    if cylinder:
+                                        prev_shuffled_samples = list(map(lambda x: flat_disk_mask(x), prev_shuffled_samples))
+                                    prev_shuffled = list(map(lambda sample: np.array(list(map(lambda x, y: sample[x,y], row_prev, col_prev))), prev_shuffled_samples))
+
+                                curr_shuffled_samples = list(map(lambda x: _single_shuffled_sample(curr_spatial_spike_train, settings), np.arange(settings['n_repeats'])))
+                                if cylinder:
+                                    curr_shuffled_samples = list(map(lambda x: flat_disk_mask(x), curr_shuffled_samples))   
+                                curr_shuffled = list(map(lambda sample: np.array(list(map(lambda x, y: sample[x,y], row_curr, col_curr))), curr_shuffled_samples))
+
+                                # assert row_prev.all() == row_curr.all() and col_prev.all() == col_curr.all(), 'Nans in different places'
+
+                                height_bucket_midpoints, width_bucket_midpoints = _get_ratemap_bucket_midpoints(prev_spatial_spike_train.arena_size, y, x)
+                                height_bucket_midpoints = height_bucket_midpoints[row_curr]
+                                width_bucket_midpoints = width_bucket_midpoints[col_curr]
+                                source_weights = np.array(list(map(lambda x, y: prev_ratemap[x,y], row_prev, col_prev)))
+                                target_weights = np.array(list(map(lambda x, y: curr_ratemap[x,y], row_curr, col_curr)))
+                                source_weights = source_weights / np.sum(source_weights)
+                                target_weights = target_weights / np.sum(target_weights)
+                                coord_buckets_curr = np.array(list(map(lambda x, y: [height_bucket_midpoints[x],width_bucket_midpoints[y]], row_curr, col_curr)))
+                                coord_buckets_prev = np.array(list(map(lambda x, y: [height_bucket_midpoints[x],width_bucket_midpoints[y]], row_prev, col_prev)))
+
+                                spike_dens_wass = pot_sliced_wasserstein(prev_pts, curr_pts, n_projections=settings['n_projections'])
+                                    # elif rate_score == 'whole':
+                                        # This is EMD on whole map for normalized/unnormalized rate remapping
+                                wass = pot_sliced_wasserstein(coord_buckets_prev, coord_buckets_curr, source_weights, target_weights, n_projections=settings['n_projections'])
+                                ref_wass_dist = list(map(lambda x, y: pot_sliced_wasserstein(coord_buckets_prev, coord_buckets_curr, x/np.sum(x), y/np.sum(y), n_projections=settings['n_shuffle_projections']), prev_shuffled, curr_shuffled))
+                                ref_wass_mean = np.mean(ref_wass_dist)
+                                ref_wass_std = np.std(ref_wass_dist)
+                                z_score = (wass - ref_wass_mean) / (ref_wass_std)
+                                mod_z_score, median, mad = compute_modified_zscore(wass, ref_wass_dist)
+
+                                assert len(ref_wass_dist) == settings['n_repeats'], 'n_repeats does not match length of ref_wass_dist'
+        
+                                pvalue = stats.t.cdf(z_score, len(ref_wass_dist)-1)
+                                mod_pvalue = stats.t.cdf(mod_z_score, len(ref_wass_dist)-1)
+                                # pvalue for wass, 2 sided
+                                # pvalue = 2 * stats.t.cdf(-np.abs(t_score), len(ref_wass_dist)-1)
+                                # pvalue = 2 * stats.norm.cdf(-np.abs(t_score))
+
+                                prev_shapiro_coeff, prev_shapiro_pval = stats.shapiro(prev_shuffled)
+                                curr_shapiro_coeff, curr_shapiro_pval = stats.shapiro(curr_shuffled)
+
+                                context_dict[categ]['signature'].append([prev_path, curr_path])
                                 context_dict[categ]['name'].append(name)
                                 context_dict[categ]['date'].append(date)
                                 context_dict[categ]['depth'].append(depth)
                                 context_dict[categ]['unit_id'].append(cell_label)
                                 context_dict[categ]['tetrode'].append(animal.animal_id.split('tet')[-1])
                                 context_dict[categ]['session_ids'].append([prev_key, curr_key])
-                                context_dict[categ]['sliced_wass'].append(sliced_wass)
+                                context_dict[categ]['whole_wass'].append(wass)
+                                context_dict[categ]['spike_density_wass'].append(spike_dens_wass)
+                                context_dict[categ]['z_score'].append(z_score)
+                                context_dict[categ]['mod_z_score'].append(mod_z_score)
+                                context_dict[categ]['p_value'].append(pvalue)
+                                context_dict[categ]['mod_p_value'].append(mod_pvalue)
+                                context_dict[categ]['shapiro_pval'].append([prev_shapiro_pval, curr_shapiro_pval])
+                                context_dict[categ]['shapiro_coeff'].append([prev_shapiro_coeff, curr_shapiro_coeff])
+                                context_dict[categ]['base_mean'].append(ref_wass_mean)
+                                context_dict[categ]['base_std'].append(ref_wass_std)
+                                context_dict[categ]['median'].append(median)
+                                context_dict[categ]['mad'].append(mad)
 
-                                # context_dict[categ] = _fill_cell_type_stats(context_dict[categ], comp_prev_cell, comp_curr_cell)
+                                curr_fr_rate = len(curr_pts) / (curr_spike_pos_t[-1] - curr_spike_pos_t[0])
+                                prev_fr_rate = len(prev_pts) / (prev_spike_pos_t[-1] - prev_spike_pos_t[0])
+                                fr_rate_ratio = curr_fr_rate / prev_fr_rate
+                                fr_rate_change = curr_fr_rate - prev_fr_rate
 
-                                # context_dict['information'].append([prev_cell.stats_dict['cell_stats']['spatial_information_content'],curr_cell.stats_dict['cell_stats']['spatial_information_content'],curr_cell.stats_dict['cell_stats']['ratemap_stats_dict']['spatial_information_content']-prev_cell.stats_dict['cell_stats']['spatial_information_content']])
-                                # context_dict['grid_score'].append([prev_cell.stats_dict['cell_stats']['grid_score'],curr_cell.stats_dict['cell_stats']['grid_score'],curr_cell.stats_dict['cell_stats']['grid_score']-prev_cell.stats_dict['cell_stats']['grid_score']])
-                                # context_dict['b_top'].append([prev_cell.stats_dict['cell_stats']['b_score_top'],curr_cell.stats_dict['cell_stats']['b_score_top'],curr_cell.stats_dict['cell_stats']['b_score_top']-prev_cell.stats_dict['cell_stats']['b_score_top']])
-                                # context_dict['b_bottom'].append([prev_cell.stats_dict['cell_stats']['b_score_bottom'],curr_cell.stats_dict['cell_stats']['b_score_bottom'],curr_cell.stats_dict['cell_stats']['b_score_bottom']-prev_cell.stats_dict['cell_stats']['b_score_bottom']])
-                                # context_dict['b_right'].append([prev_cell.stats_dict['cell_stats']['b_score_right'],curr_cell.stats_dict['cell_stats']['b_score_right'],curr_cell.stats_dict['cell_stats']['b_score_right']-prev_cell.stats_dict['cell_stats']['b_score_right']])
-                                # context_dict['b_left'].append([prev_cell.stats_dict['cell_stats']['b_score_left'],curr_cell.stats_dict['cell_stats']['b_score_left'],curr_cell.stats_dict['cell_stats']['b_score_left']-prev_cell.stats_dict['cell_stats']['b_score_left']])
+                                context_dict[categ]['fr_rate'].append([prev_fr_rate, curr_fr_rate])
+                                context_dict[categ]['fr_rate_ratio'].append(fr_rate_ratio)
+                                context_dict[categ]['fr_rate_change'].append(fr_rate_change)
+
+                                context_dict[categ]['n_repeats'].append(settings['n_repeats'])
+                                context_dict[categ]['arena_size'].append([prev_spatial_spike_train.arena_size, curr_spatial_spike_train.arena_size])
+                                context_dict[categ]['cylinder'].append(cylinder)
+                                assert prev.shape == curr.shape
+                                context_dict[categ]['ratemap_dims'].append(curr.shape)
+                                if settings['downsample']:
+                                    context_dict[categ]['downsample_factor'].append(settings['downsample_factor'])
+                                else:
+                                    context_dict[categ]['downsample_factor'].append(1)
                                 
-                                # context_dict['speed_score'].append([prev_cell.stats_dict['cell_stats']['speed_score'],curr_cell.stats_dict['cell_stats']['speed_score'],curr_cell.stats_dict['cell_stats']['speed_score']-prev_cell.stats_dict['cell_stats']['speed_score']])
-                                # context_dict['hd_score'].append([prev_cell.stats_dict['cell_stats']['hd_score'],curr_cell.stats_dict['cell_stats']['hd_score'],curr_cell.stats_dict['cell_stats']['hd_score']-prev_cell.stats_dict['cell_stats']['hd_score']])
-
-                            comp_prev = comp_curr
-                            comp_prev_cell = comp_curr_cell
+                            prev = curr
+                            prev_cell = curr_cell
+                            prev_spatial = curr_spatial
                             prev_key = curr_key
                             prev_path = curr_path
 
@@ -865,7 +1005,7 @@ def compute_remapping(study, settings, data_dir):
                 plot_matched_sesssion_waveforms(cell_session_appearances, settings, regular_dict, data_dir)
             # c += 1
 
-    return {'regular': regular_dict, 'object': obj_dict, 'centroid': centroid_dict, 'context': context_dict}
+    return {'regular': regular_dict, 'object': obj_dict, 'centroid': centroid_dict, 'context': dict}
 
 def _fill_cell_type_stats(inp_dict, prev_cell, curr_cell):
     inp_dict['information'].append([prev_cell.stats_dict['cell_stats']['spatial_information_content'],curr_cell.stats_dict['cell_stats']['spatial_information_content'],curr_cell.stats_dict['cell_stats']['spatial_information_content']-prev_cell.stats_dict['cell_stats']['spatial_information_content']])

@@ -282,7 +282,7 @@ class HaftingSpikeMap():
     #     return spatial_spike_train
 
     def get_spike_map(self, smoothing_factor=None, new_size=None, shuffle=False):
-        if self.map_data is None or (self.map_data is not None and new_size != self.map_data.shape[0]) == True:
+        if self.map_data is None or (self.map_data is not None and new_size != self.map_data.shape[0]) == True or shuffle == True:
             if self.smoothing_factor != None:
                 smoothing_factor = self.smoothing_factor
                 assert smoothing_factor != None, 'Need to add smoothing factor to function inputs'
@@ -290,6 +290,7 @@ class HaftingSpikeMap():
                 self.smoothing_factor = smoothing_factor
 
             if shuffle:
+                # print('USING SHUFFLED SPIKES')
                 spike_x, spike_y, new_spike_times = shuffle_spikes(self.spatial_spike_train.spike_times,self.spike_x, self.spike_y, self.new_spike_times)
                 # assert np.asarray(shuffled_spikes).shape == np.asarray(self.spatial_spike_train.spike_times).shape,'Shuffled spikes {} are not the same shape as original spikes {}'.format(np.asarray(shuffled_spikes).shape, np.asarray(self.spatial_spike_train.spike_times).shape)
                 # spike_x, spike_y, new_spike_times = self.spatial_spike_train.get_spike_positions(shuffled_spikes=shuffled_spikes)

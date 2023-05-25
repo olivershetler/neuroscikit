@@ -1,5 +1,6 @@
 import pandas as pd
 
+
 # def split_B6_LEC_20160404(filename):
 #     name = filename.split('_')[0]
 #     date = filename.split('_')[1].split('-')[0]
@@ -29,7 +30,7 @@ def _check_odor(odor):
     return odor
 
 def _merge_depth(name, date):
-    print(name)
+    # print(name)
     if name == 'B6-LEC1':
         pth = r"C:\Users\aaoun\OneDrive - cumc.columbia.edu\Desktop\HussainiLab\neuroscikit_test_data\LEC_filter_excel\B6 LEC1 depths.xlsx"
         df = pd.read_excel(pth)
@@ -351,9 +352,9 @@ def split_name_date_word_angle(filename):
     return _check_angle(angle), depth, name, date
 
 
-def extract_name(filename):
+def extract_name_lec(filename):
     name = filename.split('_')[0]
-    print(filename, name)
+    # print(filename, name)
     if 'B6' in name:
         group = 'B6'
     elif 'ANT' in name:
