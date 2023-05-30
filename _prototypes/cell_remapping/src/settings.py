@@ -35,6 +35,7 @@ settings_dict['rotate_angle'] = 90
 # sub2 2.xlsx is 32,32 shuffle = 1000 no jit - 13204.84 seconds
 # sub3 2.xlss is 16,16 shuffle = 1000 no jit (double check run time with ither sub3 to see which is 1. and 2.) - 7452.62 seconds
 # sub4 1.xlsx is 16,16 shuffle = 1000 no jit, vectorized ops - 2315.20 seconds
+# 16,16 shuffle = 500, no jit, vectorized on spiek map (could use jit on arrange spike with ubuntu) - 1018.07 seconds
 
 """ 
 IF YOU ARE DOING REGULAR REMAPPING

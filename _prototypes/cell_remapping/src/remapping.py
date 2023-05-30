@@ -72,6 +72,7 @@ def compute_remapping(study, settings, data_dir):
 
     # c = 0
     isStart = True
+    context_paths = {}
     # batch_map(study, tasks, ratemap_size=settings['ratemap_dims'][0])
 
     # if settings['hasObject'] or settings['runFields']:    
@@ -1134,8 +1135,7 @@ def compute_remapping(study, settings, data_dir):
                     writer.close()
                     book.save(centroid_path_to_use)
             if 'context' in to_save:
-                context_count = 0
-                context_paths = []
+        
                 for context in to_save['context']:
                     df = pd.DataFrame(to_save['context'][context])
                     if isStart:
@@ -1151,9 +1151,9 @@ def compute_remapping(study, settings, data_dir):
                         df.to_excel(writer, sheet_name='Summary')
                         writer.save()
                         writer.close()
-                        context_paths.append(context_path_to_use)
+                        context_paths[context] = context_path_to_use
                     else:
-                        context_path_to_use = context_paths[context_count]
+                        context_path_to_use = context_paths[context]
                         book = load_workbook(context_path_to_use)
                         writer = pd.ExcelWriter(context_path_to_use, engine='openpyxl')
                         writer.book = book
@@ -1162,7 +1162,6 @@ def compute_remapping(study, settings, data_dir):
                         # writer.save()
                         writer.close()
                         book.save(context_path_to_use)
-                    context_count += 1
 
             isStart = False
 
@@ -1278,7 +1277,9 @@ def _aggregate_cell_info(animal, settings):
                         print('drawing shuffled samples')
                         # shuffled_samples = list(map(lambda x: _single_shuffled_sample(spatial_spike_train, settings), np.arange(settings['n_repeats'])))
                         norm, raw = spatial_spike_train.get_map('rate').get_rate_map(new_size = settings['ratemap_dims'][0], shuffle=True, n_repeats=settings['n_repeats'])
+                        print(norm.shape, raw.shape, rate_map.shape)
                         shuffled_samples = list(map(lambda x, y: _single_shuffled_sample(x, y, settings), norm, raw))
+                        print(np.array(shuffled_samples).shape)
                         if cylinder:
                             shuffled_samples = list(map(lambda x: flat_disk_mask(x), shuffled_samples))
                         print('turning into valid weights')

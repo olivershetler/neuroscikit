@@ -11,7 +11,7 @@ from scipy import signal
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
 
-from library.map_utils import _compute_unmasked_ratemap, _temp_spike_map, _temp_occupancy_map, _speed_bins, _speed2D
+from library.map_utils import _compute_unmasked_ratemap, _temp_spike_map, _temp_occupancy_map, _speed_bins, _speed2D, _temp_spike_map_new
 from core.spatial import Position2D
 from library.ensemble_space import Cell
 from core.spikes import SpikeTrain
@@ -263,6 +263,9 @@ class HaftingSpikeMap():
         self.spike_x, self.spike_y, self.new_spike_times = self.spatial_spike_train.spike_x, self.spatial_spike_train.spike_y, self.spatial_spike_train.new_spike_times
         self.arena_size = self.spatial_spike_train.arena_size
         self.map_data = None
+        self.raw_map_data = None
+        self.shuffled_map_data = None
+        self.shuffled_raw_map_data = None
 
         if 'session_metadata' in kwargs:
             self.session_metadata = kwargs['session_metadata']
@@ -314,16 +317,30 @@ class HaftingSpikeMap():
                     self.map_data, self.map_data_raw = self.compute_spike_map(spike_x, spike_y, smoothing_factor, self.arena_size)
             else:
                 # loop through iterations of shuffled spikes
-                result = list(map(lambda iter: self.compute_spike_map(spike_x[iter], spike_y[iter], smoothing_factor, self.arena_size, new_size=new_size), range(len(new_spike_times))))
-                mdatas = [item[0] for item in result]
-                mdatas_raw = [item[1] for item in result]
-                self.map_data = np.asarray(mdatas)
-                self.map_data_raw = np.asarray(mdatas_raw)
+                # result = list(map(lambda iter: self.compute_spike_map(spike_x[iter], spike_y[iter], smoothing_factor, self.arena_size, new_size=new_size), range(len(new_spike_times))))
+                # mdatas = [item[0] for item in result]
+                # mdatas_raw = [item[1] for item in result]
+                # self.map_data = np.asarray(mdatas)
+                # self.map_data_raw = np.asarray(mdatas_raw)
+                assert spike_x.shape[0] == n_repeats, 'Number of repeats {} does not match number of shuffled spike trains {}'.format(n_repeats, spike_x.shape[0])
+                map_data = np.empty((n_repeats, new_size, new_size))
+                map_data_raw = np.empty((n_repeats, new_size, new_size))
+                for i in range(n_repeats):
+                    spike_map, spike_map_raw = self.compute_spike_map(
+                        spike_x[i], spike_y[i], smoothing_factor, self.arena_size, new_size=new_size
+                    )
+                    map_data[i,:,:] = spike_map
+                    map_data_raw[i,:,:] = spike_map_raw
 
-            if not shuffle:
-                self.spatial_spike_train.add_map_to_stats('spike', self)
+                self.shuffled_map_data = map_data
+                self.shuffled_map_data_raw = map_data_raw
 
-        return self.map_data, self.map_data_raw
+            self.spatial_spike_train.add_map_to_stats('spike', self)
+
+        if shuffle:
+            return self.shuffled_map_data, self.shuffled_map_data_raw
+        else:
+            return self.map_data, self.map_data_raw
 
     def compute_spike_map(self, spike_x, spike_y, smoothing_factor, arena_size, new_size=64):
         # arena_ratio = arena_size[0]/arena_size[1]
@@ -356,7 +373,14 @@ class HaftingSpikeMap():
         # # Resize maps
         # spike_map = _interpolate_matrix(spike_map, cv2_interpolation_method=cv2.INTER_NEAREST)
 
-        spike_map, spike_map_raw = _temp_spike_map(self.spatial_spike_train.x, self.spatial_spike_train.y, self.spatial_spike_train.t, arena_size, spike_x, spike_y, smoothing_factor, interp_size=(new_size,new_size))
+        # spike_map, spike_map_raw = _temp_spike_map(self.spatial_spike_train.x, self.spatial_spike_train.y, self.spatial_spike_train.t, arena_size, spike_x, spike_y, smoothing_factor, interp_size=(new_size,new_size))
+        spike_map, spike_map_raw = _temp_spike_map_new(self.spatial_spike_train.x, self.spatial_spike_train.y, self.spatial_spike_train.t, arena_size, spike_x, spike_y, smoothing_factor, interp_size=(new_size,new_size))
+
+        # for i in range(len(spike_map)):
+        #     for j in range(len(spike_map[i])):
+        #         assert spike_map[i][j] == spike_map_new[i][j]
+
+        # stop(crash)
 
         return spike_map, spike_map_raw
 
@@ -377,6 +401,8 @@ class HaftingRateMap():
 
         self.map_data = None
         self.raw_map_data = None
+        self.map_data_shuffled = None
+        self.raw_map_data_shuffled = None
 
         if 'session_metadata' in kwargs:
             self.session_metadata = kwargs['session_metadata']
@@ -396,11 +422,13 @@ class HaftingRateMap():
         if self.map_data is None or (self.map_data is not None and new_size != self.map_data.shape[0]) == True or shuffle == True:
             if self.map_data is None:
                 print('computing rate map bcs map_data is None')
-            elif new_size != self.map_data.shape[0] and new_size != len(self.map_data[0]):
+            elif new_size != self.map_data.shape[0]:
+            # and new_size != len(self.map_data[0]):
                 print('computing rate map bcs new_size {} != self.map_data.shape[0] {}'.format(new_size, self.map_data.shape[0]))
-            else:
+            elif shuffle == True:
                 print('computing rate map bcs shuffle == True')
-                assert shuffle == True, 'shuffle == True but new_size {} == self.map_data.shape[0] {}'.format(new_size, self.map_data.shape[0])
+            elif new_size != len(self.map_data[0]):
+                print('computing unshuffled rate map bcs self.var is set to shuffled dist')
             
             # elif shuffle == True and new_size != len(self.map_data[0]):
             #     print('computing rate map bcs shuffle == True and new_size {} != len(self.map_data[0]) {}'.format(new_size, len(self.map_data[0])))
@@ -414,14 +442,31 @@ class HaftingRateMap():
                 assert smoothing_factor != None, 'Need to add smoothing factor to function inputs'
 
             if new_size is not None:
-                self.map_data, self.raw_map_data = self.compute_rate_map(self.occ_map, self.spike_map, new_size=new_size, shuffle=shuffle, n_repeats=n_repeats)
+                map_data, raw_map_data = self.compute_rate_map(self.occ_map, self.spike_map, new_size=new_size, shuffle=shuffle, n_repeats=n_repeats)
                 # assert self.map_data.shape[0] == new_size, 'new_size {} != self.map_data.shape[0] {}'.format(new_size, self.map_data.shape[0])
             else:
-                self.map_data, self.raw_map_data = self.compute_rate_map(self.occ_map, self.spike_map, shuffle=shuffle, n_repeats=n_repeats)
+                map_data, raw_map_data = self.compute_rate_map(self.occ_map, self.spike_map, shuffle=shuffle, n_repeats=n_repeats)
+
+            if shuffle == False:
+                self.map_data = map_data
+                self.raw_map_data = raw_map_data
+            else:
+                self.map_data_shuffled = map_data
+                self.raw_map_data_shuffled = raw_map_data
 
             self.spatial_spike_train.add_map_to_stats('rate', self)
+            
+            # else:
+                # self.spatial_spike_train.add_map_to_stats('rate_shuffled', self)
+
+            # return map_data, raw_map_data
         else:
             print('using existing rate map')
+        
+        if shuffle == False:
+            return self.map_data, self.raw_map_data
+        else:
+            return self.map_data_shuffled, self.raw_map_data_shuffled
         # elif self.map_data is not None and new_size != self.map_data.shape[0]:
         
         # if self.map_data is None:
@@ -486,8 +531,6 @@ class HaftingRateMap():
 
         #     self.spatial_spike_train.add_map_to_stats('rate', self)
 
-        return self.map_data, self.raw_map_data
-
     def compute_rate_map(self, occupancy_map, spike_map, new_size=None, shuffle=False, n_repeats=None):
         '''
         Parameters:
@@ -543,6 +586,8 @@ class HaftingRateMap():
             rate_map_raw = list(map(lambda i: np.where(raw_occ < 0.0001, 0, spike_map_data_raw[i] / raw_occ) / max(spike_map_data_raw[i].flatten()), range(len(spike_map_data_raw))))
             rate_map = np.array(rate_map)
             rate_map_raw = np.array(rate_map_raw)
+            # print(rate_map.shape)
+            # print(rate_map_raw.shape)
 
         # rate_map_raw = _compute_unmasked_ratemap(occ_map_data, spike_map_data)
 

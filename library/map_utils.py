@@ -367,4 +367,21 @@ def _temp_spike_map(pos_x: np.ndarray, pos_y: np.ndarray, pos_t: np.ndarray,
 
     return spike_map_smooth, spike_map_raw
    
+def _temp_spike_map_new(pos_x, pos_y, pos_t, arena_size, spike_x, spike_y, smoothing_factor, interp_size=(64, 64)):
+    kernlen = int(smoothing_factor * 8)
+    std = int(0.2 * kernlen)
+    min_x, max_x = np.min(pos_x), np.max(pos_x)
+    min_y, max_y = np.min(pos_y), np.max(pos_y)
+    arena_height = abs(max_y - min_y)
+    arena_width = abs(max_x - min_x)
+    row_resize, column_resize = interp_size
+    spike_map_raw = np.zeros((row_resize, column_resize))
+    row_values = np.linspace(max_x, min_x, row_resize)
+    column_values = np.linspace(min_y, max_y, column_resize)
+    row_index = np.abs(row_values[:, np.newaxis] - spike_y).argmin(axis=0)
+    column_index = np.abs(column_values[:, np.newaxis] - spike_x).argmin(axis=0)
+    np.add.at(spike_map_raw, (row_index, column_index), 1)
+    spike_map_smooth = cv2.filter2D(spike_map_raw, -1, _gkern(kernlen, std))
+    spike_map_smooth = spike_map_smooth / np.max(spike_map_smooth)
+    return spike_map_smooth, spike_map_raw
 
