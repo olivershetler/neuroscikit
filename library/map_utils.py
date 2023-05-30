@@ -374,13 +374,15 @@ def _temp_spike_map_new(pos_x, pos_y, pos_t, arena_size, spike_x, spike_y, smoot
     min_y, max_y = np.min(pos_y), np.max(pos_y)
     arena_height = abs(max_y - min_y)
     arena_width = abs(max_x - min_x)
+    arena_size = (abs(max_y - min_y), abs(max_x - min_x)) # (height, width)
     row_resize, column_resize = interp_size
     spike_map_raw = np.zeros((row_resize, column_resize))
     row_values = np.linspace(max_x, min_x, row_resize)
     column_values = np.linspace(min_y, max_y, column_resize)
     row_index = np.abs(row_values[:, np.newaxis] - spike_y).argmin(axis=0)
     column_index = np.abs(column_values[:, np.newaxis] - spike_x).argmin(axis=0)
-    np.add.at(spike_map_raw, (row_index, column_index), 1)
+    # np.add.at(spike_map_raw, (row_index, column_index), 1)
+    np.add.at(spike_map_raw, (row_index, column_index), np.ones_like(row_index))
     spike_map_smooth = cv2.filter2D(spike_map_raw, -1, _gkern(kernlen, std))
     spike_map_smooth = spike_map_smooth / np.max(spike_map_smooth)
     return spike_map_smooth, spike_map_raw
