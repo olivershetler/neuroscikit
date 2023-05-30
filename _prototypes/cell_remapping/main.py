@@ -73,7 +73,7 @@ def main(overwrite_settings=None):
     """ OPTION 2 """
     """ RUNS EACH SUBFOLDER ONE AT A TIME """
     subdirs = np.sort([ f.path for f in os.scandir(data_dir) if f.is_dir() ])
-    sys.stdout = open(r'C:\Users\aaoun\OneDrive - cumc.columbia.edu\Desktop\HussainiLab\neuroscikit\_prototypes\cell_remapping\testlogRadha.txt', 'w')
+    # sys.stdout = open(r'C:\Users\aaoun\OneDrive - cumc.columbia.edu\Desktop\HussainiLab\neuroscikit\_prototypes\cell_remapping\testlogRadha.txt', 'w')
     for subdir in subdirs:
         try:
             study = make_study(subdir,settings_dict=settings_dict)
@@ -91,7 +91,7 @@ def main(overwrite_settings=None):
             
             if len(study.animals) > 0 and len(study.animals[0].sessions) > 0:
                 print('SAVING OUTPUT FOR DIRECTORY ' + str(subdir))
-                _save_output(output, subdir, start_time)
+                # _save_output(output, subdir, start_time)
             else:
                 print('NO DATA FOR DIRECTORY ' + str(subdir))
 
@@ -100,8 +100,8 @@ def main(overwrite_settings=None):
             print('DID NOT WORK FOR DIRECTORY ' + str(subdir))
     print('COMPLETED ALL FOLDERS')
     print('Total run time: ' + str(time.time() - start_time))
-    sys.stdout.close()
-    sys.stdout = sys.__stdout__
+    # sys.stdout.close()
+    # sys.stdout = sys.__stdout__
 
     # # """ OPTION 3 """
     # # Define the function that processes each subfolder

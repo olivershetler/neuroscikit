@@ -61,12 +61,12 @@ def plot_shuffled_regular_remapping(prev, curr, ref_wass_dist, prev_sample, curr
     fig.histogram_plot(ref_wass_dist, xlabel2, ylabel, fig.ax['3'])
     fig.qq_plot(ref_wass_dist, fig.ax['4'])
 
-    # random map from shuffles
-    chosen_prev = prev_sample[np.random.choice(np.arange(len(prev_sample)), 1)[0]]
-    chosen_curr = curr_sample[np.random.choice(np.arange(len(curr_sample)), 1)[0]]
+    # # random map from shuffles
+    # chosen_prev = prev_sample[np.random.choice(np.arange(len(prev_sample)), 1)[0]]
+    # chosen_curr = curr_sample[np.random.choice(np.arange(len(curr_sample)), 1)[0]]
 
-    fig.density_plot(chosen_prev, fig.ax['5'])
-    fig.density_plot(chosen_curr, fig.ax['6'])
+    fig.density_plot(prev_sample, fig.ax['5'])
+    fig.density_plot(curr_sample, fig.ax['6'])
 
     prev_key, curr_key = plot_settings['session_ids'][-1]
     wass = plot_settings['whole_wass'][-1]

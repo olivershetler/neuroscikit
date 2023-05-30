@@ -8,6 +8,191 @@ sys.path.append(PROJECT_PATH)
 
 import library.opexebo.errors as errors
 
+from numba import jit
+import numpy as np
+import numba as nb
+
+# def _arrange_spikes(pos_t, pos_x, pos_y, shuffled_times):
+#     nshuffles, nsamples = shuffled_times.shape
+
+#     shuffled_spikes_x = np.empty((nshuffles, nsamples))
+#     shuffled_spikes_y = np.empty((nshuffles, nsamples))
+
+#     for i in range(nshuffles):
+#         indices = np.abs(pos_t - shuffled_times[i]).argmin(axis=0)
+#         shuffled_spikes_x[i] = pos_x[indices]
+#         shuffled_spikes_y[i] = pos_y[indices]
+
+#     # shuffled_spikes_x = list(map(lambda x: pos_x[np.abs(pos_t - x).argmin()], shuffled_times))
+#     # # shuffled_spikes_y = list(map(lambda x: pos_y[np.abs(pos_t - x).argmin()], shuffled_times))
+
+#     # shuffled_spikes_x, shuffled_spikes_y = zip(*map(lambda x: (pos_x[np.abs(pos_t - x).argmin()], pos_y[np.abs(pos_t - x).argmin()]), shuffled_times))
+
+#     # shuffled_spikes_y = np.array(shuffled_spikes_y)
+#     # shuffled_spikes_x = np.array(shuffled_spikes_x)
+
+#     print(shuffled_spikes_x.shape, shuffled_spikes_y.shape)
+
+#     return shuffled_spikes_x, shuffled_spikes_y
+
+
+
+# @jit(nopython=True)
+def _arrange_spikes(pos_t, pos_x, pos_y, shuffled_times):
+    shuffled_spikes_x = np.empty_like(shuffled_times)
+    shuffled_spikes_y = np.empty_like(shuffled_times)
+
+    for i in range(shuffled_times.shape[0]):
+        for j in range(shuffled_times.shape[1]):
+            time = shuffled_times[i, j]
+            index = np.abs(pos_t - time).argmin()
+            shuffled_spikes_x[i, j] = pos_x[index]
+            shuffled_spikes_y[i, j] = pos_y[index]
+
+    return shuffled_spikes_x, shuffled_spikes_y
+
+def _shuffle_new(times, offset_lim, iterations, t_start=None, t_stop=None):
+    if t_start is None:
+        t_start = np.min(times)
+    if t_stop is None:
+        t_stop = np.max(times)
+
+    if t_start > np.min(times):
+        raise ValueError("`t_start` must be greater than or equal to `min(times)`")
+    if t_stop < np.max(times):
+        raise ValueError("`t_stop` must be less than or equal to `max(times)`")
+    if t_start == t_stop:
+        raise ValueError("`t_start` and `t_stop` cannot be identical ({0})".format(t_start))
+    if offset_lim >= 0.5 * (t_stop - t_start):
+        offset_lim = int(0.5 * (t_stop - t_start))
+        if offset_lim == 0.5 * (t_stop - t_start):
+            offset_lim -= 1
+        print("`offset_lim` must be less than half of the time span ({0}, {1}). Using closest int offset_lim is set to {2}".format(offset_lim, t_stop - t_start, offset_lim))
+
+    np.random.seed(0)
+    increments = np.random.uniform(offset_lim, t_stop - offset_lim, size=iterations)
+    output = np.tile(times, (iterations, 1)) + increments[:, np.newaxis]
+
+    out_of_bounds = output > t_stop
+    output[out_of_bounds] -= (t_stop - t_start)
+
+    return output, increments
+
+def shuffle_spikes_new(ts, pos_x, pos_y, pos_t, iters=1000):
+    """
+    Shuffles spike and position data.
+
+    Parameters:
+        ts (np.ndarray): Timestamps of spike events.
+        pos_x, pos_y, pos_t (np.ndarray): Arrays of x, y coordinates as well as position timestamps.
+
+    Returns:
+        np.ndarray: shuffled_spikes
+            Array where columns are shuffled x and y spike coordinates, respectively.
+    """
+    if not isinstance(ts, np.ndarray) or not isinstance(pos_x, np.ndarray) or not isinstance(pos_y, np.ndarray) or not isinstance(pos_t, np.ndarray):
+        raise ValueError("All input parameters must be NumPy arrays")
+
+    if ts.ndim != 1 or pos_x.ndim != 1 or pos_y.ndim != 1 or pos_t.ndim != 1:
+        raise ValueError("All input parameters must be 1D arrays")
+
+    if not np.isfinite(ts).all() or not np.isfinite(pos_x).all() or not np.isfinite(pos_y).all() or not np.isfinite(pos_t).all():
+        raise ValueError("Input arrays cannot include non-finite or NaN values")
+
+    # spike_x = np.zeros_like(ts)
+    # spike_y = np.zeros_like(ts)
+    # shuffled_spike_xy = np.zeros((2, len(ts)))
+
+    # Compute shuffling between 20 and 100
+    print(np.asarray(ts).shape, np.asarray(pos_x).shape, np.asarray(pos_y).shape, np.asarray(pos_t).shape)
+    print('Getting {} iterations of shuffles'.format(iters))
+    shuffled_times = _shuffle_new(ts, 20, iters, t_start=np.min(ts), t_stop=np.max(ts))[0]
+    print(np.asarray(shuffled_times).shape)
+    # shuffled_spikes = []
+    # for i, single_shuffled_time in enumerate(shuffled_times):
+    #     for j, time in enumerate(single_shuffled_time):
+    #         index = np.abs(pos_t - time).argmin()
+    #         spike_x[j] = pos_x[index]
+    #         spike_y[j] = pos_y[index]
+
+    #     shuffled_spike_xy[0] = spike_x
+    #     shuffled_spike_xy[1] = spike_y
+    #     shuffled_spikes.append(shuffled_spike_xy.copy())
+    print('arranging shuffled spikes')
+    # shuffled_spikes_x = np.array(list(map(lambda single_shuffled_time: np.array(list(map(lambda t: pos_x[np.abs(pos_t - t).argmin()], single_shuffled_time))), shuffled_times)))
+    # shuffled_spikes_y = np.array(list(map(lambda single_shuffled_time: np.array(list(map(lambda t: pos_y[np.abs(pos_t - t).argmin()], single_shuffled_time))), shuffled_times)))
+    # vectorized_x = np.vectorize(lambda t: pos_x[np.abs(pos_t - t).argmin()])
+    # vectorized_y = np.vectorize(lambda t: pos_y[np.abs(pos_t - t).argmin()])
+
+    # shuffled_spikes_x = np.array(list(map(vectorized_x, shuffled_times)))
+    # shuffled_spikes_y = np.array(list(map(vectorized_y, shuffled_times)))
+    # from numba import jit
+
+    # Call the function with your data
+    shuffled_spikes_x, shuffled_spikes_y = _arrange_spikes(pos_t, pos_x, pos_y, shuffled_times)
+
+
+    return np.array(shuffled_spikes_x).squeeze(), np.array(shuffled_spikes_y).squeeze(), shuffled_times.squeeze()
+
+
+
+@jit(nopython=True)
+def _single_shuffle2(times, offset_lim, t_start, t_stop):
+    iterations = 1
+
+    # Offset limit adjustment
+    time_span = t_stop - t_start
+    max_offset_lim = 0.5 * time_span
+    if offset_lim >= max_offset_lim:
+        offset_lim = int(max_offset_lim)
+        if offset_lim == max_offset_lim:
+            offset_lim -= 1
+        print("`offset_lim` must be less than half of the time span ({}, {}). Using closest int offset_lim is set to {}".format(offset_lim, time_span, offset_lim))
+
+    # Argument checking
+    if not isinstance(times, np.ndarray):
+        raise errors.ArgumentError("`times` must be a 1D Numpy array")
+    if times.ndim != 1:
+        raise errors.ArgumentError("`times` must be a 1D array")
+    if not np.isfinite(times).all():
+        raise errors.ArgumentError("`times` cannot include non-finite or NaN values")
+    if offset_lim <= 0:
+        raise errors.ArgumentError("`offset_lim` must be greater than zero")
+    if not np.isfinite(offset_lim):
+        raise errors.ArgumentError("`offset_lim` must be finite")
+    if not np.isfinite(iterations):
+        raise errors.ArgumentError("`iterations` must be finite")
+    if not np.isfinite(t_start):
+        raise errors.ArgumentError("`t_start` must be finite")
+    if not np.isfinite(t_stop):
+        raise errors.ArgumentError("`t_stop` must be finite")
+    if t_start > np.min(times):
+        raise errors.ArgumentError("`t_start` must be greater than or equal to `min(times)`")
+    if t_stop < np.max(times):
+        raise errors.ArgumentError("`t_stop` must be less than or equal to `max(times)`")
+    if t_start == t_stop:
+        raise errors.ArgumentError("`t_start` and `t_stop` cannot be identical")
+
+    if offset_lim >= max_offset_lim:
+        raise errors.ArgumentError("`offset_lim` must be less than half of the time span")
+
+    # Main logic
+    increments_base = np.random.RandomState().rand(iterations)  # uniformly distributed in [0,1]
+    increments = t_start + offset_lim + (increments_base * (time_span - 2 * offset_lim))
+
+    output = times + increments
+    output = output.squeeze()
+
+    # Circularizing: folding times outside the boundary back inside the boundary
+    out_of_bounds = output > t_stop
+    output[out_of_bounds] = output[out_of_bounds] - time_span
+
+    assert len(output.shape) == 1, "output.shape is not 1D"
+    output = np.sort(output)
+
+    return output, increments
+
+
 
 def shuffle_spikes(ts: np.ndarray, pos_x: np.ndarray,
                    pos_y: np.ndarray, pos_t: np.ndarray) -> list:
@@ -48,7 +233,9 @@ def shuffle_spikes(ts: np.ndarray, pos_x: np.ndarray,
     #     shuffled_spike_xy[1] = spike_y
     #     shuffled_spikes.append(shuffled_spike_xy.copy())
 
-    shuffled_times = _single_shuffle(ts, 20, t_start=min(ts), t_stop = max(ts))[0]
+
+    # shuffled_times = _single_shuffle(ts, 20, t_start=min(ts), t_stop = max(ts))[0]
+    shuffled_times = _single_shuffle2(ts, 20, t_start=min(ts), t_stop = max(ts))[0]
 
     # shuffled_spikes = []
     spike_x = []

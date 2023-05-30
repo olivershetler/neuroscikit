@@ -1,12 +1,15 @@
 import os, sys
 import numpy as np
 import itertools
+from openpyxl import load_workbook
 import re
+import pandas as pd
 import matplotlib.pyplot as plt
 import copy
 from scipy import stats, ndimage
 from skimage.measure import block_reduce
 import cv2
+import xlsxwriter
 
 PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
@@ -40,8 +43,8 @@ def _check_single_format(filename, format, fxn):
     if re.match(str(format), str(filename)) is not None:
         return fxn(filename)
     
-def _single_shuffled_sample(spatial_spike_train, settings):
-    norm, raw = spatial_spike_train.get_map('rate').get_rate_map(new_size = settings['ratemap_dims'][0], shuffle=True)
+def _single_shuffled_sample(norm, raw, settings):
+    # norm, raw = spatial_spike_train.get_map('rate').get_rate_map(new_size = settings['ratemap_dims'][0], shuffle=True)
     if settings['normalizeRate']:
         rate_map = norm
         # rate_map = rate_map / np.sum(rate_map)
@@ -68,13 +71,13 @@ def _downsample(img, downsample_factor):
 def compute_remapping(study, settings, data_dir):
 
     # c = 0
+    isStart = True
+    # batch_map(study, tasks, ratemap_size=settings['ratemap_dims'][0])
 
-    batch_map(study, tasks, ratemap_size=settings['ratemap_dims'][0])
+    # if settings['hasObject'] or settings['runFields']:    
+    # max_centroid_count, blobs_dict, shuffled_ratemap_dict, shuffled_sample_dict = _aggregate_cell_info(study, settings)
 
-    if settings['hasObject'] or settings['runFields']:    
-        max_centroid_count, blobs_dict = _aggregate_cell_info(study, settings)
-
-        ratemap_size = settings['ratemap_dims'][0]
+    ratemap_size = settings['ratemap_dims'][0]
 
         # non_disk_ids = list(itertools.product(np.arange(0, ratemap_size), np.arange(0, ratemap_size)))
         # fake_map = np.random.random((ratemap_size, ratemap_size))
@@ -92,12 +95,14 @@ def compute_remapping(study, settings, data_dir):
 
         
 
-    centroid_dict = copy.deepcopy(centroid_output)
-    regular_dict = copy.deepcopy(regular_output)
-    context_dict = copy.deepcopy(context_output)
-    obj_dict = copy.deepcopy(obj_output)
+    # centroid_dict = copy.deepcopy(centroid_output)
+    # regular_dict = copy.deepcopy(regular_output)
+    # context_dict = copy.deepcopy(context_output)
+    # obj_dict = copy.deepcopy(obj_output)
 
     for animal in study.animals:
+
+        max_centroid_count, blobs_dict, shuffled_ratemap_dict, shuffled_sample_dict = _aggregate_cell_info(animal, settings)
 
         # if settings['useMatchedCut']:
         #     # get largest possible cell id
@@ -114,11 +119,17 @@ def compute_remapping(study, settings, data_dir):
 
         # for every existing cell id across all sessions
         for k in range(int(max_matched_cell_count)):
+            centroid_dict = copy.deepcopy(centroid_output)
+            regular_dict = copy.deepcopy(regular_output)
+            context_dict = copy.deepcopy(context_output)
+            obj_dict = copy.deepcopy(obj_output)
+
             cell_label = k + 1
             print('Cell ' + str(cell_label))
 
             # prev ratemap
             prev = None
+            prev_id = None
             curr_shuffled = None
             cell_session_appearances = []
             
@@ -175,7 +186,8 @@ def compute_remapping(study, settings, data_dir):
 
                     # spatial_spike_train = ses.make_class(SpatialSpikeTrain2D, {'cell': cell, 'position': pos_obj})
 
-                    spatial_spike_train = cell.stats_dict['cell_stats']['spatial_spike_train']
+                    # spatial_spike_train = cell.stats_dict['cell_stats']['spatial_spike_train']
+                    spatial_spike_train = cell.stats_dict['spatial_spike_train'] 
 
                     rate_map_obj = spatial_spike_train.get_map('rate')
 
@@ -434,7 +446,8 @@ def compute_remapping(study, settings, data_dir):
                                     elif obj_score == 'spike_density' and lid == 0:
                                         # obj_bin_wass = single_point_wasserstein(object_pos, labels_curr, rate_map_obj.arena_size, ids=field_ids)
 
-                                        curr_spike_pos_x, curr_spike_pos_y, _ = curr_spatial_spike_train.get_spike_positions()
+                                        # curr_spike_pos_x, curr_spike_pos_y, _ = curr_spatial_spike_train.get_spike_positions()
+                                        curr_spike_pos_x, curr_spike_pos_y = curr_spatial_spike_train.spike_x, curr_spatial_spike_train.spike_y
                                         curr_spike_pos_x *= -1
                                         # spiekx an spikey are negative and positive, make positive
                                         curr_spike_pos_x += np.abs(np.min(curr_spike_pos_x))
@@ -595,12 +608,15 @@ def compute_remapping(study, settings, data_dir):
                     # If prev ratemap is not None (= we are at session2 or later, session1 has no prev session to compare)
                     if prev is not None and settings['runRegular']:
 
+
                         # get x and y pts for spikes in pair of sessions (prev and curr) for a given comparison
 
-                        prev_spike_pos_x, prev_spike_pos_y, prev_spike_pos_t = prev_spatial_spike_train.get_spike_positions()
+                        # prev_spike_pos_x, prev_spike_pos_y, prev_spike_pos_t = prev_spatial_spike_train.get_spike_positions()
+                        prev_spike_pos_x, prev_spike_pos_y, prev_spike_pos_t = prev_spatial_spike_train.spike_x, prev_spatial_spike_train.spike_y, prev_spatial_spike_train.new_spike_times
                         prev_pts = np.array([prev_spike_pos_x, prev_spike_pos_y]).T
 
-                        curr_spike_pos_x, curr_spike_pos_y, curr_spike_pos_t = curr_spatial_spike_train.get_spike_positions()
+                        # curr_spike_pos_x, curr_spike_pos_y, curr_spike_pos_t = curr_spatial_spike_train.get_spike_positions()
+                        curr_spike_pos_x, curr_spike_pos_y, curr_spike_pos_t = curr_spatial_spike_train.spike_x, curr_spatial_spike_train.spike_y, curr_spatial_spike_train.new_spike_times
                         curr_pts = np.array([curr_spike_pos_x, curr_spike_pos_y]).T
 
                         if settings['rotate_evening']:
@@ -620,17 +636,22 @@ def compute_remapping(study, settings, data_dir):
                         row_prev, col_prev = np.where(~np.isnan(prev_ratemap))
                         row_curr, col_curr = np.where(~np.isnan(curr_ratemap))
 
+                        print('setting up shuffled samples')
                         # for first map
                         if prev_shuffled is None:  
-                            prev_shuffled_samples = list(map(lambda x: _single_shuffled_sample(prev_spatial_spike_train, settings), np.arange(settings['n_repeats'])))
-                            if cylinder:
-                                prev_shuffled_samples = list(map(lambda x: flat_disk_mask(x), prev_shuffled_samples))
-                            prev_shuffled = list(map(lambda sample: np.array(list(map(lambda x, y: sample[x,y], row_prev, col_prev))), prev_shuffled_samples))
+                            prev_shuffled = shuffled_ratemap_dict[prev_id]
+                            prev_shuffled_sample = shuffled_sample_dict[prev_id]
+                            # prev_shuffled_samples = list(map(lambda x: _single_shuffled_sample(prev_spatial_spike_train, settings), np.arange(settings['n_repeats'])))
+                            # if cylinder:
+                            #     prev_shuffled_samples = list(map(lambda x: flat_disk_mask(x), prev_shuffled_samples))
+                            # prev_shuffled = list(map(lambda sample: np.array(list(map(lambda x, y: sample[x,y], row_prev, col_prev))), prev_shuffled_samples))
 
-                        curr_shuffled_samples = list(map(lambda x: _single_shuffled_sample(curr_spatial_spike_train, settings), np.arange(settings['n_repeats'])))
-                        if cylinder:
-                            curr_shuffled_samples = list(map(lambda x: flat_disk_mask(x), curr_shuffled_samples))   
-                        curr_shuffled = list(map(lambda sample: np.array(list(map(lambda x, y: sample[x,y], row_curr, col_curr))), curr_shuffled_samples))
+                        # curr_shuffled_samples = list(map(lambda x: _single_shuffled_sample(curr_spatial_spike_train, settings), np.arange(settings['n_repeats'])))
+                        # if cylinder:
+                        #     curr_shuffled_samples = list(map(lambda x: flat_disk_mask(x), curr_shuffled_samples))   
+                        # curr_shuffled = list(map(lambda sample: np.array(list(map(lambda x, y: sample[x,y], row_curr, col_curr))), curr_shuffled_samples))
+                        curr_shuffled = shuffled_ratemap_dict[curr_id]
+                        curr_shuffled_sample = shuffled_sample_dict[curr_id]
 
                         # assert row_prev.all() == row_curr.all() and col_prev.all() == col_curr.all(), 'Nans in different places'
 
@@ -644,14 +665,18 @@ def compute_remapping(study, settings, data_dir):
                         coord_buckets_curr = np.array(list(map(lambda x, y: [height_bucket_midpoints[x],width_bucket_midpoints[y]], row_curr, col_curr)))
                         coord_buckets_prev = np.array(list(map(lambda x, y: [height_bucket_midpoints[x],width_bucket_midpoints[y]], row_prev, col_prev)))
 
+                        print('doing spike density wasserstein')
                         spike_dens_wass = pot_sliced_wasserstein(prev_pts, curr_pts, n_projections=settings['n_projections'])
                             # elif rate_score == 'whole':
                                 # This is EMD on whole map for normalized/unnormalized rate remapping
+                        print('doing whole map wasserstein')
                         wass = pot_sliced_wasserstein(coord_buckets_prev, coord_buckets_curr, source_weights, target_weights, n_projections=settings['n_projections'])
+                        print('doing ref wasserstein')
                         ref_wass_dist = list(map(lambda x, y: pot_sliced_wasserstein(coord_buckets_prev, coord_buckets_curr, x/np.sum(x), y/np.sum(y), n_projections=settings['n_shuffle_projections']), prev_shuffled, curr_shuffled))
                         ref_wass_mean = np.mean(ref_wass_dist)
                         ref_wass_std = np.std(ref_wass_dist)
                         z_score = (wass - ref_wass_mean) / (ref_wass_std)
+                        print('doing modified z score')
                         mod_z_score, median, mad = compute_modified_zscore(wass, ref_wass_dist)
 
                         assert len(ref_wass_dist) == settings['n_repeats'], 'n_repeats does not match length of ref_wass_dist'
@@ -662,8 +687,9 @@ def compute_remapping(study, settings, data_dir):
                         # pvalue = 2 * stats.t.cdf(-np.abs(t_score), len(ref_wass_dist)-1)
                         # pvalue = 2 * stats.norm.cdf(-np.abs(t_score))
 
-                        prev_shapiro_coeff, prev_shapiro_pval = stats.shapiro(prev_shuffled)
-                        curr_shapiro_coeff, curr_shapiro_pval = stats.shapiro(curr_shuffled)
+                        # print('doing shapiro')
+                        # prev_shapiro_coeff, prev_shapiro_pval = stats.shapiro(prev_shuffled)
+                        # curr_shapiro_coeff, curr_shapiro_pval = stats.shapiro(curr_shuffled)
 
                         regular_dict['signature'].append([prev_path, curr_path])
                         regular_dict['name'].append(name)
@@ -678,8 +704,8 @@ def compute_remapping(study, settings, data_dir):
                         regular_dict['mod_z_score'].append(mod_z_score)
                         regular_dict['p_value'].append(pvalue)
                         regular_dict['mod_p_value'].append(mod_pvalue)
-                        regular_dict['shapiro_pval'].append([prev_shapiro_pval, curr_shapiro_pval])
-                        regular_dict['shapiro_coeff'].append([prev_shapiro_coeff, curr_shapiro_coeff])
+                        # regular_dict['shapiro_pval'].append([prev_shapiro_pval, curr_shapiro_pval])
+                        # regular_dict['shapiro_coeff'].append([prev_shapiro_coeff, curr_shapiro_coeff])
                         regular_dict['base_mean'].append(ref_wass_mean)
                         regular_dict['base_std'].append(ref_wass_std)
                         regular_dict['median'].append(median)
@@ -712,7 +738,7 @@ def compute_remapping(study, settings, data_dir):
                             plot_regular_remapping(prev, curr, regular_dict, data_dir)
 
                         if settings['plotShuffled']:
-                            plot_shuffled_regular_remapping(prev_shuffled, curr_shuffled, ref_wass_dist, prev_shuffled_samples, curr_shuffled_samples, regular_dict, data_dir)
+                            plot_shuffled_regular_remapping(prev_shuffled, curr_shuffled, ref_wass_dist, prev_shuffled_sample, curr_shuffled_sample, regular_dict, data_dir)
 
                         if settings['runFields']:
 
@@ -831,6 +857,7 @@ def compute_remapping(study, settings, data_dir):
                     categories = session_comp_categories[categ]
                     prev_key = None 
                     prev = None 
+                    prev_id = None
                     prev_spatial = None
                     prev_cell = None
 
@@ -840,6 +867,7 @@ def compute_remapping(study, settings, data_dir):
                         ses = animal.sessions[seskey]
                         path = ses.session_metadata.file_paths['tet']
                         fname = path.split('/')[-1].split('.')[0]
+                        curr_id = str(animal.animal_id) + '_' + str(seskey) + '_' + str(cell.cluster.cluster_label)
                         
                         if settings['disk_arena']: 
                             cylinder = True
@@ -851,7 +879,8 @@ def compute_remapping(study, settings, data_dir):
                         if cell_label in ensemble.get_cell_label_dict():
                             cell = ensemble.get_cell_by_id(cell_label)
 
-                            spatial_spike_train = cell.stats_dict['cell_stats']['spatial_spike_train']
+                            # spatial_spike_train = cell.stats_dict['cell_stats']['spatial_spike_train']
+                            spatial_spike_train = cell.stats_dict['spatial_spike_train'] 
 
                             rate_map_obj = spatial_spike_train.get_map('rate')
 
@@ -886,12 +915,17 @@ def compute_remapping(study, settings, data_dir):
                             curr_path = ses.session_metadata.file_paths['tet'].split('/')[-1].split('.')[0]
 
                             if prev is not None:
+                                if prev_shuffled is None:  
+                                    prev_shuffled = shuffled_ratemap_dict[prev_id]
+                                curr_shuffled = shuffled_ratemap_dict[curr_id]
                                 # get x and y pts for spikes in pair of sessions (prev and curr) for a given comparison
 
-                                prev_spike_pos_x, prev_spike_pos_y, prev_spike_pos_t = prev_spatial.get_spike_positions()
+                                # prev_spike_pos_x, prev_spike_pos_y, prev_spike_pos_t = prev_spatial.get_spike_positions()
+                                prev_spike_pos_x, prev_spike_pos_y, prev_spike_pos_t = prev_spatial_spike_train.spike_x, prev_spatial_spike_train.spike_y, prev_spatial_spike_train.new_spike_times
                                 prev_pts = np.array([prev_spike_pos_x, prev_spike_pos_y]).T
 
-                                curr_spike_pos_x, curr_spike_pos_y, curr_spike_pos_t = curr_spatial.get_spike_positions()
+                                # curr_spike_pos_x, curr_spike_pos_y, curr_spike_pos_t = curr_spatial.get_spike_positions()
+                                curr_spike_pos_x, curr_spike_pos_y, curr_spike_pos_t = curr_spatial_spike_train.spike_x, curr_spatial_spike_train.spike_y, curr_spatial_spike_train.new_spike_times
                                 curr_pts = np.array([curr_spike_pos_x, curr_spike_pos_y]).T
 
                                 if settings['rotate_evening']:
@@ -911,17 +945,17 @@ def compute_remapping(study, settings, data_dir):
                                 row_prev, col_prev = np.where(~np.isnan(prev_ratemap))
                                 row_curr, col_curr = np.where(~np.isnan(curr_ratemap))
 
-                                # for first map
-                                if prev_shuffled is None:  
-                                    prev_shuffled_samples = list(map(lambda x: _single_shuffled_sample(prev_spatial_spike_train, settings), np.arange(settings['n_repeats'])))
-                                    if cylinder:
-                                        prev_shuffled_samples = list(map(lambda x: flat_disk_mask(x), prev_shuffled_samples))
-                                    prev_shuffled = list(map(lambda sample: np.array(list(map(lambda x, y: sample[x,y], row_prev, col_prev))), prev_shuffled_samples))
+                                # # for first map
+                                # if prev_shuffled is None:  
+                                #     prev_shuffled_samples = list(map(lambda x: _single_shuffled_sample(prev_spatial_spike_train, settings), np.arange(settings['n_repeats'])))
+                                #     if cylinder:
+                                #         prev_shuffled_samples = list(map(lambda x: flat_disk_mask(x), prev_shuffled_samples))
+                                #     prev_shuffled = list(map(lambda sample: np.array(list(map(lambda x, y: sample[x,y], row_prev, col_prev))), prev_shuffled_samples))
 
-                                curr_shuffled_samples = list(map(lambda x: _single_shuffled_sample(curr_spatial_spike_train, settings), np.arange(settings['n_repeats'])))
-                                if cylinder:
-                                    curr_shuffled_samples = list(map(lambda x: flat_disk_mask(x), curr_shuffled_samples))   
-                                curr_shuffled = list(map(lambda sample: np.array(list(map(lambda x, y: sample[x,y], row_curr, col_curr))), curr_shuffled_samples))
+                                # curr_shuffled_samples = list(map(lambda x: _single_shuffled_sample(curr_spatial_spike_train, settings), np.arange(settings['n_repeats'])))
+                                # if cylinder:
+                                #     curr_shuffled_samples = list(map(lambda x: flat_disk_mask(x), curr_shuffled_samples))   
+                                # curr_shuffled = list(map(lambda sample: np.array(list(map(lambda x, y: sample[x,y], row_curr, col_curr))), curr_shuffled_samples))
 
                                 # assert row_prev.all() == row_curr.all() and col_prev.all() == col_curr.all(), 'Nans in different places'
 
@@ -953,8 +987,8 @@ def compute_remapping(study, settings, data_dir):
                                 # pvalue = 2 * stats.t.cdf(-np.abs(t_score), len(ref_wass_dist)-1)
                                 # pvalue = 2 * stats.norm.cdf(-np.abs(t_score))
 
-                                prev_shapiro_coeff, prev_shapiro_pval = stats.shapiro(prev_shuffled)
-                                curr_shapiro_coeff, curr_shapiro_pval = stats.shapiro(curr_shuffled)
+                                # prev_shapiro_coeff, prev_shapiro_pval = stats.shapiro(prev_shuffled)
+                                # curr_shapiro_coeff, curr_shapiro_pval = stats.shapiro(curr_shuffled)
 
                                 context_dict[categ]['signature'].append([prev_path, curr_path])
                                 context_dict[categ]['name'].append(name)
@@ -969,8 +1003,8 @@ def compute_remapping(study, settings, data_dir):
                                 context_dict[categ]['mod_z_score'].append(mod_z_score)
                                 context_dict[categ]['p_value'].append(pvalue)
                                 context_dict[categ]['mod_p_value'].append(mod_pvalue)
-                                context_dict[categ]['shapiro_pval'].append([prev_shapiro_pval, curr_shapiro_pval])
-                                context_dict[categ]['shapiro_coeff'].append([prev_shapiro_coeff, curr_shapiro_coeff])
+                                # context_dict[categ]['shapiro_pval'].append([prev_shapiro_pval, curr_shapiro_pval])
+                                # context_dict[categ]['shapiro_coeff'].append([prev_shapiro_coeff, curr_shapiro_coeff])
                                 context_dict[categ]['base_mean'].append(ref_wass_mean)
                                 context_dict[categ]['base_std'].append(ref_wass_std)
                                 context_dict[categ]['median'].append(median)
@@ -1005,7 +1039,134 @@ def compute_remapping(study, settings, data_dir):
                 plot_matched_sesssion_waveforms(cell_session_appearances, settings, regular_dict, data_dir)
             # c += 1
 
-    return {'regular': regular_dict, 'object': obj_dict, 'centroid': centroid_dict, 'context': dict}
+            to_save = {'regular': regular_dict, 'object': obj_dict, 'centroid': centroid_dict, 'context': context_dict}
+            if 'regular' in to_save:
+                df = pd.DataFrame(to_save['regular'])
+                # df.to_csv(PROJECT_PATH + '/_prototypes/cell_remapping/remapping_output' + '/rate_remapping.csv')
+                # check if file exists
+                if isStart:
+                    path = data_dir + '/remapping_output/regular_remapping.xlsx'
+                    # check if file exists, otherwise check file2, otherwise file3, etc... Once not found then create new file
+                    if not os.path.isfile(path):
+                        regular_path_to_use = path
+                    else:
+                        counter = 2
+                        # TO DO
+                        # save to csv iteratively - DONE?
+                        # rewrite get_spike_positions
+                        # remove shapiro - DONE
+                        # store spike positions instead of recomputing - DONE
+                        # store shuffled dists for context remapping - DONE
+                        # use full opexebo shuffle fxn with iterations = 1000 and return that - DONE
+                        # check if value between 10**2 and 10**3 for true wass dist
+                        # check of value 50 as good as 10**2 for shuffled dist
+                        # test 16,16 ratemaps since we doing whole map reg remapping not centroids, make sure compare wass and ref wass
+                        while os.path.isfile(data_dir + '/remapping_output/regular_remapping_' + str(counter) + '.xlsx'):
+                            counter += 1
+                        regular_path_to_use = data_dir + '/remapping_output/regular_remapping_' + str(counter) + '.xlsx'
+                    # create workbook 
+                    writer = pd.ExcelWriter(regular_path_to_use, engine='openpyxl')
+                    df.to_excel(writer, sheet_name='Summary')
+                    writer.save()
+                    # writer.flush()
+                    writer.close()
+
+                else:
+                    book = load_workbook(regular_path_to_use)
+                    writer = pd.ExcelWriter(regular_path_to_use, engine='openpyxl')
+                    writer.book = book
+                    writer.sheets = dict((ws.title, ws) for ws in book.worksheets)
+                    df.to_excel(writer, sheet_name='Summary', header=False, startrow=writer.sheets['Summary'].max_row)
+                    # writer.save()
+                    # writer.flush()
+                    writer.close()
+                    book.save(regular_path_to_use)
+                    # book.close()
+
+            if 'object' in to_save:
+                df = pd.DataFrame(to_save['object'])
+                if isStart:
+                    path = data_dir + '/remapping_output/obj_remapping.xlsx'
+                    if not os.path.isfile(path):
+                        obj_path_to_use = path
+                    else:
+                        counter = 2
+                        while os.path.isfile(data_dir + '/remapping_output/obj_remapping_' + str(counter) + '.xlsx'):
+                            counter += 1
+                        obj_path_to_use = data_dir + '/remapping_output/obj_remapping_' + str(counter) + '.xlsx'
+                    writer = pd.ExcelWriter(obj_path_to_use, engine='openpyxl')
+                    df.to_excel(writer, sheet_name='Summary')
+                    writer.save()
+                    writer.close()
+                else:
+                    book = load_workbook(obj_path_to_use)
+                    writer = pd.ExcelWriter(obj_path_to_use, engine='openpyxl')
+                    writer.book = book
+                    writer.sheets = dict((ws.title, ws) for ws in book.worksheets)
+                    df.to_excel(writer, sheet_name='Summary', header=False, startrow=writer.sheets['Summary'].max_row)
+                    # writer.save()
+                    writer.close()
+                    book.save(obj_path_to_use)
+                    # book.close()
+            
+            if 'centroid' in to_save:
+                df = pd.DataFrame(to_save['centroid'])
+                if isStart:
+                    path = data_dir + '/remapping_output/centroid_remapping.xlsx'
+                    if not os.path.isfile(path):
+                        centroid_path_to_use = path
+                    else:
+                        counter = 2
+                        while os.path.isfile(data_dir + '/remapping_output/centroid_remapping_' + str(counter) + '.xlsx'):
+                            counter += 1
+                        centroid_path_to_use = data_dir + '/remapping_output/centroid_remapping_' + str(counter) + '.xlsx'
+                    writer = pd.ExcelWriter(centroid_path_to_use, engine='openpyxl')
+                    df.to_excel(writer, sheet_name='Summary')
+                    writer.save()
+                    writer.close()
+                else:
+                    book = load_workbook(centroid_path_to_use)
+                    writer = pd.ExcelWriter(centroid_path_to_use, engine='openpyxl')
+                    writer.book = book
+                    writer.sheets = dict((ws.title, ws) for ws in book.worksheets)
+                    df.to_excel(writer, sheet_name='Summary', header=False, startrow=writer.sheets['Summary'].max_row)
+                    # writer.save()
+                    writer.close()
+                    book.save(centroid_path_to_use)
+            if 'context' in to_save:
+                context_count = 0
+                context_paths = []
+                for context in to_save['context']:
+                    df = pd.DataFrame(to_save['context'][context])
+                    if isStart:
+                        path = data_dir + '/remapping_output/context_' + context + '_remapping.xlsx'
+                        if not os.path.isfile(path):
+                            context_path_to_use = path
+                        else:
+                            counter = 2
+                            while os.path.isfile(data_dir + '/remapping_output/context_' + context + '_' + str(counter) + '.xlsx'):
+                                counter += 1
+                            context_path_to_use = data_dir + '/remapping_output/context_' + context + '_' + str(counter) + '.xlsx'
+                        writer = pd.ExcelWriter(context_path_to_use, engine='openpyxl')
+                        df.to_excel(writer, sheet_name='Summary')
+                        writer.save()
+                        writer.close()
+                        context_paths.append(context_path_to_use)
+                    else:
+                        context_path_to_use = context_paths[context_count]
+                        book = load_workbook(context_path_to_use)
+                        writer = pd.ExcelWriter(context_path_to_use, engine='openpyxl')
+                        writer.book = book
+                        writer.sheets = dict((ws.title, ws) for ws in book.worksheets)
+                        df.to_excel(writer, sheet_name='Summary', header=False, startrow=writer.sheets['Summary'].max_row)
+                        # writer.save()
+                        writer.close()
+                        book.save(context_path_to_use)
+                    context_count += 1
+
+            isStart = False
+
+    # return {'regular': regular_dict, 'object': obj_dict, 'centroid': centroid_dict, 'context': dict}
 
 def _fill_cell_type_stats(inp_dict, prev_cell, curr_cell):
     inp_dict['information'].append([prev_cell.stats_dict['cell_stats']['spatial_information_content'],curr_cell.stats_dict['cell_stats']['spatial_information_content'],curr_cell.stats_dict['cell_stats']['spatial_information_content']-prev_cell.stats_dict['cell_stats']['spatial_information_content']])
@@ -1042,13 +1203,16 @@ def _read_location_from_file(path, cylinder, true_var):
 
     return object_location
 
-def _aggregate_cell_info(study, settings):
+def _aggregate_cell_info(animal, settings):
     ratemap_size = settings['ratemap_dims'][0]
     max_centroid_count = 0
     blobs_dict = {}
-    type_dict = {}
-    spatial_obj_dict = {}
-    for animal in study.animals:
+    # type_dict = {}
+    # spatial_obj_dict = {}
+    shuffled_ratemap_dict = {}
+    shuffled_sample_dict = {}
+    # for animal in study.animals:
+    for onlyone in range(1):
         # get largest possible cell id
         # max_matched_cell_count = len(animal.sessions[sorted(list(animal.sessions.keys()))[-1]].get_cell_data()['cell_ensemble'].cells)
         max_matched_cell_count = max(list(map(lambda x: max(animal.sessions[x].get_cell_data()['cell_ensemble'].get_label_ids()), animal.sessions)))
@@ -1059,6 +1223,7 @@ def _aggregate_cell_info(study, settings):
                 seskey = 'session_' + str(i+1)
                 ses = animal.sessions[seskey]
                 ensemble = ses.get_cell_data()['cell_ensemble']
+                pos_obj = ses.get_position_data()['position']
 
                 path = ses.session_metadata.file_paths['tet']
                 fname = path.split('/')[-1].split('.')[0]
@@ -1075,10 +1240,12 @@ def _aggregate_cell_info(study, settings):
                     #     spatial_spike_train = cell.stats_dict['cell_stats']['spatial_spike_train']
                     # else:
                     #     spatial_spike_train = ses.make_class(SpatialSpikeTrain2D, {'cell': cell, 'position': ses.get_position_data()['position']})
-
-                    spatial_spike_train = cell.stats_dict['cell_stats']['spatial_spike_train']
+                    
+                    spatial_spike_train = ses.make_class(SpatialSpikeTrain2D, {'cell': cell, 'position': pos_obj})
+                    cell.stats_dict['spatial_spike_train'] = spatial_spike_train
 
                     rate_map_obj = spatial_spike_train.get_map('rate')
+                    
                     if settings['normalizeRate']:
                         rate_map, _ = rate_map_obj.get_rate_map(new_size = settings['ratemap_dims'][0])
                     else:
@@ -1090,27 +1257,42 @@ def _aggregate_cell_info(study, settings):
                         rate_map = _downsample(rate_map, settings['downsample_factor'])
                     if cylinder:
                         rate_map = flat_disk_mask(rate_map)
-                        
-
-                    image, n_labels, labels, centroids, field_sizes = map_blobs(spatial_spike_train, ratemap_size=ratemap_size, cylinder=cylinder, downsample=settings['downsample'], downsample_factor=settings['downsample_factor'])
-
-                    labels, centroids, field_sizes = _sort_filter_centroids_by_field_size(rate_map, field_sizes, labels, centroids, spatial_spike_train.arena_size)
 
                     id = str(animal.animal_id) + '_' + str(seskey) + '_' + str(cell.cluster.cluster_label)
+                    assert id not in blobs_dict, 'Duplicate cell id ' + str(id)
+                        
+                    if settings['hasObject'] or settings['runFields']:
+                        image, n_labels, labels, centroids, field_sizes = map_blobs(spatial_spike_train, ratemap_size=ratemap_size, cylinder=cylinder, downsample=settings['downsample'], downsample_factor=settings['downsample_factor'])
 
-                    blobs_dict[id] = [image, n_labels, labels, centroids, field_sizes]
+                        labels, centroids, field_sizes = _sort_filter_centroids_by_field_size(rate_map, field_sizes, labels, centroids, spatial_spike_train.arena_size)
 
-                    spatial_obj_dict[id] = spatial_spike_train
+                        blobs_dict[id] = [image, n_labels, labels, centroids, field_sizes]
 
-                    type_dict[id] = []
+                        if prev_field_size_len is not None:
+                            max_centroid_count = max(max_centroid_count, len(field_sizes) * prev_field_size_len)
+                        else:
+                            prev_field_size_len = len(field_sizes)
+
+                    if settings['runRegular'] or settings['runUniqueGroups']:
+                        row, col = np.where(~np.isnan(rate_map))
+                        print('drawing shuffled samples')
+                        # shuffled_samples = list(map(lambda x: _single_shuffled_sample(spatial_spike_train, settings), np.arange(settings['n_repeats'])))
+                        norm, raw = spatial_spike_train.get_map('rate').get_rate_map(new_size = settings['ratemap_dims'][0], shuffle=True, n_repeats=settings['n_repeats'])
+                        shuffled_samples = list(map(lambda x, y: _single_shuffled_sample(x, y, settings), norm, raw))
+                        if cylinder:
+                            shuffled_samples = list(map(lambda x: flat_disk_mask(x), shuffled_samples))
+                        print('turning into valid weights')
+                        shuffled_ratemaps = list(map(lambda sample: np.array(list(map(lambda x, y: sample[x,y], row, col))), shuffled_samples))
+
+                        shuffled_ratemap_dict[id] = shuffled_ratemaps
+                        shuffled_sample_dict[id] = shuffled_samples[np.random.randint(0, settings['n_repeats'])]
+
+                    # spatial_obj_dict[id] = spatial_spike_train
+
+                    # type_dict[id] = []
                 
 
-                    if prev_field_size_len is not None:
-                        max_centroid_count = max(max_centroid_count, len(field_sizes) * prev_field_size_len)
-                    else:
-                        prev_field_size_len = len(field_sizes)
-
-    return max_centroid_count, blobs_dict
+    return max_centroid_count, blobs_dict, shuffled_ratemap_dict, shuffled_sample_dict
 
 
 # def _sort_filter_centroids_by_field_size(prev, curr, field_sizes_source, field_sizes_target, blobs_map_source, blobs_map_target, centroids_prev, centroids_curr, arena_size):

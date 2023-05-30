@@ -24,12 +24,17 @@ settings_dict['n_shuffle_projections'] = 10**2 # EDIT HERE (10**3 is slow,  50 (
 settings_dict['type'] = 'object' # EDIT HERE # Currently only 'object' is supported so no need to change (will add e.g. angle later)
 # Type is used to read angle or other (e.g. odor) from filename
 ##### ratemap size setting (16,16) --> tradeoff between speed and accuracy
-settings_dict['ratemap_dims'] = (32,32) # EDIT HERE (16,16) is default, (32,32) is slower but more accurate,
+settings_dict['ratemap_dims'] = (16,16) # EDIT HERE (16,16) is default, (32,32) is slower but more accurate,
 settings_dict['disk_arena'] = False # EDIT HERE. IF TRUE WILL FORCE DISK. IF FALSE WILL CHECK FILE NAME TO SEE IF TRUE OR NOT
 settings_dict['normalizeRate'] = True # EDIT HERE --> NORMALIZED FOR ALL CASES 
-settings_dict['naming_type'] = 'LC' # EDIT HERE --> 'MEC' or 'LEC'
-settings_dict['rotate_evening'] = True
+settings_dict['naming_type'] = 'MEC' # EDIT HERE --> 'MEC' or 'LEC'
+settings_dict['rotate_evening'] = False
 settings_dict['rotate_angle'] = 90
+# sub2 1.xlsx is 32,32 shuffle = 500 with jit - 6062.33 seconds
+# sub3 1.xlsx is 32,32 shuffle = 500 no jit - 4550.15 seconds
+# sub2 2.xlsx is 32,32 shuffle = 1000 no jit - 13204.84 seconds
+# sub3 2.xlss is 16,16 shuffle = 1000 no jit (double check run time with ither sub3 to see which is 1. and 2.) - 7452.62 seconds
+# sub4 1.xlsx is 16,16 shuffle = 1000 no jit, vectorized ops - 2315.20 seconds
 
 """ 
 IF YOU ARE DOING REGULAR REMAPPING
@@ -38,7 +43,7 @@ IF YOU ARE DOING REGULAR REMAPPING
 settings_dict['runRegular'] = True # EDIT HERE
 settings_dict['plotRegular'] = True # EDIT HERE
 settings_dict['rate_scores'] = ['whole', 'spike_density']
-settings_dict['n_repeats'] = 1000 # EDIT HERE 
+settings_dict['n_repeats'] = 500 # EDIT HERE 
 settings_dict['plotShuffled'] = True # EDIT HERE
 settings_dict['plotMatchedWaveforms'] = False # EDIT HERE
 
@@ -70,7 +75,7 @@ settings_dict['centroid_scores'] = ['field', 'binary', 'centroid']
 IF YOU ARE DOING CONTEXT REMAPPING
 """
 
-settings_dict['runUniqueGroups'] = False # EDIT HERE
+settings_dict['runUniqueGroups'] = True # EDIT HERE
 
 session_comp_categories = {'morning': [1,3], 'afternoon': [2,4]} # EDIT HERE
 
@@ -84,7 +89,7 @@ obj_output = {}
 centroid_output = {}
 
 keys = ['signature','depth', 'name', 'date', 'tetrode','unit_id', 'session_ids', 'whole_wass',
-        'z_score', 'p_value', 'base_mean', 'base_std', 'mod_z_score', 'mod_p_value', 'median', 'mad', 'shapiro_pval', 'shapiro_coeff', 'spike_density_wass', 'fr_rate', 'fr_rate_ratio', 'fr_rate_change', 
+        'z_score', 'p_value', 'base_mean', 'base_std', 'mod_z_score', 'mod_p_value', 'median', 'mad', 'spike_density_wass', 'fr_rate', 'fr_rate_ratio', 'fr_rate_change', 
         'n_repeats','arena_size','cylinder','ratemap_dims','downsample_factor']
 #  'information', 'b_top', 'b_bottom', 'b_right', 'b_left', 'grid_score']
 
@@ -137,7 +142,7 @@ if settings_dict['runUniqueGroups'] == True:
     # session_comp_categories = {'morning': [1,3], 'afternoon': [2,4]}
     # keys = ['signature','depth','name','date','tetrode','unit_id', 'session_ids', 'sliced_wass']
     keys = ['signature','depth', 'name', 'date', 'tetrode','unit_id', 'session_ids', 'whole_wass',
-            'z_score', 'p_value', 'base_mean', 'base_std', 'mod_z_score', 'mod_p_value', 'median', 'mad', 'shapiro_pval', 'shapiro_coeff', 'spike_density_wass', 'fr_rate', 'fr_rate_ratio', 'fr_rate_change', 
+            'z_score', 'p_value', 'base_mean', 'base_std', 'mod_z_score', 'mod_p_value', 'median', 'mad', 'spike_density_wass', 'fr_rate', 'fr_rate_ratio', 'fr_rate_change', 
             'n_repeats','arena_size','cylinder','ratemap_dims','downsample_factor']
 
     for key in keys:

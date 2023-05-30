@@ -276,6 +276,7 @@ def _temp_occupancy_map(position: Position2D, smoothing_factor, interp_size=(64,
     row_values = np.linspace(max_y,min_y,row_resize)
     column_values = np.linspace(min_x,max_x,column_resize)
 
+    # print('Generating raw occupancy map...')
     # Generate the raw occupancy map
     for i in range(1, len(pos_t)):
 
@@ -289,10 +290,12 @@ def _temp_occupancy_map(position: Position2D, smoothing_factor, interp_size=(64,
     # Standard deviation size
     std = int(0.2*kernlen)
 
+    # print('Smoothing raw occupancy map...')
     # Normalize and smooth with scaling facotr
     occ_map_normalized = occ_map_raw / pos_t[-1]
     occ_map_smoothed = cv2.filter2D(occ_map_normalized,-1,_gkern(kernlen,std))
 
+    # print('Dilating coverage map...')
     # dilate coverage map
     kernel = np.ones((2,2))
     coverage_map = cv2.dilate(coverage_map, kernel, iterations=1)
@@ -301,7 +304,7 @@ def _temp_occupancy_map(position: Position2D, smoothing_factor, interp_size=(64,
     # occ_map_raw = _interpolate_matrix(occ_map_raw, new_size=interp_size, cv2_interpolation_method=cv2.INTER_NEAREST)
     # occ_map_smoothed = _interpolate_matrix(occ_map_smoothed, new_size=interp_size,  cv2_interpolation_method=cv2.INTER_NEAREST)
     occ_map_smoothed = occ_map_smoothed/max(occ_map_smoothed.flatten())
-
+    # print('SHAPE IS HERE: ', occ_map_smoothed.shape, coverage_map.shape, occ_map_raw.shape)
     return occ_map_smoothed, occ_map_raw, coverage_map
 
 def _temp_spike_map(pos_x: np.ndarray, pos_y: np.ndarray, pos_t: np.ndarray,
@@ -336,11 +339,12 @@ def _temp_spike_map(pos_x: np.ndarray, pos_y: np.ndarray, pos_t: np.ndarray,
 
     # Instantiate empty maps
     spike_map_raw = np.zeros((row_resize,column_resize))
-
+    
     # Load spike data and set up arrays to map spike timestamps to subject position
     row_values = np.linspace(max_x, min_x, row_resize)
     column_values = np.linspace(min_y,max_y, column_resize)
 
+    # print('Generating raw spike map...')
     # Generate raw spike map
     for i in range(len(spike_x)):
         row_index = np.abs(row_values - spike_y[i]).argmin()
@@ -350,6 +354,7 @@ def _temp_spike_map(pos_x: np.ndarray, pos_y: np.ndarray, pos_t: np.ndarray,
     # Remove low spike counts from spike map (20th percentile)
     #spike_map_raw[spike_map_raw <= np.percentile(spike_map_raw, 20)] = 0
 
+    # print('Smoothing spike map...')
     # Smooth spike map (must happen before resizing)
     spike_map_smooth = cv2.filter2D(spike_map_raw,-1,_gkern(kernlen, std))
 
