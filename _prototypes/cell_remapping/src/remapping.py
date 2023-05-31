@@ -1,5 +1,7 @@
 import os, sys
 import numpy as np
+from scipy.spatial.distance import cdist
+from pyemd import emd
 import itertools
 from openpyxl import load_workbook
 import re
@@ -20,7 +22,7 @@ from _prototypes.cell_remapping.src.wasserstein_distance import sliced_wasserste
 from _prototypes.cell_remapping.src.masks import make_object_ratemap, check_disk_arena, flat_disk_mask, generate_grid, _sample_grid
 from library.maps import map_blobs
 from scripts.batch_map.batch_map import batch_map 
-from _prototypes.cell_remapping.src.settings import obj_output, centroid_output, tasks, session_comp_categories, regular_output, context_output, variations
+from _prototypes.cell_remapping.src.settings import obj_output, centroid_output, tasks, session_comp_categories, regular_output, context_output, variations, temporal_output
 from scripts.batch_map.LEC_naming import LEC_naming_format, extract_name_lec
 from _prototypes.cell_remapping.src.MEC_naming import MEC_naming_format, extract_name_mec
 from _prototypes.cell_remapping.src.LC_naming import LC_naming_format, extract_name_lc
@@ -102,7 +104,7 @@ def compute_remapping(study, settings, data_dir):
     # obj_dict = copy.deepcopy(obj_output)
 
     for animal in study.animals:
-
+        
         max_centroid_count, blobs_dict, shuffled_ratemap_dict, shuffled_sample_dict = _aggregate_cell_info(animal, settings)
 
         # if settings['useMatchedCut']:
@@ -115,8 +117,8 @@ def compute_remapping(study, settings, data_dir):
 
         # len(session) - 1 bcs thats number of comparisons. e.g. 3 session: ses1-ses2, ses2-ses3 so 2 distances will be given for remapping
         remapping_distances = np.zeros((len(list(animal.sessions.keys()))-1, max_matched_cell_count))
-        remapping_indices = [[] for k in range(max_matched_cell_count)]
-        remapping_session_ids = [[] for k in range(max_matched_cell_count)]
+        # remapping_indices = [[] for k in range(max_matched_cell_count)]
+        # remapping_session_ids = [[] for k in range(max_matched_cell_count)]
 
         # for every existing cell id across all sessions
         for k in range(int(max_matched_cell_count)):
@@ -124,12 +126,17 @@ def compute_remapping(study, settings, data_dir):
             regular_dict = copy.deepcopy(regular_output)
             context_dict = copy.deepcopy(context_output)
             obj_dict = copy.deepcopy(obj_output)
+            temporal_dict = copy.deepcopy(temporal_output)
 
             cell_label = k + 1
             print('Cell ' + str(cell_label))
 
             # prev ratemap
             prev = None
+            curr_spikes = None 
+            curr_spike_times = None
+            curr_shuffled_temporal = None
+            prev_spike_times = None
             prev_id = None
             curr_shuffled = None
             cell_session_appearances = []
@@ -684,6 +691,7 @@ def compute_remapping(study, settings, data_dir):
    
                         pvalue = stats.t.cdf(z_score, len(ref_wass_dist)-1)
                         mod_pvalue = stats.t.cdf(mod_z_score, len(ref_wass_dist)-1)
+                        
                         # pvalue for wass, 2 sided
                         # pvalue = 2 * stats.t.cdf(-np.abs(t_score), len(ref_wass_dist)-1)
                         # pvalue = 2 * stats.norm.cdf(-np.abs(t_score))
@@ -834,13 +842,112 @@ def compute_remapping(study, settings, data_dir):
                                         source_labels = flat_disk_mask(source_labels)
                                     plot_fields_remapping(source_labels, target_labels, prev_spatial_spike_train, curr_spatial_spike_train, source_centroids, target_centroids, centroid_dict, data_dir, settings, cylinder=cylinder)
 
-                        remapping_indices[cell_label-1].append(i-1)
+                        # remapping_indices[cell_label-1].append(i-1)
 
-                        remapping_session_ids[cell_label-1].append([i-1,i])
+                        # remapping_session_ids[cell_label-1].append([i-1,i])
 
                         # c += 1
+
+                    if prev is not None and settings['runTemporal']:
+
+                        if prev_spike_times is None:
+                            prev_spike_times = prev_spatial_spike_train.spike_times
+
+                            # Shuffle spike trains within each row
+                            # prev_shuffled_temporal = np.tile(prev_spikes, (num_shuffles, 1))
+                            # prev_shuffled_indices = np.random.rand(num_shuffles, prev_shuffled_temporal.shape[1]).argsort(axis=1)
+                            # prev_shuffled_temporal = np.take_along_axis(prev_shuffled_temporal, prev_shuffled_indices, axis=1)
+                            # jitter_range = 0.05
+                            # prev_shuffled_temporal = prev_spike_times + np.random.uniform(-jitter_range, jitter_range, size=len(spike_train))
+
+
+                        curr_spike_times = curr_spatial_spike_train.spike_times
+
+                        # Define the time bins to convert spike times to spike trains
+                        # bin_width = 0.1  # Width of each time bin
+                        # bin_edges = np.arange(0, np.max([np.max(prev_spike_times), np.max(curr_spike_times)]) + bin_width, bin_width)
+                        # Calculate the pairwise distances between spikes
+                        # distances = bin_edges[:-1] + bin_width / 2  
+                        # distance_matrix = cdist(distances.reshape(-1, 1), distances.reshape(-1, 1))
+
+                        # Perform shuffling and calculate EMD scores
+                        num_shuffles = settings['n_temporal_shuffles']
+                        # if prev_spikes is None:
+                        #     prev_spikes = np.histogram(prev_spike_times, bin_edges)[0]
+                        #     prev_spikes = prev_spikes / np.sum(prev_spikes)
+
+                        # Convert spike times to spike trains with spike values
+                        # curr_spikes = np.histogram(curr_spike_times, bin_edges)[0]
+                        # curr_spikes = curr_spikes / np.sum(curr_spikes)
+
+                        # curr_shuffled_temporal = np.tile(curr_spikes, (num_shuffles, 1))
+                        # curr_shuffled_indices = np.random.rand(num_shuffles, curr_shuffled_temporal.shape[1]).argsort(axis=1)
+                        # curr_shuffled_temporal = np.take_along_axis(curr_shuffled_temporal, curr_shuffled_indices, axis=1)
+                        # print(prev_shuffled_temporal.shape, curr_shuffled_temporal.shape)
+                        # print(prev_spikes.shape, curr_spikes.shape)
+                        # print(prev_shuffled_indices.shape, curr_shuffled_indices.shape)
+                        print('computing shuffled temporal emd')
+                        # ref_emd_dist = compute_null_emd(prev_spike_times, curr_spike_times,num_shuffles)
+                        # Calculate EMD scores for shuffled spike trains
+                        # ref_emd_dist =[]
+                        # for i in range(num_shuffles):
+                        #     prev_shuffled_sample = prev_shuffled_temporal[i].flatten() / np.sum(prev_shuffled_temporal[i])
+                        #     curr_shuffled_sample = curr_shuffled_temporal[i].flatten() / np.sum(curr_shuffled_temporal[i])
+                        #     # print(prev_shuffled_sample.shape, curr_shuffled_sample.shape)
+                        #     # ref_emd = emd(prev_shuffled_sample, curr_shuffled_sample, distance_matrix)
+                        #     ref_emd = compute_emd(prev_shuffled_sample, curr_shuffled_sample)
+                        #     ref_emd_dist.append(ref_emd)
+                        # Compute the observed EMD score between the original spike trains
+                        # observed_emd = emd(prev_spikes.squeeze(), curr_spikes.squeeze(), distance_matrix)
+                        observed_emd = compute_emd(prev_spike_times, curr_spike_times)
+                        # ref_emd_mean = np.mean(ref_emd_dist)
+                        # ref_emd_std = np.std(ref_emd_dist)
+                        # z_score = (observed_emd - ref_emd_mean) / (ref_emd_std)
+                        print('doing modified z score')
+                        # mod_z_score, median, mad = compute_modified_zscore(observed_emd, ref_emd_dist)
+                        # assert len(ref_emd_dist) == settings['n_temporal_shuffles'], 'n_repeats does not match length of ref_emd_dist'
+
+                        # pvalue = stats.t.cdf(z_score, len(ref_emd_dist)-1)
+                        # mod_pvalue = stats.t.cdf(mod_z_score, len(ref_emd_dist)-1)
+                        prev_duration = prev_spatial_spike_train.session_metadata.session_object.get_spike_data()['spike_cluster'].duration
+                        curr_duration = curr_spatial_spike_train.session_metadata.session_object.get_spike_data()['spike_cluster'].duration
+
+                        curr_fr_rate = len(curr_spike_times) / prev_duration
+                        prev_fr_rate = len(prev_spike_times) / curr_duration
+                        fr_rate_ratio = curr_fr_rate / prev_fr_rate
+                        fr_rate_change = curr_fr_rate - prev_fr_rate
+
+                        # # Calculate the Earth Mover's Distance (EMD) using the spike values and distances
+                        # emd = emd_samples(prev_spikes, curr_spikes, distance_matrix)
                             
+                        temporal_dict['signature'].append([prev_path, curr_path])
+                        temporal_dict['depth'].append(depth)
+                        temporal_dict['name'].append(name)
+                        temporal_dict['date'].append(date)
+                        temporal_dict['tetrode'].append(animal.animal_id.split('tet')[-1])
+                        temporal_dict['unit_id'].append(cell_label)
+                        temporal_dict['session_ids'].append([prev_key, curr_key])
+                        temporal_dict['emd'].append(observed_emd)
+                        # temporal_dict['z_score'].append(z_score)
+                        # temporal_dict['p_value'].append(pvalue)
+                        # temporal_dict['base_mean'].append(ref_emd_mean)a
+                        # temporal_dict['base_std'].append(ref_emd_std)
+                        # temporal_dict['mod_z_score'].append(mod_z_score)
+                        # temporal_dict['mod_p_value'].append(mod_pvalue)
+                        # temporal_dict['median'].append(median)
+                        # temporal_dict['mad'].append(mad)
+                        temporal_dict['fr_rate'].append([prev_fr_rate, curr_fr_rate])
+                        temporal_dict['fr_rate_ratio'].append(fr_rate_ratio)
+                        temporal_dict['fr_rate_change'].append(fr_rate_change)
+                        # temporal_dict['n_repeats'].append(len(ref_emd_dist))
+                        temporal_dict['arena_size'].append([prev_spatial_spike_train.arena_size, curr_spatial_spike_train.arena_size])
+
+
+                    
                     prev = curr
+                    prev_spikes = curr_spikes
+                    prev_spike_times = curr_spike_times
+                    prev_shuffled_temporal = curr_shuffled_temporal
                     prev_ratemap = curr_ratemap
                     prev_spatial_spike_train = curr_spatial_spike_train
                     prev_id = curr_id
@@ -856,7 +963,7 @@ def compute_remapping(study, settings, data_dir):
                 # for category group (group of session ids)
                 for categ in session_comp_categories:
                     categories = session_comp_categories[categ]
-                    prev_key = None 
+                    prev_key = None
                     prev = None 
                     prev_id = None
                     prev_spatial = None
@@ -1040,8 +1147,8 @@ def compute_remapping(study, settings, data_dir):
                 plot_matched_sesssion_waveforms(cell_session_appearances, settings, regular_dict, data_dir)
             # c += 1
 
-            to_save = {'regular': regular_dict, 'object': obj_dict, 'centroid': centroid_dict, 'context': context_dict}
-            if 'regular' in to_save:
+            to_save = {'regular': regular_dict, 'object': obj_dict, 'centroid': centroid_dict, 'context': context_dict, 'temporal': temporal_dict}
+            if settings['runRegular']:
                 df = pd.DataFrame(to_save['regular'])
                 # df.to_csv(PROJECT_PATH + '/_prototypes/cell_remapping/remapping_output' + '/rate_remapping.csv')
                 # check if file exists
@@ -1084,7 +1191,7 @@ def compute_remapping(study, settings, data_dir):
                     book.save(regular_path_to_use)
                     # book.close()
 
-            if 'object' in to_save:
+            if settings['hasObject']:
                 df = pd.DataFrame(to_save['object'])
                 if isStart:
                     path = data_dir + '/remapping_output/obj_remapping.xlsx'
@@ -1110,7 +1217,7 @@ def compute_remapping(study, settings, data_dir):
                     book.save(obj_path_to_use)
                     # book.close()
             
-            if 'centroid' in to_save:
+            if settings['runFields']:
                 df = pd.DataFrame(to_save['centroid'])
                 if isStart:
                     path = data_dir + '/remapping_output/centroid_remapping.xlsx'
@@ -1134,7 +1241,7 @@ def compute_remapping(study, settings, data_dir):
                     # writer.save()
                     writer.close()
                     book.save(centroid_path_to_use)
-            if 'context' in to_save:
+            if settings['runUniqueGroups']:
         
                 for context in to_save['context']:
                     df = pd.DataFrame(to_save['context'][context])
@@ -1162,10 +1269,76 @@ def compute_remapping(study, settings, data_dir):
                         # writer.save()
                         writer.close()
                         book.save(context_path_to_use)
-
+            if settings['runTemporal']:
+                df = pd.DataFrame(to_save['temporal'])
+                if isStart:
+                    path = data_dir + '/remapping_output/temporal_remapping.xlsx'
+                    if not os.path.isfile(path):
+                        temporal_path_to_use = path
+                    else:
+                        counter = 2
+                        while os.path.isfile(data_dir + '/remapping_output/temporal_remapping_' + str(counter) + '.xlsx'):
+                            counter += 1
+                        temporal_path_to_use = data_dir + '/remapping_output/temporal_remapping_' + str(counter) + '.xlsx'
+                    writer = pd.ExcelWriter(temporal_path_to_use, engine='openpyxl')
+                    df.to_excel(writer, sheet_name='Summary')
+                    writer.save()
+                    writer.close()
+                else:
+                    book = load_workbook(temporal_path_to_use)
+                    writer = pd.ExcelWriter(temporal_path_to_use, engine='openpyxl')
+                    writer.book = book
+                    writer.sheets = dict((ws.title, ws) for ws in book.worksheets)
+                    df.to_excel(writer, sheet_name='Summary', header=False, startrow=writer.sheets['Summary'].max_row)
+                    # writer.save()
+                    writer.close()
+                    book.save(temporal_path_to_use)
             isStart = False
 
     # return {'regular': regular_dict, 'object': obj_dict, 'centroid': centroid_dict, 'context': dict}
+
+def compute_null_emd(spike_train_a, spike_train_b, num_iterations):
+    combined_spike_train = np.concatenate([spike_train_a, spike_train_b])
+    num_spikes = len(spike_train_a)
+    num_total_spikes = len(combined_spike_train)
+
+    # Repeat the combined spike train for the desired number of iterations
+    repeated_spike_train = np.tile(combined_spike_train, (num_iterations, 1))
+
+    # Shuffle the spike trains along the second axis (columns)
+    np.apply_along_axis(np.random.shuffle, axis=1, arr=repeated_spike_train)
+
+    # Extract the shuffled spike trains for A and B
+    shuffled_spike_train_a = repeated_spike_train[:, :num_spikes]
+    shuffled_spike_train_b = repeated_spike_train[:, num_spikes:num_total_spikes]
+
+    emd_values = np.empty(num_iterations)
+    for i in range(num_iterations):
+        emd_values[i] = compute_emd(shuffled_spike_train_a[i], shuffled_spike_train_b[i])
+
+    return emd_values
+
+# Perform further analysis or calculations with the 'emd_values' array
+
+
+def compute_emd(spike_train_a, spike_train_b):
+    # Determine the start and end times for aligning the spike trains
+    start_time = np.min([np.min(spike_train_a), np.min(spike_train_b)])
+    end_time = np.max([np.max(spike_train_a), np.max(spike_train_b)])
+
+    bins = np.arange(start_time, end_time + 1)
+    # Create aligned spike trains
+    aligned_a, _ = np.histogram(spike_train_a, bins=bins)
+    aligned_b, _ = np.histogram(spike_train_b, bins=bins)
+
+    # Compute the cumulative distribution functions (CDFs)
+    cdf_a = np.cumsum(aligned_a) / len(spike_train_a)
+    cdf_b = np.cumsum(aligned_b) / len(spike_train_b)
+
+    # Compute the EMD by integrating the absolute difference between CDFs
+    emd = np.sum(np.abs(cdf_a - cdf_b))
+
+    return emd
 
 def _fill_cell_type_stats(inp_dict, prev_cell, curr_cell):
     inp_dict['information'].append([prev_cell.stats_dict['cell_stats']['spatial_information_content'],curr_cell.stats_dict['cell_stats']['spatial_information_content'],curr_cell.stats_dict['cell_stats']['spatial_information_content']-prev_cell.stats_dict['cell_stats']['spatial_information_content']])

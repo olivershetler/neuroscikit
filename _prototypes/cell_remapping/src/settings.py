@@ -41,11 +41,11 @@ settings_dict['rotate_angle'] = 90
 IF YOU ARE DOING REGULAR REMAPPING
 """
 
-settings_dict['runRegular'] = True # EDIT HERE
-settings_dict['plotRegular'] = True # EDIT HERE
+settings_dict['runRegular'] = False # EDIT HERE
+settings_dict['plotRegular'] = False # EDIT HERE
 settings_dict['rate_scores'] = ['whole', 'spike_density']
 settings_dict['n_repeats'] = 500 # EDIT HERE 
-settings_dict['plotShuffled'] = True # EDIT HERE
+settings_dict['plotShuffled'] = False # EDIT HERE
 settings_dict['plotMatchedWaveforms'] = False # EDIT HERE
 
 """ 
@@ -76,10 +76,16 @@ settings_dict['centroid_scores'] = ['field', 'binary', 'centroid']
 IF YOU ARE DOING CONTEXT REMAPPING
 """
 
-settings_dict['runUniqueGroups'] = True # EDIT HERE
+settings_dict['runUniqueGroups'] = False # EDIT HERE
 
 session_comp_categories = {'morning': [1,3], 'afternoon': [2,4]} # EDIT HERE
 
+"""
+IF YOU ARE DOING TEMPORAL REMAPPING
+"""
+
+settings_dict['runTemporal'] = True # EDIT HERE
+settings_dict['n_temporal_shuffles'] = 1000 # EDIT HERE
 
 ##############################################################################################################################################################################
 # NO NEED TO EDIT BELOW # 
@@ -88,6 +94,13 @@ session_comp_categories = {'morning': [1,3], 'afternoon': [2,4]} # EDIT HERE
 regular_output = {}
 obj_output = {}
 centroid_output = {}
+temporal_output = {}
+
+temporal_keys = ['signature','depth', 'name', 'date', 'tetrode','unit_id', 'session_ids', 'emd',
+            # 'z_score', 'p_value', 'base_mean', 'base_std', 'mod_z_score', 'mod_p_value', 'median', 'mad', 
+            'fr_rate', 'fr_rate_ratio', 'fr_rate_change',
+            # 'n_repeats',
+            'arena_size']
 
 keys = ['signature','depth', 'name', 'date', 'tetrode','unit_id', 'session_ids', 'whole_wass',
         'z_score', 'p_value', 'base_mean', 'base_std', 'mod_z_score', 'mod_p_value', 'median', 'mad', 'spike_density_wass', 'fr_rate', 'fr_rate_ratio', 'fr_rate_change', 
@@ -116,6 +129,8 @@ for key in obj_keys:
     obj_output[key] = []
 for key in centroid_keys:
     centroid_output[key] = []
+for key in temporal_keys:
+    temporal_output[key] = []
 
 ##############################################################################################################################################################################
 
