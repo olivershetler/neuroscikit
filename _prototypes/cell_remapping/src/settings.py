@@ -41,9 +41,10 @@ settings_dict['rotate_angle'] = 90
 IF YOU ARE DOING REGULAR REMAPPING
 """
 
-settings_dict['runRegular'] = False # EDIT HERE
+settings_dict['runRegular'] = True # EDIT HERE
 settings_dict['plotRegular'] = False # EDIT HERE
-settings_dict['rate_scores'] = ['whole', 'spike_density']
+settings_dict['rate_scores'] = ['spike_density']
+# ['whole', 'spike_density']
 settings_dict['n_repeats'] = 500 # EDIT HERE 
 settings_dict['plotShuffled'] = False # EDIT HERE
 settings_dict['plotMatchedWaveforms'] = False # EDIT HERE
@@ -77,7 +78,8 @@ IF YOU ARE DOING CONTEXT REMAPPING
 """
 
 settings_dict['runUniqueGroups'] = False # EDIT HERE
-settings_dict['runUniqueOnlyTemporal'] = True # EDIT HERE
+settings_dict['runUniqueOnlyTemporal'] = False # EDIT HERE
+settings_dict['unique_rate_scores'] = ['whole', 'spike_density']
 
 session_comp_categories = {'morning': [1,3], 'afternoon': [2,4]} # EDIT HERE
 
@@ -85,7 +87,7 @@ session_comp_categories = {'morning': [1,3], 'afternoon': [2,4]} # EDIT HERE
 IF YOU ARE DOING TEMPORAL REMAPPING
 """
 
-settings_dict['runTemporal'] = False # EDIT HERE
+settings_dict['runTemporal'] = True # EDIT HERE
 settings_dict['n_temporal_shuffles'] = 1000 # EDIT HERE
 
 ##############################################################################################################################################################################
@@ -100,13 +102,17 @@ temporal_output = {}
 temporal_keys = ['signature','depth', 'name', 'date', 'tetrode','unit_id', 'session_ids', 'emd',
             # 'z_score', 'p_value', 'base_mean', 'base_std', 'mod_z_score', 'mod_p_value', 'median', 'mad', 
             'fr_rate', 'fr_rate_ratio', 'fr_rate_change',
-            # 'n_repeats',
+            'n_repeats',
             'arena_size']
 
-keys = ['signature','depth', 'name', 'date', 'tetrode','unit_id', 'session_ids', 'whole_wass',
-        'z_score', 'p_value', 'base_mean', 'base_std', 'mod_z_score', 'mod_p_value', 'median', 'mad', 'spike_density_wass', 'fr_rate', 'fr_rate_ratio', 'fr_rate_change', 
+keys = ['signature','depth', 'name', 'date', 'tetrode','unit_id', 'session_ids', 
+        'whole_wass','z_score', 'p_value', 'base_mean', 'base_std', 'mod_z_score', 'mod_p_value', 'median', 'mad', 
+        'fr_rate', 'fr_rate_ratio', 'fr_rate_change', 
+        'sd_wass', 
+        # 'sd_z_score', 'sd_pvalue', 'sd_base_mean', 'sd_base_std', 'sd_mod_z_score', 'sd_mod_pvalue', 'sd_median', 'sd_mad',
         'n_repeats','arena_size','cylinder','ratemap_dims','downsample_factor']
-#  'information', 'b_top', 'b_bottom', 'b_right', 'b_left', 'grid_score']
+sd_keys = ['sd_wass', 'sd_z_score', 'sd_pvalue', 'sd_base_mean', 'sd_base_std', 'sd_mod_z_score', 'sd_mod_pvalue', 'sd_median', 'sd_mad']
+r_keys  = ['whole_wass','z_score', 'p_value', 'base_mean', 'base_std', 'mod_z_score', 'mod_p_value', 'median', 'mad']
 
 obj_keys = ['signature','depth', 'name', 'date','tetrode','unit_id','session_id','obj_pos','object_location', 'score', 
             # 'centroid_coords', 'angle', 'magnitude',
@@ -125,7 +131,13 @@ centroid_keys = ['signature','depth', 'name', 'date','tetrode','unit_id','sessio
 # 'test_wass','centroid_wass','binary_wass']
 
 for key in keys:
-    regular_output[key] = []
+    if key in sd_keys and 'spike_density' in settings_dict['rate_scores']:
+        regular_output[key] = []
+    elif key in r_keys and 'whole' in settings_dict['rate_scores']:
+        regular_output[key] = []
+    elif key not in sd_keys and key not in r_keys:
+        regular_output[key] = []
+
 for key in obj_keys:
     obj_output[key] = []
 for key in centroid_keys:
@@ -158,27 +170,26 @@ afternoon_temporal_output = {}
 morning_temporal_output = {}
 
 if settings_dict['runUniqueGroups'] == True or settings_dict['runUniqueOnlyTemporal'] == True:
-
-    # session_comp_categories = {'morning': [1,3], 'afternoon': [2,4]}
-    # keys = ['signature','depth','name','date','tetrode','unit_id', 'session_ids', 'sliced_wass']
-    keys = ['signature','depth', 'name', 'date', 'tetrode','unit_id', 'session_ids', 'whole_wass',
-            'z_score', 'p_value', 'base_mean', 'base_std', 'mod_z_score', 'mod_p_value', 'median', 'mad', 'spike_density_wass', 'fr_rate', 'fr_rate_ratio', 'fr_rate_change', 
-            'n_repeats','arena_size','cylinder','ratemap_dims','downsample_factor']
     
-    temporal_keys = ['signature','depth', 'name', 'date', 'tetrode','unit_id', 'session_ids', 'emd',
-                # 'z_score', 'p_value', 'base_mean', 'base_std', 'mod_z_score', 'mod_p_value', 'median', 'mad', 
-                'fr_rate', 'fr_rate_ratio', 'fr_rate_change',
-                # 'n_repeats',
-                'arena_size']
     for key in keys:
-        morning_output[key] = []
+        if key in sd_keys and 'spike_density' in settings_dict['rate_scores']:
+            morning_output[key] = []
+        elif key in r_keys and 'whole' in settings_dict['rate_scores']:
+            morning_output[key] = []
+        elif key not in sd_keys and key not in r_keys:
+            morning_output[key] = []
     for key in temporal_keys:
         morning_temporal_output[key] = []
     context_output['morning'] = morning_output
     context_temporal_output['morning'] = morning_temporal_output
 
     for key in keys:
-        afternoon_output[key] = []
+        if key in sd_keys and 'spike_density' in settings_dict['rate_scores']:
+            afternoon_temporal_output[key] = []
+        elif key in r_keys and 'whole' in settings_dict['rate_scores']:
+            afternoon_temporal_output[key] = []
+        elif key not in sd_keys and key not in r_keys:
+            afternoon_temporal_output[key] = []
     for key in temporal_keys:
         afternoon_temporal_output[key] = []
     context_output['afternoon'] = afternoon_output
