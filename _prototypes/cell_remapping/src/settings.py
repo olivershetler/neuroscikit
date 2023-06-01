@@ -77,6 +77,7 @@ IF YOU ARE DOING CONTEXT REMAPPING
 """
 
 settings_dict['runUniqueGroups'] = False # EDIT HERE
+settings_dict['runUniqueOnlyTemporal'] = True # EDIT HERE
 
 session_comp_categories = {'morning': [1,3], 'afternoon': [2,4]} # EDIT HERE
 
@@ -84,7 +85,7 @@ session_comp_categories = {'morning': [1,3], 'afternoon': [2,4]} # EDIT HERE
 IF YOU ARE DOING TEMPORAL REMAPPING
 """
 
-settings_dict['runTemporal'] = True # EDIT HERE
+settings_dict['runTemporal'] = False # EDIT HERE
 settings_dict['n_temporal_shuffles'] = 1000 # EDIT HERE
 
 ##############################################################################################################################################################################
@@ -152,19 +153,33 @@ for key in task_keys:
 context_output = {}
 afternoon_output = {}
 morning_output = {}
+context_temporal_output = {}
+afternoon_temporal_output = {}
+morning_temporal_output = {}
 
-if settings_dict['runUniqueGroups'] == True:
+if settings_dict['runUniqueGroups'] == True or settings_dict['runUniqueOnlyTemporal'] == True:
 
     # session_comp_categories = {'morning': [1,3], 'afternoon': [2,4]}
     # keys = ['signature','depth','name','date','tetrode','unit_id', 'session_ids', 'sliced_wass']
     keys = ['signature','depth', 'name', 'date', 'tetrode','unit_id', 'session_ids', 'whole_wass',
             'z_score', 'p_value', 'base_mean', 'base_std', 'mod_z_score', 'mod_p_value', 'median', 'mad', 'spike_density_wass', 'fr_rate', 'fr_rate_ratio', 'fr_rate_change', 
             'n_repeats','arena_size','cylinder','ratemap_dims','downsample_factor']
-
+    
+    temporal_keys = ['signature','depth', 'name', 'date', 'tetrode','unit_id', 'session_ids', 'emd',
+                # 'z_score', 'p_value', 'base_mean', 'base_std', 'mod_z_score', 'mod_p_value', 'median', 'mad', 
+                'fr_rate', 'fr_rate_ratio', 'fr_rate_change',
+                # 'n_repeats',
+                'arena_size']
     for key in keys:
         morning_output[key] = []
+    for key in temporal_keys:
+        morning_temporal_output[key] = []
     context_output['morning'] = morning_output
+    context_temporal_output['morning'] = morning_temporal_output
 
     for key in keys:
         afternoon_output[key] = []
+    for key in temporal_keys:
+        afternoon_temporal_output[key] = []
     context_output['afternoon'] = afternoon_output
+    context_temporal_output['afternoon'] = afternoon_temporal_output
