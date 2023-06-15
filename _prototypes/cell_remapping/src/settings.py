@@ -17,17 +17,17 @@ GLOBAL SETTINGS
 
 settings_dict['session']['channel_count'] = 4
 settings_dict['ppm'] = None # EDIT HERE (will auto read from file if None, otherwise will override with this value)
-settings_dict['smoothing_factor'] = 2 # EDIT HERE (for plotting)
-settings_dict['useMatchedCut'] = False # EDIT HERE (NECESSARY TO BE TRUE OR TO HAVE MANUALLY MATCHED CUT FILES)
+settings_dict['smoothing_factor'] = 3 # EDIT HERE (for plotting)
+settings_dict['useMatchedCut'] = True # EDIT HERE (NECESSARY TO BE TRUE OR TO HAVE MANUALLY MATCHED CUT FILES)
 settings_dict['n_projections'] = 10**3 # EDIT HERE (10**3 is slow,  50 (default) is faster but less accurate, 10**2 is middle ground --> look paper)
 settings_dict['n_shuffle_projections'] = 10**2 # EDIT HERE (10**3 is slow,  50 (default) is faster but less accurate, 10**2 is middle ground --> look paper)
 settings_dict['type'] = 'object' # EDIT HERE # Currently only 'object' is supported so no need to change (will add e.g. angle later)
 # Type is used to read angle or other (e.g. odor) from filename
 ##### ratemap size setting (16,16) --> tradeoff between speed and accuracy
-settings_dict['ratemap_dims'] = (16,16) # EDIT HERE (16,16) is default, (32,32) is slower but more accurate,
+settings_dict['ratemap_dims'] = (32,32) # EDIT HERE (16,16) is default, (32,32) is slower but more accurate,
 settings_dict['disk_arena'] = False # EDIT HERE. IF TRUE WILL FORCE DISK. IF FALSE WILL CHECK FILE NAME TO SEE IF TRUE OR NOT
 settings_dict['normalizeRate'] = True # EDIT HERE --> NORMALIZED FOR ALL CASES 
-settings_dict['naming_type'] = 'MEC' # EDIT HERE --> 'MEC' or 'LEC'
+settings_dict['naming_type'] = 'LEC' # EDIT HERE --> 'MEC' or 'LEC' or 'LC'
 settings_dict['rotate_evening'] = False
 settings_dict['rotate_angle'] = 90
 # sub2 1.xlsx is 32,32 shuffle = 500 with jit - 6062.33 seconds
@@ -41,11 +41,11 @@ settings_dict['rotate_angle'] = 90
 IF YOU ARE DOING REGULAR REMAPPING
 """
 
-settings_dict['runRegular'] = True # EDIT HERE
+settings_dict['runRegular'] = False # EDIT HERE
 settings_dict['plotRegular'] = False # EDIT HERE
-settings_dict['rate_scores'] = ['spike_density']
+settings_dict['rate_scores'] = ['whole','spike_density']
 # ['whole', 'spike_density']
-settings_dict['n_repeats'] = 500 # EDIT HERE 
+settings_dict['n_repeats'] = 1000 # EDIT HERE 
 settings_dict['plotShuffled'] = False # EDIT HERE
 settings_dict['plotMatchedWaveforms'] = False # EDIT HERE
 
@@ -53,8 +53,8 @@ settings_dict['plotMatchedWaveforms'] = False # EDIT HERE
 IF YOU ARE DOING OBJECT REMAPPING
 """
 
-settings_dict['hasObject'] = False # EDIT HERE
-settings_dict['plotObject'] = False # EDIT HERE
+settings_dict['hasObject'] = True # EDIT HERE
+settings_dict['plotObject'] = True # EDIT HERE
 settings_dict['object_scores'] = ['whole', 'field', 'binary', 'centroid', 'spike_density']
 # settings_dict['grid_sample_threshold'] = 3.2 # EDIT HERE, euclidean distance
 settings_dict['spacing'] = 2 # EDIT HERE, same unit as arena height and width
@@ -87,7 +87,7 @@ session_comp_categories = {'morning': [1,3], 'afternoon': [2,4]} # EDIT HERE
 IF YOU ARE DOING TEMPORAL REMAPPING
 """
 
-settings_dict['runTemporal'] = True # EDIT HERE
+settings_dict['runTemporal'] = False # EDIT HERE
 settings_dict['n_temporal_shuffles'] = 1000 # EDIT HERE
 
 ##############################################################################################################################################################################
@@ -102,17 +102,18 @@ temporal_output = {}
 temporal_keys = ['signature','depth', 'name', 'date', 'tetrode','unit_id', 'session_ids', 'emd',
             # 'z_score', 'p_value', 'base_mean', 'base_std', 'mod_z_score', 'mod_p_value', 'median', 'mad', 
             'fr_rate', 'fr_rate_ratio', 'fr_rate_change',
-            'n_repeats',
+            # 'n_repeats',
             'arena_size']
 
 keys = ['signature','depth', 'name', 'date', 'tetrode','unit_id', 'session_ids', 
-        'whole_wass','z_score', 'p_value', 'base_mean', 'base_std', 'mod_z_score', 'mod_p_value', 'median', 'mad', 
+        'whole_wass','z_score', 'base_mean', 'base_std', 'mod_z_score', 'median', 'mad', 
+        'quantile','plower', 'phigher', 'ptwotail',
         'fr_rate', 'fr_rate_ratio', 'fr_rate_change', 
         'sd_wass', 
         # 'sd_z_score', 'sd_pvalue', 'sd_base_mean', 'sd_base_std', 'sd_mod_z_score', 'sd_mod_pvalue', 'sd_median', 'sd_mad',
         'n_repeats','arena_size','cylinder','ratemap_dims','downsample_factor']
 sd_keys = ['sd_wass', 'sd_z_score', 'sd_pvalue', 'sd_base_mean', 'sd_base_std', 'sd_mod_z_score', 'sd_mod_pvalue', 'sd_median', 'sd_mad']
-r_keys  = ['whole_wass','z_score', 'p_value', 'base_mean', 'base_std', 'mod_z_score', 'mod_p_value', 'median', 'mad']
+r_keys  = ['quantile','plower', 'phigher', 'ptwotail','whole_wass','z_score', 'p_value', 'base_mean', 'base_std', 'mod_z_score', 'mod_p_value', 'median', 'mad']
 
 obj_keys = ['signature','depth', 'name', 'date','tetrode','unit_id','session_id','obj_pos','object_location', 'score', 
             # 'centroid_coords', 'angle', 'magnitude',
@@ -185,11 +186,11 @@ if settings_dict['runUniqueGroups'] == True or settings_dict['runUniqueOnlyTempo
 
     for key in keys:
         if key in sd_keys and 'spike_density' in settings_dict['rate_scores']:
-            afternoon_temporal_output[key] = []
+            afternoon_output[key] = []
         elif key in r_keys and 'whole' in settings_dict['rate_scores']:
-            afternoon_temporal_output[key] = []
+            afternoon_output[key] = []
         elif key not in sd_keys and key not in r_keys:
-            afternoon_temporal_output[key] = []
+            afternoon_output[key] = []
     for key in temporal_keys:
         afternoon_temporal_output[key] = []
     context_output['afternoon'] = afternoon_output

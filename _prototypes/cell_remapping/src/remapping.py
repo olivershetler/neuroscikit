@@ -75,6 +75,7 @@ def compute_remapping(study, settings, data_dir):
     # c = 0
     isStart = True
     context_paths = {}
+    context_temporal_paths = {}
     # batch_map(study, tasks, ratemap_size=settings['ratemap_dims'][0])
 
     # if settings['hasObject'] or settings['runFields']:    
@@ -692,9 +693,14 @@ def compute_remapping(study, settings, data_dir):
                             mod_z_score, median, mad = compute_modified_zscore(wass, ref_wass_dist)
 
                             assert len(ref_wass_dist) == settings['n_repeats'], 'n_repeats does not match length of ref_wass_dist'
-    
-                            pvalue = stats.t.cdf(z_score, len(ref_wass_dist)-1)
-                            mod_pvalue = stats.t.cdf(mod_z_score, len(ref_wass_dist)-1)
+
+                            quantile = wasserstein_quantile(wass, ref_wass_dist)
+                            # pvalue = stats.t.cdf(z_score, len(ref_wass_dist)-1)
+                            # mod_pvalue = stats.t.cdf(mod_z_score, len(ref_wass_dist)-1)
+                            plower = quantile
+                            phigher = 1 - quantile
+                            ptwotail = (1- quantile if quantile > 0.5 else quantile)*2
+                            
                             
                             # pvalue for wass, 2 sided
                             # pvalue = 2 * stats.t.cdf(-np.abs(t_score), len(ref_wass_dist)-1)
@@ -712,11 +718,15 @@ def compute_remapping(study, settings, data_dir):
                         regular_dict['tetrode'].append(animal.animal_id.split('tet')[-1])
                         regular_dict['session_ids'].append([prev_key, curr_key])
                         if 'whole' in settings['rate_scores']:
+                            regular_dict['plower'].append(plower)
+                            regular_dict['phigher'].append(phigher)
+                            regular_dict['ptwotail'].append(ptwotail)
+                            regular_dict['quantile'].append(quantile)
                             regular_dict['whole_wass'].append(wass)
                             regular_dict['z_score'].append(z_score)
                             regular_dict['mod_z_score'].append(mod_z_score)
-                            regular_dict['p_value'].append(pvalue)
-                            regular_dict['mod_p_value'].append(mod_pvalue)
+                            # regular_dict['p_value'].append(pvalue)
+                            # regular_dict['mod_p_value'].append(mod_pvalue)
                             # regular_dict['shapiro_pval'].append([prev_shapiro_pval, curr_shapiro_pval])
                             # regular_dict['shapiro_coeff'].append([prev_shapiro_coeff, curr_shapiro_coeff])
                             regular_dict['base_mean'].append(ref_wass_mean)
@@ -1106,9 +1116,14 @@ def compute_remapping(study, settings, data_dir):
                                     mod_z_score, median, mad = compute_modified_zscore(wass, ref_wass_dist)
 
                                     assert len(ref_wass_dist) == settings['n_repeats'], 'n_repeats does not match length of ref_wass_dist'
-            
-                                    pvalue = stats.t.cdf(z_score, len(ref_wass_dist)-1)
-                                    mod_pvalue = stats.t.cdf(mod_z_score, len(ref_wass_dist)-1)
+                                    
+                                    quantile = wasserstein_quantile(wass, ref_wass_dist)
+                                    plower = quantile
+                                    phigher = 1 - quantile
+                                    ptwotail = (1- quantile if quantile > 0.5 else quantile)*2
+                            
+                                    # pvalue = stats.t.cdf(z_score, len(ref_wass_dist)-1)
+                                    # mod_pvalue = stats.t.cdf(mod_z_score, len(ref_wass_dist)-1)
                                     # pvalue for wass, 2 sided
                                     # pvalue = 2 * stats.t.cdf(-np.abs(t_score), len(ref_wass_dist)-1)
                                     # pvalue = 2 * stats.norm.cdf(-np.abs(t_score))
@@ -1124,11 +1139,15 @@ def compute_remapping(study, settings, data_dir):
                                     context_dict[categ]['tetrode'].append(animal.animal_id.split('tet')[-1])
                                     context_dict[categ]['session_ids'].append([prev_key, curr_key])
                                     context_dict[categ]['whole_wass'].append(wass)
-                                    context_dict[categ]['spike_density_wass'].append(spike_dens_wass)
+                                    context_dict[categ]['sd_wass'].append(spike_dens_wass)
                                     context_dict[categ]['z_score'].append(z_score)
                                     context_dict[categ]['mod_z_score'].append(mod_z_score)
-                                    context_dict[categ]['p_value'].append(pvalue)
-                                    context_dict[categ]['mod_p_value'].append(mod_pvalue)
+                                    context_dict[categ]['plower'].append(plower)
+                                    context_dict[categ]['phigher'].append(phigher)
+                                    context_dict[categ]['ptwotail'].append(ptwotail)
+                                    context_dict[categ]['quantile'].append(quantile)
+                                    # context_dict[categ]['p_value'].append(pvalue)
+                                    # context_dict[categ]['mod_p_value'].append(mod_pvalue)
                                     # context_dict[categ]['shapiro_pval'].append([prev_shapiro_pval, curr_shapiro_pval])
                                     # context_dict[categ]['shapiro_coeff'].append([prev_shapiro_coeff, curr_shapiro_coeff])
                                     context_dict[categ]['base_mean'].append(ref_wass_mean)
@@ -1354,31 +1373,39 @@ def compute_remapping(study, settings, data_dir):
                     if isStart:
                         path = data_dir + '/remapping_output/context_' + context + '_temporal_remapping.xlsx'
                         if not os.path.isfile(path):
-                            context_path_to_use = path
+                            context_temporal_path_to_use = path
                         else:
                             counter = 2
                             while os.path.isfile(data_dir + '/remapping_output/context_' + context + '_temporal_remapping_' + str(counter) + '.xlsx'):
                                 counter += 1
-                            context_path_to_use = data_dir + '/remapping_output/context_' + context + '_temporal_remapping_' + str(counter) + '.xlsx'
-                        writer = pd.ExcelWriter(context_path_to_use, engine='openpyxl')
+                            context_temporal_path_to_use = data_dir + '/remapping_output/context_' + context + '_temporal_remapping_' + str(counter) + '.xlsx'
+                        writer = pd.ExcelWriter(context_temporal_path_to_use, engine='openpyxl')
                         df.to_excel(writer, sheet_name='Summary')
                         writer.save()
                         writer.close()
-                        context_paths[context] = context_path_to_use
+                        context_temporal_paths[context] = context_temporal_path_to_use
                     else:
-                        context_path_to_use = context_paths[context]
-                        book = load_workbook(context_path_to_use)
-                        writer = pd.ExcelWriter(context_path_to_use, engine='openpyxl')
+                        context_temporal_path_to_use = context_temporal_paths[context]
+                        book = load_workbook(context_temporal_path_to_use)
+                        writer = pd.ExcelWriter(context_temporal_path_to_use, engine='openpyxl')
                         writer.book = book
                         writer.sheets = dict((ws.title, ws) for ws in book.worksheets)
                         df.to_excel(writer, sheet_name='Summary', header=False, startrow=writer.sheets['Summary'].max_row)
                         # writer.save()
                         writer.close()
-                        book.save(context_path_to_use)
+                        book.save(context_temporal_path_to_use)
             
             isStart = False
 
     # return {'regular': regular_dict, 'object': obj_dict, 'centroid': centroid_dict, 'context': dict}
+
+def wasserstein_quantile(true_distance, random_distances):
+    random_samples = len(random_distances)
+    ecdf = stats.cumfreq(random_distances, numbins=random_samples)
+    cumulative_counts = ecdf.cumcount / np.max(ecdf.cumcount)
+    quantile = np.interp(true_distance, ecdf.lowerlimit + np.linspace(0, ecdf.binsize*ecdf.cumcount.size, ecdf.cumcount.size),cumulative_counts)
+    return quantile
+
 
 def compute_null_spike_density(prev_pts, curr_pts, num_iterations, n_projections):
     np.random.seed(0)
