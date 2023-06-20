@@ -65,8 +65,10 @@ def plot_shuffled_regular_remapping(prev, curr, ref_wass_dist, prev_sample, curr
     # chosen_prev = prev_sample[np.random.choice(np.arange(len(prev_sample)), 1)[0]]
     # chosen_curr = curr_sample[np.random.choice(np.arange(len(curr_sample)), 1)[0]]
 
-    fig.density_plot(prev_sample, fig.ax['5'])
-    fig.density_plot(curr_sample, fig.ax['6'])
+    if prev_sample is not None:
+        fig.density_plot(prev_sample, fig.ax['5'])
+    if curr_sample is not None:
+        fig.density_plot(curr_sample, fig.ax['6'])
 
     prev_key, curr_key = plot_settings['session_ids'][-1]
     wass = plot_settings['whole_wass'][-1]

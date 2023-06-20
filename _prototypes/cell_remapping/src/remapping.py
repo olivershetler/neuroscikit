@@ -97,16 +97,190 @@ def compute_remapping(study, settings, data_dir):
 
         # non_disk_grid_sample = generate_grid()
 
-        
+    # animal_groups = {}
+    animal_cell_info = {}
+    animal_cell_ratemaps = {}
+    for animal in study.animals:
+        max_centroid_count, blobs_dict, _, _, ratemap_session_groups = _aggregate_cell_info(animal, settings)
+        animal_id = animal.animal_id.split('_')[0]
+        if animal_id not in animal_cell_ratemaps:
+            animal_cell_ratemaps[animal_id] = {}
+        # animal_groups[animal_id].append(animal)
+        animal_cell_info[animal.animal_id] = [max_centroid_count, blobs_dict]
+        for ses_id, cell_info in ratemap_session_groups.items():
+            if ses_id not in animal_cell_ratemaps[animal_id]:
+                animal_cell_ratemaps[animal_id][ses_id] = {}
+            for cell_label in cell_info:
+                ky = animal.animal_id.split('_')[1] + '_' + str(cell_label)
+                animal_cell_ratemaps[animal_id][ses_id][ky] = cell_info[cell_label]
 
+
+    prev_ses_id = None
+    animal_ref_dist = {}
+    for animal_id in animal_cell_ratemaps:
+        if animal_id not in animal_ref_dist:
+            animal_ref_dist[animal_id] = {}
+        if settings['runRegular'] or settings['runTemporal']:
+            for ses_id in animal_cell_ratemaps[animal_id]:
+                if prev_ses_id is not None:
+                    
+                    ses_1 = animal_cell_ratemaps[animal_id][prev_ses_id]
+                    ses_2 = animal_cell_ratemaps[animal_id][ses_id]
+                    
+                    ses_comp = str(prev_ses_id) + '_' + str(ses_id)
+                    if ses_comp not in animal_ref_dist[animal_id]:
+                        animal_ref_dist[animal_id][ses_comp] = {}
+                        animal_ref_dist[animal_id][ses_comp]['ref_whole'] = []
+                        animal_ref_dist[animal_id][ses_comp]['ref_spike_density'] = []
+                        animal_ref_dist[animal_id][ses_comp]['ref_temporal'] = []
+                        animal_ref_dist[animal_id][ses_comp]['ref_rate_ratio'] = []
+                        animal_ref_dist[animal_id][ses_comp]['ref_rate_change'] = []
+                        animal_ref_dist[animal_id][ses_comp]['ref_weights'] = []
+
+                    for cell_label_1 in ses_1:
+                        for cell_label_2 in ses_2:
+                            if cell_label_1 != cell_label_2: # DO NOT COMPARE SAME CELL, PONLY MAKIGN REF DIST
+                                print('comparing cell {} to cell {}'.format(cell_label_1, cell_label_2))
+                                source_map = ses_1[cell_label_1][0]
+                                target_map = ses_2[cell_label_2][0]
+                                prev_spatial_spike_train = ses_1[cell_label_1][1]
+                                curr_spatial_spike_train = ses_2[cell_label_2][1]
+                                y, x = source_map.shape
+                                assert source_map.shape == target_map.shape, "source and target maps are not the same shape"
+                                if settings['runRegular']:
+                                    row_prev, col_prev = np.where(~np.isnan(source_map))
+                                    source_weights = np.array(list(map(lambda x, y: source_map[x,y], row_prev, col_prev)))
+                                    row_curr, col_curr = np.where(~np.isnan(target_map))
+                                    target_weights = np.array(list(map(lambda x, y: target_map[x,y], row_curr, col_curr)))
+
+                                    prev_height_bucket_midpoints, prev_width_bucket_midpoints = _get_ratemap_bucket_midpoints(prev_spatial_spike_train.arena_size, y, x)
+                                    curr_height_bucket_midpoints, curr_width_bucket_midpoints = _get_ratemap_bucket_midpoints(curr_spatial_spike_train.arena_size, y, x)
+                                                
+                                    prev_height_bucket_midpoints = prev_height_bucket_midpoints[row_prev]
+                                    prev_width_bucket_midpoints = prev_width_bucket_midpoints[col_prev]
+                                    curr_height_bucket_midpoints = curr_height_bucket_midpoints[row_curr]
+                                    curr_width_bucket_midpoints = curr_width_bucket_midpoints[col_curr]
+
+                                    prev_spike_pos_x, prev_spike_pos_y, prev_spike_pos_t = prev_spatial_spike_train.spike_x, prev_spatial_spike_train.spike_y, prev_spatial_spike_train.new_spike_times
+                                    prev_pts = np.array([prev_spike_pos_x, prev_spike_pos_y]).T
+
+                                    curr_spike_pos_x, curr_spike_pos_y, curr_spike_pos_t = curr_spatial_spike_train.spike_x, curr_spatial_spike_train.spike_y, curr_spatial_spike_train.new_spike_times
+                                    curr_pts = np.array([curr_spike_pos_x, curr_spike_pos_y]).T
+
+                                    source_weights = source_weights / np.sum(source_weights)
+                                    target_weights = target_weights / np.sum(target_weights)
+                                    coord_buckets_curr = np.array(list(map(lambda x, y: [curr_height_bucket_midpoints[x],curr_width_bucket_midpoints[y]], row_curr, col_curr)))
+                                    coord_buckets_prev = np.array(list(map(lambda x, y: [prev_height_bucket_midpoints[x],prev_width_bucket_midpoints[y]], row_prev, col_prev)))
+                                    curr_pts = scale_points(curr_pts)
+                                    prev_pts = scale_points(prev_pts)
+                                    spike_dens_wass = pot_sliced_wasserstein(prev_pts, curr_pts, n_projections=settings['n_projections'])
+                                    animal_ref_dist[animal_id][ses_comp]['ref_spike_density'].append(spike_dens_wass)
+                                    wass = pot_sliced_wasserstein(coord_buckets_prev, coord_buckets_curr, source_weights, target_weights, n_projections=settings['n_projections'])
+                                    animal_ref_dist[animal_id][ses_comp]['ref_whole'].append(wass)
+                                    animal_ref_dist[animal_id][ses_comp]['ref_weights'].append([source_weights, target_weights])
+
+                                if settings['runTemporal']:
+                                    prev_spike_times = prev_spatial_spike_train.spike_times
+                                    curr_spike_times = curr_spatial_spike_train.spike_times
+                                    observed_emd = compute_emd(prev_spike_times, curr_spike_times)
+                                    animal_ref_dist[animal_id][ses_comp]['ref_temporal'].append(observed_emd)
+                                
+                                prev_duration = prev_spatial_spike_train.session_metadata.session_object.get_spike_data()['spike_cluster'].duration
+                                curr_duration = curr_spatial_spike_train.session_metadata.session_object.get_spike_data()['spike_cluster'].duration
+                                curr_spike_times = curr_spatial_spike_train.spike_times
+                                prev_spike_times = prev_spatial_spike_train.spike_times
+                                curr_fr_rate = len(curr_spike_times) / prev_duration
+                                prev_fr_rate = len(prev_spike_times) / curr_duration
+                                fr_rate_ratio = curr_fr_rate / prev_fr_rate
+                                fr_rate_change = curr_fr_rate - prev_fr_rate
+                                animal_ref_dist[animal_id][ses_comp]['ref_rate_ratio'].append(fr_rate_ratio)
+                                animal_ref_dist[animal_id][ses_comp]['ref_rate_change'].append(fr_rate_change)
+                            else:
+                                print('SAME CELL, omitting from ref dist {} {}'.format(cell_label_1, cell_label_2))
+                prev_ses_id = ses_id
+        if settings['runUniqueGroups'] or settings['runUniqueOnlyTemporal']:
+            for categ in session_comp_categories:
+                prev_ses_id_categs = None 
+                for ses_id_categs in session_comp_categories[categ]:
+                    # ses_id_categs = ses_id_categs.split('_')[1]
+                    if prev_ses_id_categs is not None:
+                        
+                        ses_1 = animal_cell_ratemaps[animal_id][prev_ses_id_categs]
+                        ses_2 = animal_cell_ratemaps[animal_id][ses_id_categs]
+                        
+                        # ses_comp = '_'.join([prev_ses_id_categs, ses_id_categs])
+                        print('wordsearch ' + str(ses_comp))
+                        ses_comp = str(prev_ses_id_categs) + '_' + str(ses_id_categs)
+                        if ses_comp not in animal_ref_dist[animal_id]:
+                            animal_ref_dist[animal_id][ses_comp] = {}
+                            animal_ref_dist[animal_id][ses_comp]['ref_whole'] = []
+                            animal_ref_dist[animal_id][ses_comp]['ref_spike_density'] = []
+                            animal_ref_dist[animal_id][ses_comp]['ref_temporal'] = []
+                            animal_ref_dist[animal_id][ses_comp]['ref_rate_ratio'] = []
+                            animal_ref_dist[animal_id][ses_comp]['ref_rate_change'] = []
+
+                        for cell_label_1 in ses_1:
+                            for cell_label_2 in ses_2:
+                                if cell_label_1 != cell_label_2: # DO NOT COMPARE SAME CELL, PONLY MAKIGN REF DIST
+                                    source_map = ses_1[cell_label_1][0]
+                                    target_map = ses_2[cell_label_2][0]
+                                    prev_spatial_spike_train = ses_1[cell_label_1][1]
+                                    curr_spatial_spike_train = ses_2[cell_label_2][1]
+                                    if settings['runUniqueGroups']:
+                                        row_prev, col_prev = np.where(~np.isnan(source_map))
+                                        source_weights = np.array(list(map(lambda x, y: source_map[x,y], row_prev, col_prev)))
+                                        row_curr, col_curr = np.where(~np.isnan(target_map))
+                                        target_weights = np.array(list(map(lambda x, y: target_map[x,y], row_curr, col_curr)))
+
+                                        prev_height_bucket_midpoints, prev_width_bucket_midpoints = _get_ratemap_bucket_midpoints(prev_spatial_spike_train.arena_size, y, x)
+                                        curr_height_bucket_midpoints, curr_width_bucket_midpoints = _get_ratemap_bucket_midpoints(curr_spatial_spike_train.arena_size, y, x)
+                                                    
+                                        prev_height_bucket_midpoints = prev_height_bucket_midpoints[row_prev]
+                                        prev_width_bucket_midpoints = prev_width_bucket_midpoints[col_prev]
+                                        curr_height_bucket_midpoints = curr_height_bucket_midpoints[row_curr]
+                                        curr_width_bucket_midpoints = curr_width_bucket_midpoints[col_curr]
+
+                                        source_weights = source_weights / np.sum(source_weights)
+                                        target_weights = target_weights / np.sum(target_weights)
+                                        coord_buckets_curr = np.array(list(map(lambda x, y: [curr_height_bucket_midpoints[x],curr_width_bucket_midpoints[y]], row_curr, col_curr)))
+                                        coord_buckets_prev = np.array(list(map(lambda x, y: [prev_height_bucket_midpoints[x],prev_width_bucket_midpoints[y]], row_prev, col_prev)))
+                                        curr_pts = scale_points(curr_pts)
+                                        prev_pts = scale_points(prev_pts)
+                                        spike_dens_wass = pot_sliced_wasserstein(prev_pts, curr_pts, n_projections=settings['n_projections'])
+                                        animal_ref_dist[animal_id][ses_comp]['ref_spike_density'].append(spike_dens_wass)
+                                        wass = pot_sliced_wasserstein(coord_buckets_prev, coord_buckets_curr, source_weights, target_weights, n_projections=settings['n_projections'])
+                                        animal_ref_dist[animal_id][ses_comp]['ref_whole'].append(wass)
+
+                                    if settings['runUniqueOnlyTemporal']:
+                                        prev_spike_times = prev_spatial_spike_train.spike_times
+                                        curr_spike_times = curr_spatial_spike_train.spike_times
+                                        observed_emd = compute_emd(prev_spike_times, curr_spike_times)
+                                        animal_ref_dist[animal_id][ses_comp]['ref_temporal'].append(observed_emd)
+                                        prev_duration = prev_spatial_spike_train.session_metadata.session_object.get_spike_data()['spike_cluster'].duration
+                                        curr_duration = curr_spatial_spike_train.session_metadata.session_object.get_spike_data()['spike_cluster'].duration
+
+                                        curr_fr_rate = len(curr_spike_times) / prev_duration
+                                        prev_fr_rate = len(prev_spike_times) / curr_duration
+                                        fr_rate_ratio = curr_fr_rate / prev_fr_rate
+                                        fr_rate_change = curr_fr_rate - prev_fr_rate
+                                        animal_ref_dist[animal_id][ses_comp]['ref_rate_ratio'].append(fr_rate_ratio)
+                                        animal_ref_dist[animal_id][ses_comp]['ref_rate_change'].append(fr_rate_change)
+                                else:
+                                    print('SAME CELL, omitting from ref dist {} {}'.format(cell_label_1, cell_label_2))
+
+                    prev_ses_id_categs = ses_id_categs
     # centroid_dict = copy.deepcopy(centroid_output)
     # regular_dict = copy.deepcopy(regular_output)
     # context_dict = copy.deepcopy(context_output)
     # obj_dict = copy.deepcopy(obj_output)
 
     for animal in study.animals:
-        
-        max_centroid_count, blobs_dict, shuffled_ratemap_dict, shuffled_sample_dict = _aggregate_cell_info(animal, settings)
+
+        animal_id = animal.animal_id.split('_')[0]
+
+        # max_centroid_count, blobs_dict, shuffled_ratemap_dict, shuffled_sample_dict = _aggregate_cell_info(animal, settings)
+        # max_centroid_count, blobs_dict, _, _ = _aggregate_cell_info(animal, settings)
+        max_centroid_count, blobs_dict = animal_cell_info[animal.animal_id]
 
         # if settings['useMatchedCut']:
         #     # get largest possible cell id
@@ -591,6 +765,7 @@ def compute_remapping(study, settings, data_dir):
                                     obj_dict['object_location'].append(object_location)
                                     obj_dict['obj_pos'].append((true_object_pos['x'], true_object_pos['y']))
                                     obj_dict['signature'].append(curr_path)
+                                    obj_dict['spike_count'].append(len(curr_spatial_spike_train.spike_times))
                                     obj_dict['name'].append(name)
                                     obj_dict['date'].append(date)
                                     obj_dict['depth'].append(depth)
@@ -613,6 +788,12 @@ def compute_remapping(study, settings, data_dir):
                         if settings['plotObject']:
                             plot_obj_remapping(true_object_ratemap, curr, labels, centroids, obj_dict, data_dir)
 
+                    if prev is not None:
+                        ses_1 = prev_key.split('_')[1]
+                        ses_2 = seskey.split('_')[1]
+                        # ses_comp = '_'.join([ses_1, ses_2])
+                        ses_comp = str(ses_1) + '_' + str(ses_2)
+        
                     # If prev ratemap is not None (= we are at session2 or later, session1 has no prev session to compare)
                     if prev is not None and settings['runRegular']:
 
@@ -643,48 +824,54 @@ def compute_remapping(study, settings, data_dir):
                         row_prev, col_prev = np.where(~np.isnan(prev_ratemap))
                         row_curr, col_curr = np.where(~np.isnan(curr_ratemap))
 
-                        if 'whole' in settings['rate_scores']:
-                            print('setting up shuffled samples')
-                            # for first map
-                            if prev_shuffled is None:  
-                                prev_shuffled = shuffled_ratemap_dict[prev_id]
-                                prev_shuffled_sample = shuffled_sample_dict[prev_id]
+                        # if 'whole' in settings['rate_scores']:
+                        #     print('setting up shuffled samples')
+                        #     # for first map
+                        #     if prev_shuffled is None:  
+                        #         prev_shuffled = shuffled_ratemap_dict[prev_id]
+                        #         prev_shuffled_sample = shuffled_sample_dict[prev_id]
 
-                            curr_shuffled = shuffled_ratemap_dict[curr_id]
-                            curr_shuffled_sample = shuffled_sample_dict[curr_id]
+                        #     curr_shuffled = shuffled_ratemap_dict[curr_id]
+                        #     curr_shuffled_sample = shuffled_sample_dict[curr_id]
 
                         # assert row_prev.all() == row_curr.all() and col_prev.all() == col_curr.all(), 'Nans in different places'
 
-                        height_bucket_midpoints, width_bucket_midpoints = _get_ratemap_bucket_midpoints(prev_spatial_spike_train.arena_size, y, x)
-                        height_bucket_midpoints = height_bucket_midpoints[row_curr]
-                        width_bucket_midpoints = width_bucket_midpoints[col_curr]
+                        prev_height_bucket_midpoints, prev_width_bucket_midpoints = _get_ratemap_bucket_midpoints(prev_spatial_spike_train.arena_size, y, x)
+                        curr_height_bucket_midpoints, curr_width_bucket_midpoints = _get_ratemap_bucket_midpoints(curr_spatial_spike_train.arena_size, y, x)
+                        
+                        prev_height_bucket_midpoints = prev_height_bucket_midpoints[row_prev]
+                        prev_width_bucket_midpoints = prev_width_bucket_midpoints[col_prev]
+                        curr_height_bucket_midpoints = curr_height_bucket_midpoints[row_curr]
+                        curr_width_bucket_midpoints = curr_width_bucket_midpoints[col_curr]
                         source_weights = np.array(list(map(lambda x, y: prev_ratemap[x,y], row_prev, col_prev)))
                         target_weights = np.array(list(map(lambda x, y: curr_ratemap[x,y], row_curr, col_curr)))
                         source_weights = source_weights / np.sum(source_weights)
                         target_weights = target_weights / np.sum(target_weights)
-                        coord_buckets_curr = np.array(list(map(lambda x, y: [height_bucket_midpoints[x],width_bucket_midpoints[y]], row_curr, col_curr)))
-                        coord_buckets_prev = np.array(list(map(lambda x, y: [height_bucket_midpoints[x],width_bucket_midpoints[y]], row_prev, col_prev)))
+                        coord_buckets_curr = np.array(list(map(lambda x, y: [curr_height_bucket_midpoints[x],curr_width_bucket_midpoints[y]], row_curr, col_curr)))
+                        coord_buckets_prev = np.array(list(map(lambda x, y: [prev_height_bucket_midpoints[x],prev_width_bucket_midpoints[y]], row_prev, col_prev)))
 
                         if 'spike_density' in settings['rate_scores']:
                             print('doing spike density wasserstein')
                             curr_pts = scale_points(curr_pts)
                             prev_pts = scale_points(prev_pts)
                             spike_dens_wass = pot_sliced_wasserstein(prev_pts, curr_pts, n_projections=settings['n_projections'])
-                            # print('doing null spike density wasserstein')
+                            print('doing null spike density wasserstein')
+                            null_spike_dens_wass = animal_ref_dist[animal_id][ses_comp]['ref_spike_density']
                             # null_spike_dens_wass = compute_null_spike_density(prev_pts, curr_pts, 
                             #                                               settings['n_repeats'], settings['n_shuffle_projections'])
-                            # null_spike_dens_wass_mean = np.mean(null_spike_dens_wass)
-                            # null_spike_dens_wass_std = np.std(null_spike_dens_wass)
-                            # spike_dens_z_score = (spike_dens_wass - null_spike_dens_wass_mean) / (null_spike_dens_wass_std)
-                            # spike_dens_mod_z_score, median, mad = compute_modified_zscore(spike_dens_wass, null_spike_dens_wass)
-                            # spike_dens_pvalue = stats.t.cdf(spike_dens_z_score, len(null_spike_dens_wass)-1)
-                            # spike_dens_mod_pvalue = stats.t.cdf(spike_dens_mod_z_score, len(null_spike_dens_wass)-1)
+                            null_spike_dens_wass_mean = np.mean(null_spike_dens_wass)
+                            null_spike_dens_wass_std = np.std(null_spike_dens_wass)
+                            spike_dens_z_score = (spike_dens_wass - null_spike_dens_wass_mean) / (null_spike_dens_wass_std)
+                            spike_dens_mod_z_score, median, mad = compute_modified_zscore(spike_dens_wass, null_spike_dens_wass)
+                            sd_quantile = wasserstein_quantile(spike_dens_wass, null_spike_dens_wass)
                         
                         if 'whole' in settings['rate_scores']:
                             print('doing whole map wasserstein')
                             wass = pot_sliced_wasserstein(coord_buckets_prev, coord_buckets_curr, source_weights, target_weights, n_projections=settings['n_projections'])
                             print('doing ref wasserstein')
-                            ref_wass_dist = list(map(lambda x, y: pot_sliced_wasserstein(coord_buckets_prev, coord_buckets_curr, x/np.sum(x), y/np.sum(y), n_projections=settings['n_shuffle_projections']), prev_shuffled, curr_shuffled))
+                            # ref_wass_dist = list(map(lambda x, y: pot_sliced_wasserstein(coord_buckets_prev, coord_buckets_curr, x/np.sum(x), y/np.sum(y), n_projections=settings['n_shuffle_projections']), prev_shuffled, curr_shuffled))
+                            ref_wass_dist = animal_ref_dist[animal_id][ses_comp]['ref_whole']
+                            
                             ref_wass_mean = np.mean(ref_wass_dist)
                             ref_wass_std = np.std(ref_wass_dist)
                             z_score = (wass - ref_wass_mean) / (ref_wass_std)
@@ -692,7 +879,7 @@ def compute_remapping(study, settings, data_dir):
                             print('doing modified z score')
                             mod_z_score, median, mad = compute_modified_zscore(wass, ref_wass_dist)
 
-                            assert len(ref_wass_dist) == settings['n_repeats'], 'n_repeats does not match length of ref_wass_dist'
+                            # assert len(ref_wass_dist) == settings['n_repeats'], 'n_repeats does not match length of ref_wass_dist'
 
                             quantile = wasserstein_quantile(wass, ref_wass_dist)
                             # pvalue = stats.t.cdf(z_score, len(ref_wass_dist)-1)
@@ -711,12 +898,14 @@ def compute_remapping(study, settings, data_dir):
                             # curr_shapiro_coeff, curr_shapiro_pval = stats.shapiro(curr_shuffled)
 
                         regular_dict['signature'].append([prev_path, curr_path])
+                        regular_dict['spike_count'].append([len(prev_pts), len(curr_pts)])
                         regular_dict['name'].append(name)
                         regular_dict['date'].append(date)
                         regular_dict['depth'].append(depth)
                         regular_dict['unit_id'].append(cell_label)
                         regular_dict['tetrode'].append(animal.animal_id.split('tet')[-1])
                         regular_dict['session_ids'].append([prev_key, curr_key])
+                        
                         if 'whole' in settings['rate_scores']:
                             regular_dict['plower'].append(plower)
                             regular_dict['phigher'].append(phigher)
@@ -735,29 +924,49 @@ def compute_remapping(study, settings, data_dir):
                             regular_dict['mad'].append(mad)
                         if 'spike_density' in settings['rate_scores']:
                             regular_dict['sd_wass'].append(spike_dens_wass)
-                            # regular_dict['sd_z_score'].append(spike_dens_z_score)
-                            # regular_dict['sd_mod_z_score'].append(spike_dens_mod_z_score)
-                            # regular_dict['sd_pvalue'].append(spike_dens_pvalue)
-                            # regular_dict['sd_mod_pvalue'].append(spike_dens_mod_pvalue)
-                            # regular_dict['sd_base_mean'].append(null_spike_dens_wass_mean)
-                            # regular_dict['sd_base_std'].append(null_spike_dens_wass_std)
-                            # regular_dict['sd_median'].append(median)
-                            # regular_dict['sd_mad'].append(mad)
+                            regular_dict['sd_z_score'].append(spike_dens_z_score)
+                            regular_dict['sd_base_mean'].append(null_spike_dens_wass_mean)
+                            regular_dict['sd_base_std'].append(null_spike_dens_wass_std)
+                            regular_dict['sd_median'].append(median)
+                            regular_dict['sd_mad'].append(mad)
+                            regular_dict['sd_quantile'].append(sd_quantile)
 
                         curr_fr_rate = len(curr_pts) / (curr_spike_pos_t[-1] - curr_spike_pos_t[0])
                         prev_fr_rate = len(prev_pts) / (prev_spike_pos_t[-1] - prev_spike_pos_t[0])
                         fr_rate_ratio = curr_fr_rate / prev_fr_rate
                         fr_rate_change = curr_fr_rate - prev_fr_rate
 
-                        regular_dict['fr_rate'].append([prev_fr_rate, curr_fr_rate])
-                        regular_dict['fr_rate_ratio'].append(fr_rate_ratio)
-                        regular_dict['fr_rate_change'].append(fr_rate_change)
+                        ref_rate_ratio_dist = animal_ref_dist[animal_id][ses_comp]['ref_rate_ratio']
+                        fr_ratio_mean = np.mean(ref_rate_ratio_dist)
+                        fr_ratio_std = np.std(ref_rate_ratio_dist)
+                        fr_ratio_z = (fr_rate_ratio - fr_ratio_mean) / (fr_ratio_std)
+                        print(fr_rate_ratio, ref_rate_ratio_dist)
+                        fr_ratio_quantile = wasserstein_quantile(fr_rate_ratio, ref_rate_ratio_dist)
+
+                        ref_rate_change_dist = animal_ref_dist[animal_id][ses_comp]['ref_rate_change']
+                        fr_change_mean = np.mean(ref_rate_change_dist)
+                        fr_change_std = np.std(ref_rate_change_dist)
+                        fr_change_z = (fr_rate_change - fr_change_mean) / (fr_change_std)
+                        fr_change_quantile = wasserstein_quantile(fr_rate_change, ref_rate_change_dist)
+
+
+                        regular_dict['fr'].append([prev_fr_rate, curr_fr_rate])
+                        regular_dict['fr_ratio'].append(fr_rate_ratio)
+                        regular_dict['fr_change'].append(fr_rate_change)
+                        regular_dict['fr_ratio_z'].append(fr_ratio_z)
+                        regular_dict['fr_change_z'].append(fr_change_z)
+                        regular_dict['fr_ratio_q'].append(fr_ratio_quantile)
+                        regular_dict['fr_change_q'].append(fr_change_quantile)
+                        regular_dict['fr_ratio_mean'].append(fr_ratio_mean)
+                        regular_dict['fr_ratio_std'].append(fr_ratio_std)
+                        regular_dict['fr_change_mean'].append(fr_change_mean)
+                        regular_dict['fr_change_std'].append(fr_change_std)
 
                         # regular_dict['total_fr_change'].append(np.nansum(curr_ratemap) - np.nansum(prev_ratemap))
                         # regular_dict['avg_fr_change'].append(np.nanmean(target_weights) - np.mean(source_weights))
                         # regular_dict['std_fr_change'].append(np.float64(np.std(target_weights) - np.std(source_weights)))
 
-                        regular_dict['n_repeats'].append(settings['n_repeats'])
+                        regular_dict['n_repeats'].append(len(ref_rate_ratio_dist))
                         regular_dict['arena_size'].append([prev_spatial_spike_train.arena_size, curr_spatial_spike_train.arena_size])
                         regular_dict['cylinder'].append(cylinder)
                         assert prev.shape == curr.shape
@@ -771,6 +980,10 @@ def compute_remapping(study, settings, data_dir):
                             plot_regular_remapping(prev, curr, regular_dict, data_dir)
 
                         if settings['plotShuffled']:
+                            prev_shuffled_sample = None
+                            curr_shuffled_sample = None
+                            prev_shuffled = animal_ref_dist[animal_id][ses_comp]['ref_weights'][0]
+                            curr_shuffled = animal_ref_dist[animal_id][ses_comp]['ref_weights'][1]
                             plot_shuffled_regular_remapping(prev_shuffled, curr_shuffled, ref_wass_dist, prev_shuffled_sample, curr_shuffled_sample, regular_dict, data_dir)
 
                         if settings['runFields']:
@@ -924,9 +1137,11 @@ def compute_remapping(study, settings, data_dir):
                         # Compute the observed EMD score between the original spike trains
                         # observed_emd = emd(prev_spikes.squeeze(), curr_spikes.squeeze(), distance_matrix)
                         observed_emd = compute_emd(prev_spike_times, curr_spike_times)
-                        # ref_emd_mean = np.mean(ref_emd_dist)
-                        # ref_emd_std = np.std(ref_emd_dist)
-                        # z_score = (observed_emd - ref_emd_mean) / (ref_emd_std)
+                        ref_emd_dist = animal_ref_dist[animal_id][ses_comp]['ref_temporal']
+                        ref_emd_mean = np.mean(ref_emd_dist)
+                        ref_emd_std = np.std(ref_emd_dist)
+                        z_score = (observed_emd - ref_emd_mean) / (ref_emd_std)
+                        quantile = wasserstein_quantile(observed_emd, ref_emd_dist)
                         # print('doing modified z score')
                         # mod_z_score, median, mad = compute_modified_zscore(observed_emd, ref_emd_dist)
                         # assert len(ref_emd_dist) == settings['n_temporal_shuffles'], 'n_repeats does not match length of ref_emd_dist'
@@ -941,10 +1156,25 @@ def compute_remapping(study, settings, data_dir):
                         fr_rate_ratio = curr_fr_rate / prev_fr_rate
                         fr_rate_change = curr_fr_rate - prev_fr_rate
 
-                        # # Calculate the Earth Mover's Distance (EMD) using the spike values and distances
-                        # emd = emd_samples(prev_spikes, curr_spikes, distance_matrix)
-                            
+                        #         'fr_rate', 'fr_rate_ratio', 'fr_rate_change', 'fr_ratio_z', 'fr_ratio_quantile', 
+        #'fr_rate_quantile', 'fr_rate_change_quantile',
+        #'fr_rate_mean', 'fr_rate_std', 'fr_rate_ratio_mean', 'fr_rate_ratio_std', 'fr_rate_change_mean', 'fr_rate_change_std',
+
+                        ref_rate_ratio_dist = animal_ref_dist[animal_id][ses_comp]['ref_rate_ratio']
+                        fr_ratio_mean = np.mean(ref_rate_ratio_dist)
+                        fr_ratio_std = np.std(ref_rate_ratio_dist)
+                        fr_ratio_z = (fr_rate_ratio - fr_ratio_mean) / (fr_ratio_std)
+                        fr_ratio_quantile = wasserstein_quantile(fr_rate_ratio, ref_rate_ratio_dist)
+
+                        ref_rate_change_dist = animal_ref_dist[animal_id][ses_comp]['ref_rate_change']
+                        fr_change_mean = np.mean(ref_rate_change_dist)
+                        fr_change_std = np.std(ref_rate_change_dist)
+                        fr_change_z = (fr_rate_change - fr_change_mean) / (fr_change_std)
+                        fr_change_quantile = wasserstein_quantile(fr_rate_change, ref_rate_change_dist)
+                        
+                        
                         temporal_dict['signature'].append([prev_path, curr_path])
+                        temporal_dict['spike_count'].append([len(prev_spike_times), len(curr_spike_times)])
                         temporal_dict['depth'].append(depth)
                         temporal_dict['name'].append(name)
                         temporal_dict['date'].append(date)
@@ -952,18 +1182,26 @@ def compute_remapping(study, settings, data_dir):
                         temporal_dict['unit_id'].append(cell_label)
                         temporal_dict['session_ids'].append([prev_key, curr_key])
                         temporal_dict['emd'].append(observed_emd)
-                        # temporal_dict['z_score'].append(z_score)
-                        # temporal_dict['p_value'].append(pvalue)
-                        # temporal_dict['base_mean'].append(ref_emd_mean)
-                        # temporal_dict['base_std'].append(ref_emd_std)
+                        temporal_dict['emd_z'].append(z_score)
+                        temporal_dict['emd_quantile'].append(quantile)
+                        temporal_dict['emd_mean'].append(ref_emd_mean)
+                        temporal_dict['emd_std'].append(ref_emd_std)
                         # temporal_dict['mod_z_score'].append(mod_z_score)
                         # temporal_dict['mod_p_value'].append(mod_pvalue)
                         # temporal_dict['median'].append(median)
                         # temporal_dict['mad'].append(mad)
-                        temporal_dict['fr_rate'].append([prev_fr_rate, curr_fr_rate])
-                        temporal_dict['fr_rate_ratio'].append(fr_rate_ratio)
-                        temporal_dict['fr_rate_change'].append(fr_rate_change)
-                        # temporal_dict['n_repeats'].append(len(ref_emd_dist))
+                        temporal_dict['fr'].append([prev_fr_rate, curr_fr_rate])
+                        temporal_dict['fr_ratio'].append(fr_rate_ratio)
+                        temporal_dict['fr_change'].append(fr_rate_change)
+                        temporal_dict['fr_ratio_z'].append(fr_ratio_z)
+                        temporal_dict['fr_ratio_q'].append(fr_ratio_quantile)
+                        temporal_dict['fr_change_z'].append(fr_change_z)
+                        temporal_dict['fr_change_q'].append(fr_change_quantile)
+                        temporal_dict['fr_ratio_mean'].append(fr_ratio_mean)
+                        temporal_dict['fr_ratio_std'].append(fr_ratio_std)
+                        temporal_dict['fr_change_mean'].append(fr_change_mean)
+                        temporal_dict['fr_change_std'].append(fr_change_std)
+                        temporal_dict['n_repeats'].append(len(ref_rate_ratio_dist))
                         temporal_dict['arena_size'].append([prev_spatial_spike_train.arena_size, curr_spatial_spike_train.arena_size])
 
 
@@ -977,6 +1215,7 @@ def compute_remapping(study, settings, data_dir):
                     prev_key = curr_key
                     prev_path = curr_path
                     prev_shuffled = curr_shuffled
+                    
                     # prev_plot = curr_plot
             
             # If there are context specific or otherwise specific groups to compare, can set those ids in settings
@@ -1045,13 +1284,19 @@ def compute_remapping(study, settings, data_dir):
                             curr_spatial = spatial_spike_train
                             curr_cell = cell
                             curr_key = seskey
+                            curr_ratemap = rate_map
                             curr_path = ses.session_metadata.file_paths['tet'].split('/')[-1].split('.')[0]
 
                             if prev is not None:
+                                ses_1 = prev_key.split('_')[1]
+                                ses_2 = seskey.split('_')[1]
+                                # ses_comp = '_'.join([ses_1, ses_2])
+                                ses_comp = str(ses_1) + '_' + str(ses_2)
+                                
                                 if settings['runUniqueGroups']:
-                                    if prev_shuffled is None:  
-                                        prev_shuffled = shuffled_ratemap_dict[prev_id]
-                                    curr_shuffled = shuffled_ratemap_dict[curr_id]
+                                    # if prev_shuffled is None:  
+                                    #     prev_shuffled = shuffled_ratemap_dict[prev_id]
+                                    # curr_shuffled = shuffled_ratemap_dict[curr_id]
                                     # get x and y pts for spikes in pair of sessions (prev and curr) for a given comparison
 
                                     # prev_spike_pos_x, prev_spike_pos_y, prev_spike_pos_t = prev_spatial.get_spike_positions()
@@ -1093,15 +1338,19 @@ def compute_remapping(study, settings, data_dir):
 
                                     # assert row_prev.all() == row_curr.all() and col_prev.all() == col_curr.all(), 'Nans in different places'
 
-                                    height_bucket_midpoints, width_bucket_midpoints = _get_ratemap_bucket_midpoints(prev_spatial.arena_size, y, x)
-                                    height_bucket_midpoints = height_bucket_midpoints[row_curr]
-                                    width_bucket_midpoints = width_bucket_midpoints[col_curr]
+                                    prev_height_bucket_midpoints, prev_width_bucket_midpoints = _get_ratemap_bucket_midpoints(prev_spatial_spike_train.arena_size, y, x)
+                                    curr_height_bucket_midpoints, curr_width_bucket_midpoints = _get_ratemap_bucket_midpoints(curr_spatial_spike_train.arena_size, y, x)
+                                    
+                                    prev_height_bucket_midpoints = prev_height_bucket_midpoints[row_prev]
+                                    prev_width_bucket_midpoints = prev_width_bucket_midpoints[col_prev]
+                                    curr_height_bucket_midpoints = curr_height_bucket_midpoints[row_curr]
+                                    curr_width_bucket_midpoints = curr_width_bucket_midpoints[col_curr]
                                     source_weights = np.array(list(map(lambda x, y: prev_ratemap[x,y], row_prev, col_prev)))
                                     target_weights = np.array(list(map(lambda x, y: curr_ratemap[x,y], row_curr, col_curr)))
                                     source_weights = source_weights / np.sum(source_weights)
                                     target_weights = target_weights / np.sum(target_weights)
-                                    coord_buckets_curr = np.array(list(map(lambda x, y: [height_bucket_midpoints[x],width_bucket_midpoints[y]], row_curr, col_curr)))
-                                    coord_buckets_prev = np.array(list(map(lambda x, y: [height_bucket_midpoints[x],width_bucket_midpoints[y]], row_prev, col_prev)))
+                                    coord_buckets_curr = np.array(list(map(lambda x, y: [curr_height_bucket_midpoints[x],curr_width_bucket_midpoints[y]], row_curr, col_curr)))
+                                    coord_buckets_prev = np.array(list(map(lambda x, y: [prev_height_bucket_midpoints[x],prev_width_bucket_midpoints[y]], row_prev, col_prev)))
 
                                     curr_pts = scale_points(curr_pts)
                                     prev_pts = scale_points(prev_pts)
@@ -1109,18 +1358,26 @@ def compute_remapping(study, settings, data_dir):
                                         # elif rate_score == 'whole':
                                             # This is EMD on whole map for normalized/unnormalized rate remapping
                                     wass = pot_sliced_wasserstein(coord_buckets_prev, coord_buckets_curr, source_weights, target_weights, n_projections=settings['n_projections'])
-                                    ref_wass_dist = list(map(lambda x, y: pot_sliced_wasserstein(coord_buckets_prev, coord_buckets_curr, x/np.sum(x), y/np.sum(y), n_projections=settings['n_shuffle_projections']), prev_shuffled, curr_shuffled))
+                                    # ref_wass_dist = list(map(lambda x, y: pot_sliced_wasserstein(coord_buckets_prev, coord_buckets_curr, x/np.sum(x), y/np.sum(y), n_projections=settings['n_shuffle_projections']), prev_shuffled, curr_shuffled))
+                                    ref_wass_dist = animal_ref_dist[animal_id][ses_comp]['ref_whole']
                                     ref_wass_mean = np.mean(ref_wass_dist)
                                     ref_wass_std = np.std(ref_wass_dist)
                                     z_score = (wass - ref_wass_mean) / (ref_wass_std)
                                     mod_z_score, median, mad = compute_modified_zscore(wass, ref_wass_dist)
+                                    ref_spike_dens_wass_dist = animal_ref_dist[animal_id][ses_comp]['ref_spike_density']
+                                    ref_spike_dens_wass_mean = np.mean(ref_spike_dens_wass_dist)
+                                    ref_spike_dens_wass_std = np.std(ref_spike_dens_wass_dist)
+                                    spike_dens_z_score = (spike_dens_wass - ref_spike_dens_wass_mean) / (ref_spike_dens_wass_std)
 
-                                    assert len(ref_wass_dist) == settings['n_repeats'], 'n_repeats does not match length of ref_wass_dist'
+                                    # assert len(ref_wass_dist) == settings['n_repeats'], 'n_repeats does not match length of ref_wass_dist'
                                     
                                     quantile = wasserstein_quantile(wass, ref_wass_dist)
                                     plower = quantile
                                     phigher = 1 - quantile
                                     ptwotail = (1- quantile if quantile > 0.5 else quantile)*2
+
+                                    sd_quantile = wasserstein_quantile(spike_dens_wass, ref_spike_dens_wass_dist)
+                                    _, sd_median, sd_mad = compute_modified_zscore(spike_dens_wass, ref_spike_dens_wass_dist)
                             
                                     # pvalue = stats.t.cdf(z_score, len(ref_wass_dist)-1)
                                     # mod_pvalue = stats.t.cdf(mod_z_score, len(ref_wass_dist)-1)
@@ -1132,6 +1389,7 @@ def compute_remapping(study, settings, data_dir):
                                     # curr_shapiro_coeff, curr_shapiro_pval = stats.shapiro(curr_shuffled)
 
                                     context_dict[categ]['signature'].append([prev_path, curr_path])
+                                    context_dict[categ]['spike_count'].append([len(prev_pts), len(curr_pts)])
                                     context_dict[categ]['name'].append(name)
                                     context_dict[categ]['date'].append(date)
                                     context_dict[categ]['depth'].append(depth)
@@ -1139,7 +1397,7 @@ def compute_remapping(study, settings, data_dir):
                                     context_dict[categ]['tetrode'].append(animal.animal_id.split('tet')[-1])
                                     context_dict[categ]['session_ids'].append([prev_key, curr_key])
                                     context_dict[categ]['whole_wass'].append(wass)
-                                    context_dict[categ]['sd_wass'].append(spike_dens_wass)
+                                    # context_dict[categ]['sd_wass'].append(spike_dens_wass)
                                     context_dict[categ]['z_score'].append(z_score)
                                     context_dict[categ]['mod_z_score'].append(mod_z_score)
                                     context_dict[categ]['plower'].append(plower)
@@ -1154,17 +1412,45 @@ def compute_remapping(study, settings, data_dir):
                                     context_dict[categ]['base_std'].append(ref_wass_std)
                                     context_dict[categ]['median'].append(median)
                                     context_dict[categ]['mad'].append(mad)
+                                    context_dict[categ]['sd_wass'].append(spike_dens_wass)
+                                    context_dict[categ]['sd_z_score'].append(spike_dens_z_score)
+                                    context_dict[categ]['sd_quantile'].append(sd_quantile)
+                                    context_dict[categ]['sd_base_mean'].append(ref_spike_dens_wass_mean)
+                                    context_dict[categ]['sd_base_std'].append(ref_spike_dens_wass_std)
+                                    context_dict[categ]['sd_median'].append(sd_median)
+                                    context_dict[categ]['sd_mad'].append(sd_mad)
 
                                     curr_fr_rate = len(curr_pts) / (curr_spike_pos_t[-1] - curr_spike_pos_t[0])
                                     prev_fr_rate = len(prev_pts) / (prev_spike_pos_t[-1] - prev_spike_pos_t[0])
                                     fr_rate_ratio = curr_fr_rate / prev_fr_rate
                                     fr_rate_change = curr_fr_rate - prev_fr_rate
 
-                                    context_dict[categ]['fr_rate'].append([prev_fr_rate, curr_fr_rate])
-                                    context_dict[categ]['fr_rate_ratio'].append(fr_rate_ratio)
-                                    context_dict[categ]['fr_rate_change'].append(fr_rate_change)
+                                    ref_rate_ratio_dist = animal_ref_dist[animal_id][ses_comp]['ref_rate_ratio']
+                                    fr_ratio_mean = np.mean(ref_rate_ratio_dist)
+                                    fr_ratio_std = np.std(ref_rate_ratio_dist)
+                                    fr_ratio_z = (fr_rate_ratio - fr_ratio_mean) / (fr_ratio_std)
+                                    fr_ratio_quantile = wasserstein_quantile(fr_rate_ratio, ref_rate_ratio_dist)
 
-                                    context_dict[categ]['n_repeats'].append(settings['n_repeats'])
+                                    ref_rate_change_dist = animal_ref_dist[animal_id][ses_comp]['ref_rate_change']
+                                    fr_change_mean = np.mean(ref_rate_change_dist)
+                                    fr_change_std = np.std(ref_rate_change_dist)
+                                    fr_change_z = (fr_rate_change - fr_change_mean) / (fr_change_std)
+                                    fr_change_quantile = wasserstein_quantile(fr_rate_change, ref_rate_change_dist)
+
+                                    context_dict[categ]['fr'].append([prev_fr_rate, curr_fr_rate])
+                                    context_dict[categ]['fr_ratio'].append(fr_rate_ratio)
+                                    context_dict[categ]['fr_change'].append(fr_rate_change)
+                                    context_dict[categ]['fr_ratio_z'].append(fr_ratio_z)
+                                    context_dict[categ]['fr_change_z'].append(fr_change_z)
+                                    context_dict[categ]['fr_ratio_q'].append(fr_ratio_quantile)
+                                    context_dict[categ]['fr_change_q'].append(fr_change_quantile)
+                                    # mean and std
+                                    context_dict[categ]['fr_ratio_mean'].append(fr_ratio_mean)
+                                    context_dict[categ]['fr_ratio_std'].append(fr_ratio_std)
+                                    context_dict[categ]['fr_change_mean'].append(fr_change_mean)
+                                    context_dict[categ]['fr_change_std'].append(fr_change_std)
+
+                                    context_dict[categ]['n_repeats'].append(len(ref_rate_ratio_dist))
                                     context_dict[categ]['arena_size'].append([prev_spatial_spike_train.arena_size, curr_spatial_spike_train.arena_size])
                                     context_dict[categ]['cylinder'].append(cylinder)
                                     assert prev.shape == curr.shape
@@ -1185,6 +1471,12 @@ def compute_remapping(study, settings, data_dir):
                 
                                     print('computing shuffled temporal emd')
                                     observed_emd = compute_emd(prev_spike_times, curr_spike_times)
+                                    ref_emd_dist = animal_ref_dist[animal_id][ses_comp]['ref_temporal']
+                                    emd_mean = np.mean(ref_emd_dist)
+                                    emd_std = np.std(ref_emd_dist)
+                                    emd_z = (observed_emd - emd_mean) / (emd_std)
+                                    emd_quantile = wasserstein_quantile(observed_emd, ref_emd_dist)
+
                                     print('doing modified z score')
                                     prev_duration = prev_spatial.session_metadata.session_object.get_spike_data()['spike_cluster'].duration
                                     curr_duration = curr_spatial.session_metadata.session_object.get_spike_data()['spike_cluster'].duration
@@ -1194,6 +1486,32 @@ def compute_remapping(study, settings, data_dir):
                                     fr_rate_ratio = curr_fr_rate / prev_fr_rate
                                     fr_rate_change = curr_fr_rate - prev_fr_rate
 
+                                    ref_rate_ratio_dist = animal_ref_dist[animal_id][ses_comp]['ref_rate_ratio']
+                                    fr_ratio_mean = np.mean(ref_rate_ratio_dist)
+                                    fr_ratio_std = np.std(ref_rate_ratio_dist)
+                                    fr_ratio_z = (fr_rate_ratio - fr_ratio_mean) / (fr_ratio_std)
+                                    fr_ratio_quantile = wasserstein_quantile(fr_rate_ratio, ref_rate_ratio_dist)
+
+                                    ref_rate_change_dist = animal_ref_dist[animal_id][ses_comp]['ref_rate_change']
+                                    fr_change_mean = np.mean(ref_rate_change_dist)
+                                    fr_change_std = np.std(ref_rate_change_dist)
+                                    fr_change_z = (fr_rate_change - fr_change_mean) / (fr_change_std)
+                                    fr_change_quantile = wasserstein_quantile(fr_rate_change, ref_rate_change_dist)
+
+                                    context_temporal_dict[categ]['fr'].append([prev_fr_rate, curr_fr_rate])
+                                    context_temporal_dict[categ]['fr_ratio'].append(fr_rate_ratio)
+                                    context_temporal_dict[categ]['fr_change'].append(fr_rate_change)
+                                    context_temporal_dict[categ]['fr_ratio_z'].append(fr_ratio_z)
+                                    context_temporal_dict[categ]['fr_change_z'].append(fr_change_z)
+                                    context_temporal_dict[categ]['fr_ratio_q'].append(fr_ratio_quantile)
+                                    context_temporal_dict[categ]['fr_change_q'].append(fr_change_quantile)
+                                    # mean and std
+                                    context_temporal_dict[categ]['fr_ratio_mean'].append(fr_ratio_mean)
+                                    context_temporal_dict[categ]['fr_ratio_std'].append(fr_ratio_std)
+                                    context_temporal_dict[categ]['fr_change_mean'].append(fr_change_mean)
+                                    context_temporal_dict[categ]['fr_change_std'].append(fr_change_std)
+                                    context_temporal_dict[categ]['n_repeats'].append(len(ref_rate_ratio_dist))
+
                                     context_temporal_dict[categ]['signature'].append([prev_path, curr_path])
                                     context_temporal_dict[categ]['depth'].append(depth)
                                     context_temporal_dict[categ]['name'].append(name)
@@ -1202,19 +1520,25 @@ def compute_remapping(study, settings, data_dir):
                                     context_temporal_dict[categ]['unit_id'].append(cell_label)
                                     context_temporal_dict[categ]['session_ids'].append([prev_key, curr_key])
                                     context_temporal_dict[categ]['emd'].append(observed_emd)
-                                    context_temporal_dict[categ]['fr_rate'].append([prev_fr_rate, curr_fr_rate])
-                                    context_temporal_dict[categ]['fr_rate_ratio'].append(fr_rate_ratio)
-                                    context_temporal_dict[categ]['fr_rate_change'].append(fr_rate_change)
+                                    context_temporal_dict[categ]['emd_z'].append(emd_z)
+                                    context_temporal_dict[categ]['emd_quantile'].append(emd_quantile)
+                                    context_temporal_dict[categ]['spike_count'].append([len(prev_spike_times), len(curr_spike_times)])
+                                    # mean and std 
+                                    context_temporal_dict[categ]['emd_mean'].append(emd_mean)
+                                    context_temporal_dict[categ]['emd_std'].append(emd_std)
                                     context_temporal_dict[categ]['arena_size'].append([prev_spatial.arena_size, curr_spatial.arena_size])
 
 
                             prev = curr
-                            prev_spike_times = curr_spike_times
+                            prev_spike_times = curr_spike_times 
                             prev_cell = curr_cell
                             prev_spatial = curr_spatial
                             prev_key = curr_key
                             prev_path = curr_path
                             prev_shuffled = curr_shuffled
+                            prev_ratemap = curr_ratemap
+
+                            
 
             if settings['plotMatchedWaveforms'] and settings['runRegular']:     
                 plot_matched_sesssion_waveforms(cell_session_appearances, settings, regular_dict, data_dir)
@@ -1536,90 +1860,82 @@ def _aggregate_cell_info(animal, settings):
     # spatial_obj_dict = {}
     shuffled_ratemap_dict = {}
     shuffled_sample_dict = {}
+    ratemap_session_groups = {}
     # for animal in study.animals:
-    for onlyone in range(1):
-        # get largest possible cell id
-        # max_matched_cell_count = len(animal.sessions[sorted(list(animal.sessions.keys()))[-1]].get_cell_data()['cell_ensemble'].cells)
-        max_matched_cell_count = max(list(map(lambda x: max(animal.sessions[x].get_cell_data()['cell_ensemble'].get_label_ids()), animal.sessions)))
-        for k in range(int(max_matched_cell_count)):
-            cell_label = k + 1
-            prev_field_size_len = None 
-            for i in range(len(list(animal.sessions.keys()))):
-                seskey = 'session_' + str(i+1)
-                ses = animal.sessions[seskey]
-                ensemble = ses.get_cell_data()['cell_ensemble']
-                pos_obj = ses.get_position_data()['position']
 
-                path = ses.session_metadata.file_paths['tet']
-                fname = path.split('/')[-1].split('.')[0]
-
-                # Check if cylinder
-                if settings['disk_arena']: 
-                    cylinder = True
-                else:
-                    cylinder, _ = check_disk_arena(fname)
-
-                if cell_label in ensemble.get_cell_label_dict():
-                    cell = ensemble.get_cell_by_id(cell_label)
-                    # if 'spatial_spike_train' in cell.stats_dict['cell_stats']:
-                    #     spatial_spike_train = cell.stats_dict['cell_stats']['spatial_spike_train']
-                    # else:
-                    #     spatial_spike_train = ses.make_class(SpatialSpikeTrain2D, {'cell': cell, 'position': ses.get_position_data()['position']})
-                    
-                    spatial_spike_train = ses.make_class(SpatialSpikeTrain2D, {'cell': cell, 'position': pos_obj})
-                    cell.stats_dict['spatial_spike_train'] = spatial_spike_train
-
-                    rate_map_obj = spatial_spike_train.get_map('rate')
-                    
-                    if settings['normalizeRate']:
-                        rate_map, _ = rate_map_obj.get_rate_map(new_size = settings['ratemap_dims'][0])
-                    else:
-                        _, rate_map = rate_map_obj.get_rate_map(new_size = settings['ratemap_dims'][0])
-
-                    assert rate_map.shape == (settings['ratemap_dims'][0], settings['ratemap_dims'][1]), 'Wrong ratemap shape {} vs settings shape {}'.format(rate_map.shape, (settings['ratemap_dims'][0], settings['ratemap_dims'][1]))
-                    
-                    if settings['downsample']:
-                        rate_map = _downsample(rate_map, settings['downsample_factor'])
-                    if cylinder:
-                        rate_map = flat_disk_mask(rate_map)
-
-                    id = str(animal.animal_id) + '_' + str(seskey) + '_' + str(cell.cluster.cluster_label)
-                    assert id not in blobs_dict, 'Duplicate cell id ' + str(id)
-                        
-                    if settings['hasObject'] or settings['runFields']:
-                        image, n_labels, labels, centroids, field_sizes = map_blobs(spatial_spike_train, ratemap_size=ratemap_size, cylinder=cylinder, downsample=settings['downsample'], downsample_factor=settings['downsample_factor'])
-
-                        labels, centroids, field_sizes = _sort_filter_centroids_by_field_size(rate_map, field_sizes, labels, centroids, spatial_spike_train.arena_size)
-
-                        blobs_dict[id] = [image, n_labels, labels, centroids, field_sizes]
-
-                        if prev_field_size_len is not None:
-                            max_centroid_count = max(max_centroid_count, len(field_sizes) * prev_field_size_len)
-                        else:
-                            prev_field_size_len = len(field_sizes)
-
-                    if (settings['runRegular'] and 'whole' in settings['rate_scores']) or (settings['runUniqueGroups'] and 'whole' in settings['unique_rate_scores']):
-                        print('drawing shuffled samples')
-                        row, col = np.where(~np.isnan(rate_map))
-                        # shuffled_samples = list(map(lambda x: _single_shuffled_sample(spatial_spike_train, settings), np.arange(settings['n_repeats'])))
-                        norm, raw = spatial_spike_train.get_map('rate').get_rate_map(new_size = settings['ratemap_dims'][0], shuffle=True, n_repeats=settings['n_repeats'])
-                        print(norm.shape, raw.shape, rate_map.shape)
-                        shuffled_samples = list(map(lambda x, y: _single_shuffled_sample(x, y, settings), norm, raw))
-                        print(np.array(shuffled_samples).shape)
-                        if cylinder:
-                            shuffled_samples = list(map(lambda x: flat_disk_mask(x), shuffled_samples))
-                        print('turning into valid weights')
-                        shuffled_ratemaps = list(map(lambda sample: np.array(list(map(lambda x, y: sample[x,y], row, col))), shuffled_samples))
-
-                        shuffled_ratemap_dict[id] = shuffled_ratemaps
-                        shuffled_sample_dict[id] = shuffled_samples[np.random.randint(0, settings['n_repeats'])]
-
-                    # spatial_obj_dict[id] = spatial_spike_train
-
-                    # type_dict[id] = []
+    # get largest possible cell id
+    # max_matched_cell_count = len(animal.sessions[sorted(list(animal.sessions.keys()))[-1]].get_cell_data()['cell_ensemble'].cells)
+    max_matched_cell_count = max(list(map(lambda x: max(animal.sessions[x].get_cell_data()['cell_ensemble'].get_label_ids()), animal.sessions)))
+    for k in range(int(max_matched_cell_count)):
+        cell_label = k + 1
+        prev_field_size_len = None 
+        for i in range(len(list(animal.sessions.keys()))):
+            seskey = 'session_' + str(i+1)
+            if i+1 not in ratemap_session_groups:
+                ratemap_session_groups[i+1] = {}
+            ses = animal.sessions[seskey]
+            ensemble = ses.get_cell_data()['cell_ensemble']
+            pos_obj = ses.get_position_data()['position']
+            path = ses.session_metadata.file_paths['tet']
+            fname = path.split('/')[-1].split('.')[0]
+            # Check if cylinder
+            if settings['disk_arena']: 
+                cylinder = True
+            else:
+                cylinder, _ = check_disk_arena(fname)
+            if cell_label in ensemble.get_cell_label_dict():
+                cell = ensemble.get_cell_by_id(cell_label)
+                # if 'spatial_spike_train' in cell.stats_dict['cell_stats']:
+                #     spatial_spike_train = cell.stats_dict['cell_stats']['spatial_spike_train']
+                # else:
+                #     spatial_spike_train = ses.make_class(SpatialSpikeTrain2D, {'cell': cell, 'position': ses.get_position_data()['position']})
                 
+                spatial_spike_train = ses.make_class(SpatialSpikeTrain2D, {'cell': cell, 'position': pos_obj})
+                cell.stats_dict['spatial_spike_train'] = spatial_spike_train
+                rate_map_obj = spatial_spike_train.get_map('rate')
+                
+                if settings['normalizeRate']:
+                    rate_map, _ = rate_map_obj.get_rate_map(new_size = settings['ratemap_dims'][0])
+                else:
+                    _, rate_map = rate_map_obj.get_rate_map(new_size = settings['ratemap_dims'][0])
+                assert rate_map.shape == (settings['ratemap_dims'][0], settings['ratemap_dims'][1]), 'Wrong ratemap shape {} vs settings shape {}'.format(rate_map.shape, (settings['ratemap_dims'][0], settings['ratemap_dims'][1]))
+                
+                if settings['downsample']:
+                    rate_map = _downsample(rate_map, settings['downsample_factor'])
+                if cylinder:
+                    rate_map = flat_disk_mask(rate_map)
+                id = str(animal.animal_id) + '_' + str(seskey) + '_' + str(cell.cluster.cluster_label)
+                assert id not in blobs_dict, 'Duplicate cell id ' + str(id)
 
-    return max_centroid_count, blobs_dict, shuffled_ratemap_dict, shuffled_sample_dict
+                ratemap_session_groups[i+1][cell_label] = [rate_map, spatial_spike_train]
+                    
+                if settings['hasObject'] or settings['runFields']:
+                    image, n_labels, labels, centroids, field_sizes = map_blobs(spatial_spike_train, ratemap_size=ratemap_size, cylinder=cylinder, downsample=settings['downsample'], downsample_factor=settings['downsample_factor'])
+                    labels, centroids, field_sizes = _sort_filter_centroids_by_field_size(rate_map, field_sizes, labels, centroids, spatial_spike_train.arena_size)
+                    blobs_dict[id] = [image, n_labels, labels, centroids, field_sizes]
+                    if prev_field_size_len is not None:
+                        max_centroid_count = max(max_centroid_count, len(field_sizes) * prev_field_size_len)
+                    else:
+                        prev_field_size_len = len(field_sizes)
+                # if (settings['runRegular'] and 'whole' in settings['rate_scores']) or (settings['runUniqueGroups'] and 'whole' in settings['unique_rate_scores']):
+                #     print('drawing shuffled samples')
+                #     row, col = np.where(~np.isnan(rate_map))
+                #     # shuffled_samples = list(map(lambda x: _single_shuffled_sample(spatial_spike_train, settings), np.arange(settings['n_repeats'])))
+                #     norm, raw = spatial_spike_train.get_map('rate').get_rate_map(new_size = settings['ratemap_dims'][0], shuffle=True, n_repeats=settings['n_repeats'])
+                #     print(norm.shape, raw.shape, rate_map.shape)
+                #     shuffled_samples = list(map(lambda x, y: _single_shuffled_sample(x, y, settings), norm, raw))
+                #     print(np.array(shuffled_samples).shape)
+                #     if cylinder:
+                #         shuffled_samples = list(map(lambda x: flat_disk_mask(x), shuffled_samples))
+                #     print('turning into valid weights')
+                #     shuffled_ratemaps = list(map(lambda sample: np.array(list(map(lambda x, y: sample[x,y], row, col))), shuffled_samples))
+                #     shuffled_ratemap_dict[id] = shuffled_ratemaps
+                #     shuffled_sample_dict[id] = shuffled_samples[np.random.randint(0, settings['n_repeats'])]
+                # spatial_obj_dict[id] = spatial_spike_train
+                # type_dict[id] = []
+            
+
+    return max_centroid_count, blobs_dict, shuffled_ratemap_dict, shuffled_sample_dict, ratemap_session_groups
 
 
 # def _sort_filter_centroids_by_field_size(prev, curr, field_sizes_source, field_sizes_target, blobs_map_source, blobs_map_target, centroids_prev, centroids_curr, arena_size):

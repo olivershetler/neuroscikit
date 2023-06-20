@@ -18,7 +18,7 @@ GLOBAL SETTINGS
 settings_dict['session']['channel_count'] = 4
 settings_dict['ppm'] = None # EDIT HERE (will auto read from file if None, otherwise will override with this value)
 settings_dict['smoothing_factor'] = 3 # EDIT HERE (for plotting)
-settings_dict['useMatchedCut'] = True # EDIT HERE (NECESSARY TO BE TRUE OR TO HAVE MANUALLY MATCHED CUT FILES)
+settings_dict['useMatchedCut'] = False # EDIT HERE (NECESSARY TO BE TRUE OR TO HAVE MANUALLY MATCHED CUT FILES)
 settings_dict['n_projections'] = 10**3 # EDIT HERE (10**3 is slow,  50 (default) is faster but less accurate, 10**2 is middle ground --> look paper)
 settings_dict['n_shuffle_projections'] = 10**2 # EDIT HERE (10**3 is slow,  50 (default) is faster but less accurate, 10**2 is middle ground --> look paper)
 settings_dict['type'] = 'object' # EDIT HERE # Currently only 'object' is supported so no need to change (will add e.g. angle later)
@@ -27,7 +27,7 @@ settings_dict['type'] = 'object' # EDIT HERE # Currently only 'object' is suppor
 settings_dict['ratemap_dims'] = (32,32) # EDIT HERE (16,16) is default, (32,32) is slower but more accurate,
 settings_dict['disk_arena'] = False # EDIT HERE. IF TRUE WILL FORCE DISK. IF FALSE WILL CHECK FILE NAME TO SEE IF TRUE OR NOT
 settings_dict['normalizeRate'] = True # EDIT HERE --> NORMALIZED FOR ALL CASES 
-settings_dict['naming_type'] = 'LEC' # EDIT HERE --> 'MEC' or 'LEC' or 'LC'
+settings_dict['naming_type'] = 'MEC' # EDIT HERE --> 'MEC' or 'LEC' or 'LC'
 settings_dict['rotate_evening'] = False
 settings_dict['rotate_angle'] = 90
 # sub2 1.xlsx is 32,32 shuffle = 500 with jit - 6062.33 seconds
@@ -41,19 +41,19 @@ settings_dict['rotate_angle'] = 90
 IF YOU ARE DOING REGULAR REMAPPING
 """
 
-settings_dict['runRegular'] = False # EDIT HERE
-settings_dict['plotRegular'] = False # EDIT HERE
+settings_dict['runRegular'] = True # EDIT HERE
+settings_dict['plotRegular'] = True # EDIT HERE
 settings_dict['rate_scores'] = ['whole','spike_density']
 # ['whole', 'spike_density']
 settings_dict['n_repeats'] = 1000 # EDIT HERE 
-settings_dict['plotShuffled'] = False # EDIT HERE
+settings_dict['plotShuffled'] = True # EDIT HERE
 settings_dict['plotMatchedWaveforms'] = False # EDIT HERE
 
 """ 
 IF YOU ARE DOING OBJECT REMAPPING
 """
 
-settings_dict['hasObject'] = True # EDIT HERE
+settings_dict['hasObject'] = False # EDIT HERE
 settings_dict['plotObject'] = True # EDIT HERE
 settings_dict['object_scores'] = ['whole', 'field', 'binary', 'centroid', 'spike_density']
 # settings_dict['grid_sample_threshold'] = 3.2 # EDIT HERE, euclidean distance
@@ -77,8 +77,8 @@ settings_dict['centroid_scores'] = ['field', 'binary', 'centroid']
 IF YOU ARE DOING CONTEXT REMAPPING
 """
 
-settings_dict['runUniqueGroups'] = False # EDIT HERE
-settings_dict['runUniqueOnlyTemporal'] = False # EDIT HERE
+settings_dict['runUniqueGroups'] = True # EDIT HERE
+settings_dict['runUniqueOnlyTemporal'] = True # EDIT HERE
 settings_dict['unique_rate_scores'] = ['whole', 'spike_density']
 
 session_comp_categories = {'morning': [1,3], 'afternoon': [2,4]} # EDIT HERE
@@ -87,7 +87,7 @@ session_comp_categories = {'morning': [1,3], 'afternoon': [2,4]} # EDIT HERE
 IF YOU ARE DOING TEMPORAL REMAPPING
 """
 
-settings_dict['runTemporal'] = False # EDIT HERE
+settings_dict['runTemporal'] = True # EDIT HERE
 settings_dict['n_temporal_shuffles'] = 1000 # EDIT HERE
 
 ##############################################################################################################################################################################
@@ -99,20 +99,25 @@ obj_output = {}
 centroid_output = {}
 temporal_output = {}
 
-temporal_keys = ['signature','depth', 'name', 'date', 'tetrode','unit_id', 'session_ids', 'emd',
-            # 'z_score', 'p_value', 'base_mean', 'base_std', 'mod_z_score', 'mod_p_value', 'median', 'mad', 
-            'fr_rate', 'fr_rate_ratio', 'fr_rate_change',
-            # 'n_repeats',
+temporal_keys = ['signature','depth', 'name', 'date', 'tetrode','unit_id', 'session_ids', 
+            # 'z_score', 'quantile', 'base_mean', 'base_std', 
+            'emd',
+            'emd_z', 'emd_quantile', 'emd_mean', 'emd_std',
+            # 'mod_z_score', 'mod_p_value', 
+            # 'median', 'mad', 
+            'fr', 'fr_ratio', 'fr_change', 'fr_ratio_z', 'fr_ratio_q', 'fr_ratio_mean', 'fr_ratio_std',
+            'fr_change_z', 'fr_change_q', 'fr_change_mean', 'fr_change_std','spike_count',
+            'n_repeats',
             'arena_size']
 
 keys = ['signature','depth', 'name', 'date', 'tetrode','unit_id', 'session_ids', 
         'whole_wass','z_score', 'base_mean', 'base_std', 'mod_z_score', 'median', 'mad', 
         'quantile','plower', 'phigher', 'ptwotail',
-        'fr_rate', 'fr_rate_ratio', 'fr_rate_change', 
-        'sd_wass', 
-        # 'sd_z_score', 'sd_pvalue', 'sd_base_mean', 'sd_base_std', 'sd_mod_z_score', 'sd_mod_pvalue', 'sd_median', 'sd_mad',
+        'fr', 'fr_ratio', 'fr_change', 'fr_ratio_z', 'fr_ratio_q', 'fr_ratio_mean', 'fr_ratio_std',
+        'fr_change_z', 'fr_change_q', 'fr_change_mean', 'fr_change_std','spike_count',
+        'sd_wass', 'sd_z_score', 'sd_quantile', 'sd_base_mean', 'sd_base_std', 'sd_median', 'sd_mad',
         'n_repeats','arena_size','cylinder','ratemap_dims','downsample_factor']
-sd_keys = ['sd_wass', 'sd_z_score', 'sd_pvalue', 'sd_base_mean', 'sd_base_std', 'sd_mod_z_score', 'sd_mod_pvalue', 'sd_median', 'sd_mad']
+sd_keys = ['sd_wass', 'sd_z_score', 'sd_quantile', 'sd_base_mean', 'sd_base_std', 'sd_mod_z_score', 'sd_mod_pvalue', 'sd_median', 'sd_mad']
 r_keys  = ['quantile','plower', 'phigher', 'ptwotail','whole_wass','z_score', 'p_value', 'base_mean', 'base_std', 'mod_z_score', 'mod_p_value', 'median', 'mad']
 
 obj_keys = ['signature','depth', 'name', 'date','tetrode','unit_id','session_id','obj_pos','object_location', 'score', 
@@ -121,7 +126,7 @@ obj_keys = ['signature','depth', 'name', 'date','tetrode','unit_id','session_id'
             'obj_wass_0', 'obj_wass_90', 'obj_wass_180', 'obj_wass_270', 'obj_wass_NO', 
             'obj_q_0', 'obj_q_90', 'obj_q_180', 'obj_q_270', 'obj_q_NO',
             'obj_vec_0', 'obj_vec_90', 'obj_vec_180', 'obj_vec_270', 'obj_vec_NO',
-            'bin_area', 'total_rate', 'field_peak_rate',
+            'bin_area', 'total_rate', 'field_peak_rate', 'spike_count',
             'field_coverage', 'field_area', 'field_rate', 'cumulative_coverage', 'cumulative_area', 'cumulative_rate',
             'arena_size', 'cylinder', 'ratemap_dims', 'spacing', 'hexagonal', 'sample_size', 'downsample_factor']
 
