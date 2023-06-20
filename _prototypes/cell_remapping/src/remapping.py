@@ -97,6 +97,7 @@ def compute_remapping(study, settings, data_dir):
 
         # non_disk_grid_sample = generate_grid()
 
+    # """ change to helper funcntin for permute shuffling """
     # animal_groups = {}
     animal_cell_info = {}
     animal_cell_ratemaps = {}
@@ -114,7 +115,7 @@ def compute_remapping(study, settings, data_dir):
                 ky = animal.animal_id.split('_')[1] + '_' + str(cell_label)
                 animal_cell_ratemaps[animal_id][ses_id][ky] = cell_info[cell_label]
 
-
+    # """ change to helper funcntin for permute shuffling """
     prev_ses_id = None
     animal_ref_dist = {}
     for animal_id in animal_cell_ratemaps:
@@ -278,6 +279,9 @@ def compute_remapping(study, settings, data_dir):
 
         animal_id = animal.animal_id.split('_')[0]
 
+
+        """ UNCOMMENT TO RUN CIRCULAR SHUFFLING REF DIST"""
+        """ NEED TO GO LINE BY LINE AND set ref_wass_dist to come from list(map( of shuffled samples)) """
         # max_centroid_count, blobs_dict, shuffled_ratemap_dict, shuffled_sample_dict = _aggregate_cell_info(animal, settings)
         # max_centroid_count, blobs_dict, _, _ = _aggregate_cell_info(animal, settings)
         max_centroid_count, blobs_dict = animal_cell_info[animal.animal_id]
