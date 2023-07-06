@@ -11,8 +11,11 @@ import pandas as pd
 #     return _check_angle(angle), depth, name, date
 
 def _check_angle(angle):
-    valid_angles = ['0','90','180','270','NO','noobject','no','zero', 'NO2', 'no2', '0_2','0_1','90_2','90_1','180_2','180_1','270_2','270_1', 'NO_1', 'NO_2']
+    valid_angles = ['0','90','180','270','NO','noobject','no','zero', 'NO2', 'no2', '0_2','0_1','90_2','90_1','180_2',
+                    '180_1','270_2','270_1', 'NO_1', 'NO_2','position0', 'position90', 'position180', 'position270', '0banana']
     conv_angles = {'noobject': 'NO','no': 'NO','zero': '0', 'NO2': 'NO', 'no2': 'NO', 
+                   'position0': '0', 'position90': '90', 'position180': '180', 'position270': '270',
+                   '0banana': '0', 
                    '0_2': '0', '0_1': '0', '90_2': '90', '90_1': '90', '180_2': '180', '180_1': '180', '270_2': '270', '270_1': '270', 'NO_1': 'NO', 'NO_2': 'NO'}
 
     assert angle in valid_angles, 'Invalid angle: {}'.format(angle)
@@ -68,7 +71,8 @@ def split_name_date_angle_angle(filename):
     angle1 = filename.split('-')[-2]
     angle2 = filename.split('-')[-1]
 
-    angle = _check_angle(angle1) + '_' + _check_angle(angle2)
+    # angle = _check_angle(angle1) + '_' + 
+    angle = _check_angle(angle2)
 
     name = filename.split('_')[0]
     date = filename.split('_')[1].split('-')[0]
@@ -79,6 +83,7 @@ def split_name_date_angle_angle(filename):
 
 def split_name_date_angle(filename):
     angle = filename.split('-')[-1]
+    angle = _check_angle(angle)
 
     name = filename.split('_')[0]
     date = filename.split('_')[1].split('-')[0]
@@ -102,7 +107,8 @@ def split_name_date_angle_angle_angle(filename):
     angle2 = filename.split('-')[-2]
     angle3 = filename.split('-')[-1]
 
-    angle = _check_angle(angle1) + '_' + _check_angle(angle2) + '_' + _check_angle(angle3)
+    # angle = _check_angle(angle1) + '_' + _check_angle(angle2) + '_' + 
+    angle = _check_angle(angle3)
 
     name = filename.split('_')[0]
     date = filename.split('_')[1].split('-')[0]
@@ -116,7 +122,8 @@ def split_name_date_int_angle_angle_angle(filename):
     angle2 = filename.split('-')[-2]
     angle3 = filename.split('-')[-1]
 
-    angle = _check_angle(angle1) + '_' + _check_angle(angle2) + '_' + _check_angle(angle3)
+    # angle = _check_angle(angle1) + '_' + _check_angle(angle2) + '_' +
+    angle = _check_angle(angle3)
 
     name = filename.split('_')[0]
     date = filename.split('_')[1].split('-')[0]
@@ -145,7 +152,8 @@ def split_name_date_angle_apple_angle_angle(filename):
     angle3 = filename.split('APPLEmovedit')[-1].split('-')[1]
     angle1 = filename.split('APPLEmovedit')[0].split('-')[-1]
 
-    angle = _check_angle(angle1) + '_' + _check_angle(angle2) + '_' + _check_angle(angle3)
+    # angle = _check_angle(angle1) + '_' + _check_angle(angle2) + '_' + 
+    angle = _check_angle(angle3)
 
     name = filename.split('_')[0]
     date = filename.split('_')[1].split('-')[0]
@@ -158,7 +166,8 @@ def split_name_date_angle_angle_int(filename):
     angle1 = filename.split('_')[0].split('-')[-1]
     angle2 = filename.split('_')[0].split('-')[-2]
 
-    angle = _check_angle(angle1) + '_' + _check_angle(angle2) 
+    # angle = _check_angle(angle1) + '_' + 
+    angle = _check_angle(angle2) 
 
     name = filename.split('_')[0]
     date = filename.split('_')[1].split('-')[0]
@@ -190,7 +199,7 @@ def split_name_date_depth_word_angle(filename):
     depth = filename.split('_')[1].split('-')[-2]
     name = filename.split('_')[0]
     date = filename.split('_')[1].split('-')[0]
-
+    
     return _check_angle(angle), depth, name, date
 
 def split_name_date_depth_noodor_noobject(filename):
@@ -279,7 +288,7 @@ def split_name_date_depth_word_angle_word(filename):
 
     if 'object' in filename and 'noobject' not in filename:
         angle = filename.split('object')[-1].split('-')[0]
-    depth = filename.split('_')[0].split('-')[-3]
+    depth = filename.split('_')[1].split('-')[-3]
     name = filename.split('_')[0]
     date = filename.split('_')[1].split('-')[0]
 
@@ -298,7 +307,8 @@ def split_name_date_round_depth_angle_angle(filename):
     # 'ANT-133a-4_{date}-ROUND-{depth}-{angle}-{angle}'
     angle1 = filename.split('-')[-2]
     angle2 = filename.split('-')[-1]
-    angle = _check_angle(angle1) + '_' + _check_angle(angle2) 
+    # angle = _check_angle(angle1) + '_' + _check_angle(angle2) 
+    angle = _check_angle(angle2)
     depth = filename.split('-')[-3]
     name = filename.split('_')[0]
     date = filename.split('_')[1].split('-')[0]
@@ -351,6 +361,14 @@ def split_name_date_word_angle(filename):
 
     return _check_angle(angle), depth, name, date
 
+def split_name_date_depth_angle(filename):
+    # '{animal}_{date}_{depth}-{angle}'
+    angle = filename.split('-')[-1]
+    depth = filename.split('-')[-2]
+    date = filename.split('_')[1]
+    name = filename.split('_')[0]
+
+    return _check_angle(angle), depth, name, date
 
 def extract_name_lec(filename):
     name = filename.split('_')[0]
@@ -380,7 +398,7 @@ LEC_naming_format = {
                 'odor': {
     
                 },
-            },
+            },  
             'B6-LEC2': {
                 'object': {
                     r'^B6-LEC2_[0-9]{8}\-[0-9]{1}\-[0-9]{1}\-([^-]+)$': split_name_date_int_int_angle, # 'B6-LEC2_{date}-{int}-{int}-{angle}',
@@ -421,6 +439,7 @@ LEC_naming_format = {
             'object': {
                 r'^ANT-119a-6_[0-9]{8}\-([^-]+)\-object([^-]+)$': split_name_date_depth_word_angle, # 'ANT-119a-6_{date}-{depth}-object{angle}',
                 r'^ANT-119a-6_[0-9]{8}\-([^-]+)\-noodor-noobject$': split_name_date_depth_noodor_noobject, # 'ANT-119a-6_{date}-{depth}-noodor-noobject',
+                r'^ANT-119a-6_[0-9]{8}\-([^-]+)\-([^-]+)$': split_name_date_depth_angle, # 'ANT-119a-6_{date}-{depth}-{angle}',
             },
             'odor': {
                 r'^ANT-119a-6_[0-9]{8}\-([^-]+)\-odor([^-]+)$': split_name_date_depth_odor_order, # 'ANT-119a-6_{date}-{depth}-odor{order}',
@@ -488,6 +507,8 @@ LEC_naming_format = {
             'object': {
                 r'^NON-INT-01_[0-9]{8}\-([^-]+)\-ROUND\-([^-]+)\-([0-9]+)$': split_name_date_angle_depth_int, # 'NON-INT-01_{date}-{angle}-{depth}-{int}',
                 r'^NON-INT-01_[0-9]{8}\-ROUND\-([^-]+)\-([^-]+)$': split_name_date_angle_depth, # 'NON-INT-01_{date}-{angle}-{depth}'
+                r'^NON-INT-01_[0-9]{8}\-([^-]+)\-([^-]+)\-([0-9]+)$': split_name_date_angle_depth_int,
+                r'^NON-INT-01_[0-9]{8}\-([^-]+)\-([^-]+)$': split_name_date_angle_depth,
             },
             'odor': {
     
@@ -497,6 +518,7 @@ LEC_naming_format = {
             'object': {
                 r'^NON-INT-02_[0-9]{8}\-([^-]+)\-ROUND\-([^-]+)\-([0-9]+)$': split_name_date_angle_depth_int, # 'NON-INT-01_{date}-{angle}-{depth}-{int}',
                 r'^NON-INT-02_[0-9]{8}\-ROUND\-([^-]+)\-([^-]+)$': split_name_date_angle_depth, # 'NON-INT-02_{date}-{angle}-{depth}',
+                r'^NON-INT-02_[0-9]{8}\-([^-]+)\-([^-]+)$': split_name_date_angle_depth,
             },
             'odor': {
     
@@ -506,6 +528,8 @@ LEC_naming_format = {
             'object': {
                 r'^NON-INT-03_[0-9]{8}\-([^-]+)\-ROUND\-([^-]+)\-([0-9]+)$': split_name_date_angle_depth_int, # 'NON-INT-03_{date}-{angle}-{depth}-{int}',
                 r'^NON-INT-03_[0-9]{8}\-ROUND\-([^-]+)\-([^-]+)$': split_name_date_angle_depth,# 'NON-INT-03_{date}-{angle}-{depth}'
+                r'^NON-INT-03_[0-9]{8}\-([^-]+)\-([^-]+)$': split_name_date_angle_depth,
+                r'^NON-INT-03_[0-9]{8}\-([^-]+)\-([^-]+)\-([0-9]+)$': split_name_date_angle_depth_int,
             },
             'odor': {
     
