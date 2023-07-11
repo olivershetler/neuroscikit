@@ -24,7 +24,7 @@ def _downsample(img, downsample_factor):
 
 # Taken from https://stackoverflow.com/questions/59144828/opencv-getting-all-blob-pixels
 #public
-def map_blobs(spatial_map: SpatialSpikeTrain2D | HaftingRateMap, **kwargs):
+def map_blobs(spatial_map: SpatialSpikeTrain2D | HaftingRateMap, nofilter=False, **kwargs):
 
     '''
         Segments and labels firing fields in ratemap.
@@ -68,7 +68,7 @@ def map_blobs(spatial_map: SpatialSpikeTrain2D | HaftingRateMap, **kwargs):
             ratemap, _ = spatial_map.get_map('rate').get_rate_map(smoothing_factor)
 
     if 'downsample' in kwargs:
-        if kwargs['downsample']:
+        if kwargs['downsample'] == True:
             ratemap = _downsample(ratemap, kwargs['downsample_factor'])
 
     if 'cylinder' in kwargs:
@@ -100,18 +100,21 @@ def map_blobs(spatial_map: SpatialSpikeTrain2D | HaftingRateMap, **kwargs):
     thresh, blobs = cv2.threshold(image,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
     n_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(blobs, connectivity=4)
 
-    # Filter through each blob, and remove any blob smaller than some threshold.
-    for i in range(1, n_labels):
-        num_pix = len(np.where(labels==i)[0])
-        if num_pix <= (blobs.size * 0.01):
-            blobs[np.where(labels==i)] = 0
+    if nofilter == False:
+        # Filter through each blob, and remove any blob smaller than some threshold.
+        for i in range(1, n_labels):
+            num_pix = len(np.where(labels==i)[0])
+            if num_pix <= (blobs.size * 0.01):
+                blobs[np.where(labels==i)] = 0
 
-    # Once smaller blobs are removed, re-smooth, and re-normalize image
-    image[np.where(blobs == 0)] = 0
-    image = image / max(image.flatten())
-    image = cv2.filter2D(image,-1,kernel)
-    image = image / max(image.flatten())
-    image_2 = np.array(image * 255, dtype = np.uint8)
+        # Once smaller blobs are removed, re-smooth, and re-normalize image
+        image[np.where(blobs == 0)] = 0
+        image = image / max(image.flatten())
+        image = cv2.filter2D(image,-1,kernel)
+        image = image / max(image.flatten())
+        image_2 = np.array(image * 255, dtype = np.uint8)
+    else:
+        image_2 = image
 
     # Second round of segmentation to acquire more clean and accurate blobs from pre-preocessed image
     thresh, blobs = cv2.threshold(image_2,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)

@@ -129,6 +129,7 @@ class SpatialSpikeTrain2D():
         # return np.array(self.x)[spike_index], np.array(self.y)[spike_index]
 
         v = _speed2D(self.x, self.y, self.t)
+        print('Using speed bounds {} to {}'.format(self.speed_bounds[0], self.speed_bounds[1]))
         x, y, t = _speed_bins(self.speed_bounds[0], self.speed_bounds[1], v, self.x, self.y, self.t)
 
         cPost = np.copy(t)

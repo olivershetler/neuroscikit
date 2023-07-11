@@ -1,4 +1,3 @@
-from msilib.schema import Class
 import os
 import sys
 import numpy as np
