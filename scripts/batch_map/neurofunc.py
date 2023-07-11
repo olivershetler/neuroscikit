@@ -105,14 +105,17 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None, sum_sheet_count=N
 
     file_name = os.path.join(root_path, "neurofunc_parameters.txt")
     with open(file_name, 'w') as f:
-        f.write("ppm is: ")
-        f.write(str(settings_dict['ppm']) + "\n")
-        f.write("Smoothing is: ")
-        f.write(str(settings_dict['smoothing_factor']) + "\n")
-        f.write("speed bounds are: ")
-        f.write(str(settings_dict['speed_lowerbound']) + "," + str(settings_dict['speed_upperbound']) + "\n")
-        f.write("save method is: ")
-        f.write(str(settings_dict['saveMethod']) + "\n")
+        for ky in settings_dict:
+            f.write(str(ky) + ' is: ')
+            f.write(str(settings_dict[ky]) + '\n')
+        # f.write("ppm is: ")
+        # f.write(str(settings_dict['ppm']) + "\n")
+        # f.write("Smoothing is: ")
+        # f.write(str(settings_dict['smoothing_factor']) + "\n")
+        # f.write("speed bounds are: ")
+        # f.write(str(settings_dict['speed_lowerbound']) + "," + str(settings_dict['speed_upperbound']) + "\n")
+        # f.write("save method is: ")
+        # f.write(str(settings_dict['saveMethod']) + "\n")
         f.close()
 
     if study.animals is None:
@@ -839,7 +842,7 @@ if __name__ == '__main__':
     session_settings = {'channel_count': 4, 'animal': animal, 'devices': devices, 'implant': implant}
 
     """ FOR YOU TO EDIT """
-    settings = {'ppm': 511, 'session':  session_settings, 'smoothing_factor': 3, 'useMatchedCut': False}
+    settings = {'ppm': 485, 'session':  session_settings, 'smoothing_factor': 3, 'useMatchedCut': True}
     """ FOR YOU TO EDIT """
 
     tasks['disk_arena'] = True # -->

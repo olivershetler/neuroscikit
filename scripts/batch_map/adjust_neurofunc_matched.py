@@ -61,12 +61,22 @@ def adjust_neurofunc_to_matched_mapping(file_dir, data_dir, settings):
             else:
                 empty_cell = matched_lbls[-1] + 1
 
-            mapping_output_paths = np.sort([ f.path for f in os.scandir(subdir) if 'mappings' in f.path ])
+            # mapping_output_paths = np.sort([ f.path for f in os.scandir(subdir) if 'mappings' in f.path ])
+            mapping_output_paths = np.sort([f.path for f in os.scandir(subdir.encode()) if b'mappings' in f.path]) 
+
             # print([f.path for f in os.scandir(data_dir) ])
             # print(mapping_output_path)
             assert len(mapping_output_paths) == 4
+            # tet_id = animal.animal_id.split('_tet')[-1]
+            # mapping_output_path = [x for x in mapping_output_paths if int(x.split('_mappings')[0][-1]) == int(tet_id)]
             tet_id = animal.animal_id.split('_tet')[-1]
-            mapping_output_path = [x for x in mapping_output_paths if int(x.split('_mappings')[0][-1]) == int(tet_id)]
+            # for x in mapping_output_paths: 
+            #     print(x)
+            #     print(int(x.split(b'_mappings')[0][-1]))
+            #     print(x.decode())
+            #     print(int(x.split(b'_mappings')[0][-1]))
+            mapping_output_path = [x for x in mapping_output_paths if int(x.decode().split('_mappings')[0][-1]) == int(tet_id)] 
+            print('here', mapping_output_path, tet_id, mapping_output_paths)
             assert len(mapping_output_path) == 1
             mapping_output_path = mapping_output_path[0]
 

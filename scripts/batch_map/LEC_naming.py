@@ -35,13 +35,15 @@ def _check_odor(odor):
 def _merge_depth(name, date):
     # print(name)
     if name == 'B6-LEC1':
-        pth = r"C:\Users\aaoun\OneDrive - cumc.columbia.edu\Desktop\HussainiLab\neuroscikit_test_data\LEC_filter_excel\B6 LEC1 depths.xlsx"
+        # pth = r"C:\Users\aaoun\OneDrive - cumc.columbia.edu\Desktop\HussainiLab\neuroscikit_test_data\LEC_filter_excel\B6 LEC1 depths.xlsx"
+        pth = r"/home/apollo/Documents/neuroscikit/B6 LEC1 depths.xlsx"
         df = pd.read_excel(pth)
         
         format_date = str(date[:4] + '/' + date[4:6] + '/' + date[6:])
 
     elif name == 'B6-LEC2': 
-        pth = r"C:\Users\aaoun\OneDrive - cumc.columbia.edu\Desktop\HussainiLab\neuroscikit_test_data\LEC_filter_excel\B6 LEC2 depths.xlsx"
+        pth = r"/home/apollo/Documents/neuroscikit/B6 LEC2 depths.xlsx"
+        # pth = r"C:\Users\aaoun\OneDrive - cumc.columbia.edu\Desktop\HussainiLab\neuroscikit_test_data\LEC_filter_excel\B6 LEC2 depths.xlsx"
         df = pd.read_excel(pth)
 
         format_date = str(date[:4] + '/' + date[4:6] + '/' + date[6:])
