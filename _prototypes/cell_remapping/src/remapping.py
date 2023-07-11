@@ -112,15 +112,18 @@ def compute_remapping(study, settings, data_dir):
             if ses_id not in animal_cell_ratemaps[animal_id]:
                 animal_cell_ratemaps[animal_id][ses_id] = {}
             for cell_label in cell_info:
-                ky = animal.animal_id.split('_')[1] + '_' + str(cell_label)
+                tetrode = animal.animal_id.split('tet')[-1]
+                ky = str(tetrode) + '_' + str(cell_label)
                 animal_cell_ratemaps[animal_id][ses_id][ky] = cell_info[cell_label]
 
     # """ change to helper funcntin for permute shuffling """
     prev_ses_id = None
     animal_ref_dist = {}
+    visited = {}
     for animal_id in animal_cell_ratemaps:
         if animal_id not in animal_ref_dist:
             animal_ref_dist[animal_id] = {}
+            visited[animal_id] = {}
         if settings['runRegular'] or settings['runTemporal']:
             for ses_id in animal_cell_ratemaps[animal_id]:
                 if prev_ses_id is not None:
@@ -131,6 +134,7 @@ def compute_remapping(study, settings, data_dir):
                     ses_comp = str(prev_ses_id) + '_' + str(ses_id)
                     if ses_comp not in animal_ref_dist[animal_id]:
                         animal_ref_dist[animal_id][ses_comp] = {}
+                        visited[animal_id][ses_comp] = []
                         animal_ref_dist[animal_id][ses_comp]['ref_whole'] = []
                         animal_ref_dist[animal_id][ses_comp]['ref_spike_density'] = []
                         animal_ref_dist[animal_id][ses_comp]['ref_temporal'] = []
@@ -140,8 +144,11 @@ def compute_remapping(study, settings, data_dir):
 
                     for cell_label_1 in ses_1:
                         for cell_label_2 in ses_2:
-                            if cell_label_1 != cell_label_2: # DO NOT COMPARE SAME CELL, PONLY MAKIGN REF DIST
+                            lbl_pair = [cell_label_1, cell_label_2]
+
+                            if cell_label_1 != cell_label_2 and list(np.sort(lbl_pair)) not in visited[animal_id][ses_comp]: # DO NOT COMPARE SAME CELL, PONLY MAKIGN REF DIST
                                 print('comparing cell {} to cell {}'.format(cell_label_1, cell_label_2))
+                                visited[animal_id][ses_comp].append(lbl_pair)
                                 source_map = ses_1[cell_label_1][0]
                                 target_map = ses_2[cell_label_2][0]
                                 prev_spatial_spike_train = ses_1[cell_label_1][1]
@@ -197,7 +204,10 @@ def compute_remapping(study, settings, data_dir):
                                 animal_ref_dist[animal_id][ses_comp]['ref_rate_ratio'].append(fr_rate_ratio)
                                 animal_ref_dist[animal_id][ses_comp]['ref_rate_change'].append(fr_rate_change)
                             else:
-                                print('SAME CELL, omitting from ref dist {} {}'.format(cell_label_1, cell_label_2))
+                                if cell_label_1 == cell_label_2:
+                                    print('SAME CELL, omitting from ref dist {} {}'.format(cell_label_1, cell_label_2))
+                                else:
+                                    print('CELL PAIR ALREADY VISITED, e.g tet1_cell1 + tet2_cell2 == tet2_cell2 + tet1_cell1')
                 prev_ses_id = ses_id
         if settings['runUniqueGroups'] or settings['runUniqueOnlyTemporal']:
             for categ in session_comp_categories:
@@ -291,7 +301,7 @@ def compute_remapping(study, settings, data_dir):
         #     max_matched_cell_count = len(animal.sessions[sorted(list(animal.sessions.keys()))[-1]].get_cell_data()['cell_ensemble'].cells)
         # else:
         #     max_matched_cell_count = max(list(map(lambda x: max(animal.sessions[x].get_cell_data()['cell_ensemble'].get_label_ids()), animal.sessions)))
-
+        
         max_matched_cell_count = max(list(map(lambda x: max(animal.sessions[x].get_cell_data()['cell_ensemble'].get_label_ids()), animal.sessions)))
 
         # len(session) - 1 bcs thats number of comparisons. e.g. 3 session: ses1-ses2, ses2-ses3 so 2 distances will be given for remapping
@@ -1868,6 +1878,10 @@ def _aggregate_cell_info(animal, settings):
     # for animal in study.animals:
 
     # get largest possible cell id
+    for x in animal.sessions:
+        print(animal.sessions[x].session_metadata.file_paths['cut'])
+        print(animal.sessions[x].get_cell_data()['cell_ensemble'].get_label_ids())
+
     # max_matched_cell_count = len(animal.sessions[sorted(list(animal.sessions.keys()))[-1]].get_cell_data()['cell_ensemble'].cells)
     max_matched_cell_count = max(list(map(lambda x: max(animal.sessions[x].get_cell_data()['cell_ensemble'].get_label_ids()), animal.sessions)))
     for k in range(int(max_matched_cell_count)):
@@ -1894,7 +1908,9 @@ def _aggregate_cell_info(animal, settings):
                 # else:
                 #     spatial_spike_train = ses.make_class(SpatialSpikeTrain2D, {'cell': cell, 'position': ses.get_position_data()['position']})
                 
-                spatial_spike_train = ses.make_class(SpatialSpikeTrain2D, {'cell': cell, 'position': pos_obj})
+                # spatial_spike_train = ses.make_class(SpatialSpikeTrain2D, {'cell': cell, 'position': pos_obj})
+                spatial_spike_train = ses.make_class(SpatialSpikeTrain2D, {'cell': cell, 'position': pos_obj, 'speed_bounds': (settings['speed_lowerbound'], settings['speed_upperbound'])})
+
                 cell.stats_dict['spatial_spike_train'] = spatial_spike_train
                 rate_map_obj = spatial_spike_train.get_map('rate')
                 
@@ -1915,6 +1931,9 @@ def _aggregate_cell_info(animal, settings):
                     
                 if settings['hasObject'] or settings['runFields']:
                     image, n_labels, labels, centroids, field_sizes = map_blobs(spatial_spike_train, ratemap_size=ratemap_size, cylinder=cylinder, downsample=settings['downsample'], downsample_factor=settings['downsample_factor'])
+                    if len(np.unique(labels)) == 1:
+                        image, n_labels, labels, centroids, field_sizes = map_blobs(spatial_spike_train, ratemap_size=ratemap_size, cylinder=cylinder, downsample=settings['downsample'], downsample_factor=settings['downsample_factor'], nofilter=True)                        
+
                     labels, centroids, field_sizes = _sort_filter_centroids_by_field_size(rate_map, field_sizes, labels, centroids, spatial_spike_train.arena_size)
                     blobs_dict[id] = [image, n_labels, labels, centroids, field_sizes]
                     if prev_field_size_len is not None:
