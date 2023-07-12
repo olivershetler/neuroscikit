@@ -55,6 +55,8 @@ def rate_map_coherence(spatial_map: SpatialSpikeTrain2D | HaftingRateMap, **kwar
         _, rate_map_raw = spatial_map.get_rate_map(smoothing_factor)
     elif isinstance(spatial_map, SpatialSpikeTrain2D):
         _, rate_map_raw = spatial_map.get_map('rate').get_rate_map(smoothing_factor)
+    else:
+        rate_map_raw = spatial_map
 
 
     kernel = np.array([[0.125, 0.125, 0.125],

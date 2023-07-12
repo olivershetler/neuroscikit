@@ -14,7 +14,7 @@ import library.opexebo.defaults as default
 import library.opexebo.errors as errors 
 
 # def rate_map_stats(rate_map, time_map, debug=False):
-def rate_map_stats(spatial_spike_train: SpatialSpikeTrain2D, debug=False):
+def rate_map_stats(spatial_spike_train: SpatialSpikeTrain2D, debug=False, ratemap=None, occmap=None, override=False):
     '''
     Calculate statistics of a rate map that depend on probability distribution
     function (PDF)
@@ -66,8 +66,13 @@ def rate_map_stats(spatial_spike_train: SpatialSpikeTrain2D, debug=False):
 
     Copyright (C) 2019 by Simon Ball
     '''
-    rate_map, _ = spatial_spike_train.get_map('rate').get_rate_map()
-    time_map = spatial_spike_train.get_map('occupancy').raw_map_data
+    if override:
+        rate_map = ratemap
+        time_map = occmap
+    else:
+        rate_map, _ = spatial_spike_train.get_map('rate').get_rate_map()
+        time_map = spatial_spike_train.get_map('occupancy').raw_map_data
+
 
     if type(rate_map) != np.ma.MaskedArray:
         rate_map = np.ma.masked_invalid(rate_map, copy=True)

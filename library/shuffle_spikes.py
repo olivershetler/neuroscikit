@@ -37,7 +37,7 @@ import numba as nb
 
 
 
-@jit(nopython=True)
+# @jit(nopython=True)
 def _arrange_spikes(pos_t, pos_x, pos_y, shuffled_times):
     shuffled_spikes_x = np.empty_like(shuffled_times)
     shuffled_spikes_y = np.empty_like(shuffled_times)
@@ -52,6 +52,7 @@ def _arrange_spikes(pos_t, pos_x, pos_y, shuffled_times):
     return shuffled_spikes_x, shuffled_spikes_y
 
 def _shuffle_new(times, offset_lim, iterations, t_start=None, t_stop=None):
+    print(times)
     if t_start is None:
         t_start = np.min(times)
     if t_stop is None:
