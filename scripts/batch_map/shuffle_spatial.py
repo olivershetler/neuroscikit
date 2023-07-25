@@ -9,6 +9,7 @@ from _prototypes.unit_matcher.waveform import time_index, troughs
 import warnings
 from library.study_space import Session, Study, Animal
 from scripts.batch_map.LEC_naming import LEC_naming_format, extract_name_lec
+from _prototypes.cell_remapping.src.MEC_naming import MEC_naming_format, extract_name_mec
 import tkinter as tk
 from tkinter import filedialog
 import time
@@ -180,12 +181,12 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None, sum_sheet_count=N
                 # Session stamp
                 signature = tet_file.split("/")[-1][:-2]
 
-                # if settings['naming_type'] == 'LEC':
-                group, name = extract_name_lec(signature)
-                formats = LEC_naming_format[group][name]['object']
-                # elif settings['naming_type'] == 'MEC':
-                #     name = extract_name_mec(fname)
-                #     formats = MEC_naming_format
+                if settings['naming_type'] == 'LEC':
+                    group, name = extract_name_lec(signature)
+                    formats = LEC_naming_format[group][name]['object']
+                elif settings['naming_type'] == 'MEC':
+                        name = extract_name_mec(signature)
+                        formats = MEC_naming_format
                 # elif settings['naming_type'] == 'LC':
                 #     name = extract_name_lc(fname)
                 #     formats = LC_naming_format
@@ -271,9 +272,9 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None, sum_sheet_count=N
                     v = _speed2D(spatial_spike_train.x, spatial_spike_train.y, spatial_spike_train.t)
 
                     rate_obj = spatial_spike_train.get_map('rate')
-                    rate_map, rate_map_raw = rate_obj.get_rate_map()
+                    rate_map, rate_map_raw = rate_obj.get_rate_map(new_size=settings_dict['ratemap_dims'][0])
                     occ_obj = spatial_spike_train.get_map('occupancy')
-                    occ_map, _, _ = occ_obj.get_occupancy_map()
+                    occ_map, _, _ = occ_obj.get_occupancy_map(new_size=settings_dict['ratemap_dims'][0])
                     # if settings['normalizeRate']:
                     #     rate_map, _ = rate_obj.get_rate_map()
                     # else:
@@ -459,11 +460,13 @@ if __name__ == '__main__':
     settings['header'] = csv_header # --> change csv_header header to change tasks that are saved to csv
 
     """ FOR YOU TO EDIT """
+    settings['naming_type'] = 'LEC'
     settings['speed_lowerbound'] = 0
     settings['speed_upperbound'] = 99
     settings['end_cell'] = None
     settings['start_cell'] = None
     settings['saveData'] = True
+    settings['ratemap_dims'] = (32, 32)
     settings['saveMethod'] = 'one_for_parent'
     # possible saves are:
     # 1 csv per session (all tetrode and indiv): 'one_per_session' --> 5 sheets (summary of all 4 tetrodes, tet1, tet2, tet3, tet4)
@@ -485,16 +488,33 @@ if __name__ == '__main__':
     # study.make_animals()
     # batch_map(study, settings, data_dir)
 
-    """ OPTION 2 """
+    # """ OPTION 2 """
+    # """ RUNS EACH SUBFOLDER ONE AT A TIME """
+    # subdirs = np.sort([ f.path for f in os.scandir(data_dir) if f.is_dir() ])
+    # count = 1
+    # for subdir in subdirs:
+    #     try:
+    #         study = make_study(subdir,settings_dict=settings)
+    #         study.make_animals()
+    #         batch_map(study, settings, subdir, sum_sheet_count=count)
+    #         count += 1
+    #     except Exception:
+    #         print(traceback.format_exc())
+    #         print('DID NOT WORK FOR DIRECTORY ' + str(subdir))
+
+    """ OPTION 3 """
     """ RUNS EACH SUBFOLDER ONE AT A TIME """
     subdirs = np.sort([ f.path for f in os.scandir(data_dir) if f.is_dir() ])
     count = 1
     for subdir in subdirs:
-        try:
-            study = make_study(subdir,settings_dict=settings)
-            study.make_animals()
-            batch_map(study, settings, subdir, sum_sheet_count=count)
-            count += 1
-        except Exception:
-            print(traceback.format_exc())
-            print('DID NOT WORK FOR DIRECTORY ' + str(subdir))
+        subdir = str(subdir)
+        subdirs2 = np.sort([ f.path for f in os.scandir(subdir) if f.is_dir() ])
+        for subdir2 in subdirs2:
+            try:
+                study = make_study(subdir2,settings_dict=settings)
+                study.make_animals()
+                batch_map(study, settings, subdir2, sum_sheet_count=count)
+                count += 1
+            except Exception:
+                print(traceback.format_exc())
+                print('DID NOT WORK FOR DIRECTORY ' + str(subdir2))
