@@ -792,7 +792,7 @@ if __name__ == '__main__':
         try:
             sub_study = make_study(subdir,settings_dict=settings_dict)
             sub_study.make_animals()
-            run_unit_matcher(paths=[], settings=settings_dict, study=sub_study, dim_redux=None)
+            run_unit_matcher(paths=[], settings=settings_dict, study=sub_study)
             count += 1
         except Exception:
             print(traceback.format_exc())
