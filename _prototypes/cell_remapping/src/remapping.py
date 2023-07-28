@@ -302,8 +302,15 @@ def compute_remapping(study, settings, data_dir):
         # else:
         #     max_matched_cell_count = max(list(map(lambda x: max(animal.sessions[x].get_cell_data()['cell_ensemble'].get_label_ids()), animal.sessions)))
         
-        max_matched_cell_count = max(list(map(lambda x: max(animal.sessions[x].get_cell_data()['cell_ensemble'].get_label_ids()), animal.sessions)))
-
+        try:
+            max_matched_cell_count = max(list(map(lambda x: max(animal.sessions[x].get_cell_data()['cell_ensemble'].get_label_ids()), animal.sessions)))
+        except:
+            max_matched_cell_count = 0
+            for x in animal.sessions:
+                cell_label_ids = animal.sessions[x].get_cell_data()['cell_ensemble'].get_label_ids() 
+                nmb_matched = len(cell_label_ids)
+                if nmb_matched > max_matched_cell_count:
+                    max_matched_cell_count = nmb_matched
         # len(session) - 1 bcs thats number of comparisons. e.g. 3 session: ses1-ses2, ses2-ses3 so 2 distances will be given for remapping
         remapping_distances = np.zeros((len(list(animal.sessions.keys()))-1, max_matched_cell_count))
         # remapping_indices = [[] for k in range(max_matched_cell_count)]
@@ -1883,7 +1890,16 @@ def _aggregate_cell_info(animal, settings):
         print(animal.sessions[x].get_cell_data()['cell_ensemble'].get_label_ids())
 
     # max_matched_cell_count = len(animal.sessions[sorted(list(animal.sessions.keys()))[-1]].get_cell_data()['cell_ensemble'].cells)
-    max_matched_cell_count = max(list(map(lambda x: max(animal.sessions[x].get_cell_data()['cell_ensemble'].get_label_ids()), animal.sessions)))
+    try:
+        max_matched_cell_count = max(list(map(lambda x: max(animal.sessions[x].get_cell_data()['cell_ensemble'].get_label_ids()), animal.sessions)))
+    except:
+        max_matched_cell_count = 0
+        for x in animal.sessions:
+            cell_label_ids = animal.sessions[x].get_cell_data()['cell_ensemble'].get_label_ids() 
+            nmb_matched = len(cell_label_ids)
+            if nmb_matched > max_matched_cell_count:
+                max_matched_cell_count = nmb_matched
+    
     for k in range(int(max_matched_cell_count)):
         cell_label = k + 1
         prev_field_size_len = None 
