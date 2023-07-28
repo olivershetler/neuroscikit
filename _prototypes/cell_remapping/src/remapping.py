@@ -1224,7 +1224,7 @@ def compute_remapping(study, settings, data_dir):
                         temporal_dict['fr_change_std'].append(fr_change_std)
                         temporal_dict['n_repeats'].append(len(ref_rate_ratio_dist))
                         temporal_dict['arena_size'].append([prev_spatial_spike_train.arena_size, curr_spatial_spike_train.arena_size])
-
+                        temporal_dict['temporal_bin_size'].append(settings['temporal_bin_size'])
 
                     
                     prev = curr
