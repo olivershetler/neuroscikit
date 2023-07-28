@@ -91,6 +91,7 @@ IF YOU ARE DOING TEMPORAL REMAPPING
 
 settings_dict['runTemporal'] = False # EDIT HERE
 settings_dict['n_temporal_shuffles'] = 1000 # EDIT HERE
+settings_dict['temporal_bin_size'] = 10
 
 ##############################################################################################################################################################################
 # NO NEED TO EDIT BELOW # 
