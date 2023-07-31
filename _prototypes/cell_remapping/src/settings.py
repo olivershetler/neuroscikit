@@ -14,7 +14,7 @@ settings_dict = {'session': session_settings}
 """ 
 GLOBAL SETTINGS
 """
-
+# settings_dict['single_tet'] = 7
 settings_dict['session']['channel_count'] = 4
 settings_dict['ppm'] = None # EDIT HERE (will auto read from file if None, otherwise will override with this value)
 settings_dict['smoothing_factor'] = 3 # EDIT HERE (for plotting)
@@ -91,6 +91,7 @@ IF YOU ARE DOING TEMPORAL REMAPPING
 
 settings_dict['runTemporal'] = False # EDIT HERE
 settings_dict['n_temporal_shuffles'] = 1000 # EDIT HERE
+settings_dict['temporal_bin_size'] = 10
 
 ##############################################################################################################################################################################
 # NO NEED TO EDIT BELOW # 

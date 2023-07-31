@@ -190,7 +190,7 @@ def compute_remapping(study, settings, data_dir):
                                 if settings['runTemporal']:
                                     prev_spike_times = prev_spatial_spike_train.spike_times
                                     curr_spike_times = curr_spatial_spike_train.spike_times
-                                    observed_emd = compute_emd(prev_spike_times, curr_spike_times)
+                                    observed_emd = compute_emd(prev_spike_times, curr_spike_times, settings['temporal_bin_size'])
                                     animal_ref_dist[animal_id][ses_comp]['ref_temporal'].append(observed_emd)
                                 
                                 prev_duration = prev_spatial_spike_train.session_metadata.session_object.get_spike_data()['spike_cluster'].duration
@@ -265,7 +265,7 @@ def compute_remapping(study, settings, data_dir):
                                     if settings['runUniqueOnlyTemporal']:
                                         prev_spike_times = prev_spatial_spike_train.spike_times
                                         curr_spike_times = curr_spatial_spike_train.spike_times
-                                        observed_emd = compute_emd(prev_spike_times, curr_spike_times)
+                                        observed_emd = compute_emd(prev_spike_times, curr_spike_times, settings['temporal_bin_size'])
                                         animal_ref_dist[animal_id][ses_comp]['ref_temporal'].append(observed_emd)
                                         prev_duration = prev_spatial_spike_train.session_metadata.session_object.get_spike_data()['spike_cluster'].duration
                                         curr_duration = curr_spatial_spike_train.session_metadata.session_object.get_spike_data()['spike_cluster'].duration
@@ -302,8 +302,15 @@ def compute_remapping(study, settings, data_dir):
         # else:
         #     max_matched_cell_count = max(list(map(lambda x: max(animal.sessions[x].get_cell_data()['cell_ensemble'].get_label_ids()), animal.sessions)))
         
-        max_matched_cell_count = max(list(map(lambda x: max(animal.sessions[x].get_cell_data()['cell_ensemble'].get_label_ids()), animal.sessions)))
-
+        try:
+            max_matched_cell_count = max(list(map(lambda x: max(animal.sessions[x].get_cell_data()['cell_ensemble'].get_label_ids()), animal.sessions)))
+        except:
+            max_matched_cell_count = 0
+            for x in animal.sessions:
+                cell_label_ids = animal.sessions[x].get_cell_data()['cell_ensemble'].get_label_ids() 
+                nmb_matched = len(cell_label_ids)
+                if nmb_matched > max_matched_cell_count:
+                    max_matched_cell_count = nmb_matched
         # len(session) - 1 bcs thats number of comparisons. e.g. 3 session: ses1-ses2, ses2-ses3 so 2 distances will be given for remapping
         remapping_distances = np.zeros((len(list(animal.sessions.keys()))-1, max_matched_cell_count))
         # remapping_indices = [[] for k in range(max_matched_cell_count)]
@@ -1150,7 +1157,7 @@ def compute_remapping(study, settings, data_dir):
                         #     ref_emd_dist.append(ref_emd)
                         # Compute the observed EMD score between the original spike trains
                         # observed_emd = emd(prev_spikes.squeeze(), curr_spikes.squeeze(), distance_matrix)
-                        observed_emd = compute_emd(prev_spike_times, curr_spike_times)
+                        observed_emd = compute_emd(prev_spike_times, curr_spike_times, settings['temporal_bin_size'])
                         ref_emd_dist = animal_ref_dist[animal_id][ses_comp]['ref_temporal']
                         ref_emd_mean = np.mean(ref_emd_dist)
                         ref_emd_std = np.std(ref_emd_dist)
@@ -1217,7 +1224,7 @@ def compute_remapping(study, settings, data_dir):
                         temporal_dict['fr_change_std'].append(fr_change_std)
                         temporal_dict['n_repeats'].append(len(ref_rate_ratio_dist))
                         temporal_dict['arena_size'].append([prev_spatial_spike_train.arena_size, curr_spatial_spike_train.arena_size])
-
+                        temporal_dict['temporal_bin_size'].append(settings['temporal_bin_size'])
 
                     
                     prev = curr
@@ -1484,7 +1491,7 @@ def compute_remapping(study, settings, data_dir):
 
                 
                                     print('computing shuffled temporal emd')
-                                    observed_emd = compute_emd(prev_spike_times, curr_spike_times)
+                                    observed_emd = compute_emd(prev_spike_times, curr_spike_times, settings['temporal_bin_size'])
                                     ref_emd_dist = animal_ref_dist[animal_id][ses_comp]['ref_temporal']
                                     emd_mean = np.mean(ref_emd_dist)
                                     emd_std = np.std(ref_emd_dist)
@@ -1789,7 +1796,7 @@ def scale_points(pts):
 
     return scaled_pts
 
-def compute_null_emd(spike_train_a, spike_train_b, num_iterations):
+def compute_null_emd(spike_train_a, spike_train_b, num_iterations, bin_size):
     np.random.seed(0)
     combined_spike_train = np.concatenate([spike_train_a, spike_train_b])
     num_spikes = len(spike_train_a)
@@ -1808,16 +1815,16 @@ def compute_null_emd(spike_train_a, spike_train_b, num_iterations):
 
     emd_values = np.empty(num_iterations)
     for i in range(num_iterations):
-        emd_values[i] = compute_emd(shuffled_spike_train_a[i], shuffled_spike_train_b[i])
+        emd_values[i] = compute_emd(shuffled_spike_train_a[i], shuffled_spike_train_b[i], bin_size)
 
     return emd_values
 
-def compute_emd(spike_train_a, spike_train_b):
+def compute_emd(spike_train_a, spike_train_b, bin_size):
     # Determine the start and end times for aligning the spike trains
     start_time = np.min([np.min(spike_train_a), np.min(spike_train_b)])
     end_time = np.max([np.max(spike_train_a), np.max(spike_train_b)])
 
-    bins = np.arange(start_time, end_time + 1)
+    bins = np.arange(start_time, end_time + 1, bin_size)
     # Create aligned spike trains
     aligned_a, _ = np.histogram(spike_train_a, bins=bins)
     aligned_b, _ = np.histogram(spike_train_b, bins=bins)
@@ -1883,7 +1890,16 @@ def _aggregate_cell_info(animal, settings):
         print(animal.sessions[x].get_cell_data()['cell_ensemble'].get_label_ids())
 
     # max_matched_cell_count = len(animal.sessions[sorted(list(animal.sessions.keys()))[-1]].get_cell_data()['cell_ensemble'].cells)
-    max_matched_cell_count = max(list(map(lambda x: max(animal.sessions[x].get_cell_data()['cell_ensemble'].get_label_ids()), animal.sessions)))
+    try:
+        max_matched_cell_count = max(list(map(lambda x: max(animal.sessions[x].get_cell_data()['cell_ensemble'].get_label_ids()), animal.sessions)))
+    except:
+        max_matched_cell_count = 0
+        for x in animal.sessions:
+            cell_label_ids = animal.sessions[x].get_cell_data()['cell_ensemble'].get_label_ids() 
+            nmb_matched = len(cell_label_ids)
+            if nmb_matched > max_matched_cell_count:
+                max_matched_cell_count = nmb_matched
+    
     for k in range(int(max_matched_cell_count)):
         cell_label = k + 1
         prev_field_size_len = None 

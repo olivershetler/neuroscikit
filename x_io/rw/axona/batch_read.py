@@ -85,6 +85,7 @@ def _grab_tetrode_cut_position_files(paths: list, pos_files=[], cut_files=[], te
     if len(paths) == 1 and os.path.isdir(paths[0]):
         files = os.listdir(paths[0])
         for file in files:
+            file = file.decode()
             fpath = paths[0] + '/' + file
             if os.path.isdir(fpath) and 'git' not in fpath:
                 cut_files, tetrode_files, pos_files, matched_cut_files, animal_dir_names = _grab_tetrode_cut_position_files(os.listdir(fpath), pos_files=pos_files, cut_files=cut_files, tetrode_files=tetrode_files, matched_cut_files=matched_cut_files, animal_dir_names=animal_dir_names, parent_path=fpath)
@@ -240,15 +241,15 @@ def batch_sessions(sorted_files, settings_dict, indiv_session_settings):
             if len(cut_files) != len(tet_files):
                 print('Number of tet and cut files is mismatched for ses with file' + str(tet_files[0]))
 
-            min_file_match_count = min(len(cut_files),len(tet_files))
+            max_file_match_count = max(len(cut_files),len(tet_files))
         else:
             if len(matched_cut_files) != len(tet_files):
                 print('Number of tet and matched cut files is mismatched for ses with file' + str(tet_files[0]))
 
-            min_file_match_count = min(len(matched_cut_files),len(tet_files))
+            max_file_match_count = max(len(matched_cut_files),len(tet_files))
 
         # for j in range(len(cut_files)):
-        for j in range(min_file_match_count):
+        for j in range(max_file_match_count):
 
             session_settings_dict = settings_dict['session']
             # session_settings_dict['channel_count'] = indiv_session_settings['tetrode_counts'][i]
@@ -273,7 +274,7 @@ def batch_sessions(sorted_files, settings_dict, indiv_session_settings):
 
                 session_settings_dict['animal'] = {'animal_id': animal_id}
 
-
+                print(tet_id, cut_id)
                 if settings_dict['useMatchedCut'] == True:
                     assert len(sorted_files[i]) > 3, print('Matched cut file not present, make sure to run unit matcher')
                     # print(matched_cut_files)
@@ -472,7 +473,7 @@ def _init_session_dict(settings_dict):
     return session_dict
 
 def _get_session_data(cut_file, tet_file, ch_count=4):
-
+    print(cut_file)
     with open(cut_file, 'r') as open_cut_file, open(tet_file, 'rb') as open_tet_file:
         cut_data = _read_cut(open_cut_file)
         tetrode_data = _format_spikes(open_tet_file)

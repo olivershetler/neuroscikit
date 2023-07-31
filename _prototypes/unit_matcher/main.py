@@ -211,11 +211,11 @@ def run_unit_matcher(paths=[], settings={}, method='JSD', dim_redux='PCA', study
 
         file_str = new_cut_file_path.split(r'_matched.cut' )[0]
 
-        with open(str(file_str + '_pca.pickle'), 'wb') as handle:
-            pickle.dump(animal_pca_results, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        # with open(str(file_str + '_pca.pickle'), 'wb') as handle:
+        #     pickle.dump(animal_pca_results, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-        with open(str(file_str + '_mappings.pickle'), 'wb') as handle:
-            pickle.dump(session_mappings, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        # with open(str(file_str + '_mappings.pickle'), 'wb') as handle:
+        #     pickle.dump(session_mappings, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
         # file_name = r"testing_output.xlsx"
         # writer = pd.ExcelWriter(file_name, engine='xlsxwriter')
@@ -751,7 +751,7 @@ if __name__ == '__main__':
     """ If a setting is not used for your analysis (e.g. smoothing_factor), just pass in an arbitrary value or pass in 'None' """
     STUDY_SETTINGS = {
 
-        'ppm': 511,  # EDIT HERE
+        'ppm': 485,  # EDIT HERE
 
         'smoothing_factor': 3, # EDIT HERE
 
@@ -777,6 +777,7 @@ if __name__ == '__main__':
     STUDY_SETTINGS['session'] = SESSION_SETTINGS
 
     settings_dict = STUDY_SETTINGS
+    # settings_dict['single_tet'] = 7
 
     start_time = time.time()
     root = tk.Tk()
@@ -786,7 +787,7 @@ if __name__ == '__main__':
     import sys
     subdirs = np.sort([ f.path for f in os.scandir(data_dir) if f.is_dir() ])
     count = 1
-    sys.stdout = open(r'C:\Users\aaoun\OneDrive - cumc.columbia.edu\Desktop\HussainiLab\neuroscikit\_prototypes\unit_matcher\testlog.txt', 'w')
+    # sys.stdout = open(r'C:\Users\aaoun\OneDrive - cumc.columbia.edu\Desktop\HussainiLab\neuroscikit\_prototypes\unit_matcher\testlog.txt', 'w')
     for subdir in subdirs:
         try:
             sub_study = make_study(subdir,settings_dict=settings_dict)
@@ -796,8 +797,8 @@ if __name__ == '__main__':
         except Exception:
             print(traceback.format_exc())
             print('DID NOT WORK FOR DIRECTORY ' + str(subdir))
-    sys.stdout.close()
-    sys.stdout = sys.__stdout__
+    # sys.stdout.close()
+    # sys.stdout = sys.__stdout__
     print('COMPLETED UNIT MATCHING')
 
 
