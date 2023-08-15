@@ -165,10 +165,13 @@ def main(dict_path, output_folder_path, folder_list, settings_dict):
                                 ax = fig.add_subplot(gs_sub[0])
                                 img = ax.imshow(ratemap, cmap='jet', aspect='equal')
 
-                                firing_rate = np.sum(ses_ratemaps_raw[i][~np.isnan(ses_ratemaps_raw[i])] / len(ses_ratemaps_raw[i][~np.isnan(ses_ratemaps_raw[i])]))
+                                # firing_rate = np.sum(ses_ratemaps_raw[i][~np.isnan(ses_ratemaps_raw[i])] / len(ses_ratemaps_raw[i][~np.isnan(ses_ratemaps_raw[i])]))
+                                firing_rate = len(ses_ratemap_cells[i].event_times) / ses_ratemap_cells[i].event_times[-1] 
                                 firing_rate = round(firing_rate,2)
+                                # firing_rate2 = round(firing_rate2,2)
                                 # angle_title = 'Angle: ' + str(angle) + ', Rate: ' + str(firing_rate) + ' Hz'
-                                rate_title = str(firing_rate) + ' Hz'
+                                rate_title = str(firing_rate) + ' Hz' 
+                                # + ', ' + str(firing_rate2) + ' Hz'
                                 ax.set_title(rate_title, fontweight='bold')
 
                                 if angle != 'NO':
