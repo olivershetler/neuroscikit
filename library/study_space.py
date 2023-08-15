@@ -172,7 +172,7 @@ class Session(Workspace):
 
 
 class Study(Workspace):
-    def __init__(self, study_metadata, input_dict: dict):
+    def __init__(self, study_metadata, input_dict: dict, allowed_sessions=None):
         assert isinstance(study_metadata, StudyMetadata), 'The argument must be a Study object'
         self._input_dict = input_dict
 
@@ -181,6 +181,7 @@ class Study(Workspace):
         self.animal_ids = self._get_animal_ids()
 
         self.animals = None
+        self.allowed_sessions = allowed_sessions
 
     def _get_animal_ids(self):
         animal_ids = []
@@ -239,9 +240,14 @@ class Study(Workspace):
             animal_sessions = self._sort_session_by_animal()
             animals = []
             for key in animal_sessions:
-                assert type(animal_sessions[key]) == dict
-                animal_instance = Animal(animal_sessions[key])
-                animals.append(animal_instance)
+                if self.allowed_sessions is not None:
+                    assert type(animal_sessions[key]) == dict
+                    animal_instance = Animal(animal_sessions[key], allowed_sessions=self.allowed_sessions)
+                    animals.append(animal_instance)
+                else:
+                    assert type(animal_sessions[key]) == dict
+                    animal_instance = Animal(animal_sessions[key])
+                    animals.append(animal_instance)
             self.animals = animals
 
     def get_animals(self):
@@ -275,8 +281,9 @@ class Animal(Workspace):
     Holds all sessions belonging to an animal, TO BE ADDED: ordered sequentially in time
     """
     ### Currently input is a list of dictionaries, once we save ordered sessions in x_io study class we will input nested dictionaries
-    def __init__(self, input_dict: dict):
+    def __init__(self, input_dict: dict, allowed_sessions=None):
         self._input_dict = input_dict
+        self.allowed_sessions = allowed_sessions
 
         # self.cell_ids = {}
 
@@ -297,17 +304,18 @@ class Animal(Workspace):
             lbls = np.unique(np.concatenate(list(map(lambda x: np.unique(self._input_dict[x].get_spike_data()['spike_cluster'].cluster_labels), self._input_dict))))
             isMatchedCut = True
         for key in self._input_dict:
-            session = self._input_dict[key]
-            assert isinstance(session, Session)
-            # session is instance of SessionWorkspace, has SessionData and SessionMetadata
-            # AnimalSession will hold Cells which hold SpikeTrains from SessionData
-            if not isMatchedCut:
-                cell_ensemble, cell_ids = self._read_session(session, matched_lbls=None)
-            else:
-                cell_ensemble, cell_ids = self._read_session(session, matched_lbls=lbls)
-            sessions[key] = session
-            ensembles[key] = cell_ensemble
-            # self.cell_ids[key] = cell_ids
+            if self.allowed_sessions is None or key in self.allowed_sessions:
+                session = self._input_dict[key]
+                assert isinstance(session, Session)
+                # session is instance of SessionWorkspace, has SessionData and SessionMetadata
+                # AnimalSession will hold Cells which hold SpikeTrains from SessionData
+                if not isMatchedCut:
+                    cell_ensemble, cell_ids = self._read_session(session, matched_lbls=None)
+                else:
+                    cell_ensemble, cell_ids = self._read_session(session, matched_lbls=lbls)
+                sessions[key] = session
+                ensembles[key] = cell_ensemble
+                # self.cell_ids[key] = cell_ids
         return sessions, ensembles
 
     def _extract_core_classes(self, session):

@@ -107,7 +107,7 @@ def shuffle_spikes_new(ts, pos_x, pos_y, pos_t, iters=1000):
     # Compute shuffling between 20 and 100
     print(np.asarray(ts).shape, np.asarray(pos_x).shape, np.asarray(pos_y).shape, np.asarray(pos_t).shape)
     print('Getting {} iterations of shuffles'.format(iters))
-    shuffled_times = _shuffle_new(ts, 20, iters, t_start=np.min(ts), t_stop=np.max(ts))[0]
+    shuffled_times = _shuffle_new(ts, 20/60, iters, t_start=np.min(ts), t_stop=np.max(ts))[0]
     print(np.asarray(shuffled_times).shape)
     # shuffled_spikes = []
     # for i, single_shuffled_time in enumerate(shuffled_times):
