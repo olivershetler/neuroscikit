@@ -214,7 +214,10 @@ if __name__ == '__main__':
     """ RUNS EACH SUBFOLDER ONE AT A TIME """
     subdirs = np.sort([ f.path for f in os.scandir(data_dir) if f.is_dir() ])
     swap_df_path = r"C:\Users\aaoun\OneDrive - cumc.columbia.edu\Desktop\HussainiLab\neuroscikit_test_data\Sifting_Through_Cells.xlsx"
-    swap_df = pd.read_excel(swap_df_path, sheet_name='ANT')
+    swap_df_ANT = pd.read_excel(swap_df_path, sheet_name='ANT')
+    swap_df_B6 = pd.read_excel(swap_df_path, sheet_name='B6')
+    swap_df_NON = pd.read_excel(swap_df_path, sheet_name='NON')
+    swap_df = pd.concat([swap_df_ANT, swap_df_B6, swap_df_NON])
     swap_df['CATEGORY'] = swap_df['CATEGORY'].astype(str)
     swap_df['CATEGORY'] = swap_df['CATEGORY'].str.replace('.png', '')
     for subdir in subdirs:
