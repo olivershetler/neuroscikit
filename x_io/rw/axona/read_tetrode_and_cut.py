@@ -141,7 +141,7 @@ def _read_tetrode(tetrode_file):
             trial_date = line.decode(encoding='UTF-8').split(" ")[2:]
         elif 'trial_time' in str(line):
             trial_time = line.decode(encoding='UTF-8').split(" ")[1]
-
+    
     day, month, year = trial_date
     month = datetime.strptime(str(month), '%b').month
     hour, minute, second = trial_time.split(':')
@@ -159,7 +159,6 @@ def _read_tetrode(tetrode_file):
     step = (bytes_per_sample * samples_per_spike * 4 + bytes_per_timestamp * 4)
 
     t_start_indices = np.arange(0, step*num_spikes, step).astype(int).reshape(num_spikes, 1)
-
     #print("\n\n",[index for index in t_start_indices[0:100]])
 
     t_indices = t_start_indices
@@ -171,7 +170,6 @@ def _read_tetrode(tetrode_file):
 
     t = spike_data[t_indices].reshape(num_spikes, bytes_per_timestamp)  # acquiring the time bytes
     t = np.sum(np.multiply(t, big_endian_vector), axis=1) / timebase  # converting from bytes to float values
-
     '''
     for i in range(0, num_spikes):
         assert t[i] == t3[i]

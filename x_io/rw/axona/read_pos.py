@@ -156,7 +156,6 @@ def _get_position(pos_fpath, ppm=None, method='', flip_y=True):
     x: a column array of the x-values (in pixels)
     y: a column array of the y-values (in pixels)
     """
-
     with open(pos_fpath, 'rb+') as f:  # opening the .pos file
         headers = ''  # initializing the header string
         for line in f:  # reads line by line to read the header of the file

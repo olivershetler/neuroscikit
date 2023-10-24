@@ -277,7 +277,7 @@ def batch_sessions(sorted_files, settings_dict, indiv_session_settings):
 
                 session_settings_dict['animal'] = {'animal_id': animal_id}
 
-                print(tet_id, cut_id)
+                # print(tet_id, cut_id)
                 if settings_dict['useMatchedCut'] == True:
                     assert len(sorted_files[i]) > 3, print('Matched cut file not present, make sure to run unit matcher')
                     # print(matched_cut_files)
