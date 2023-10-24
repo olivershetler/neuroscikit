@@ -1,4 +1,0 @@
-ppm is: 485
-Smoothing is: 3
-speed bounds are: 0,99
-save method is: one_for_parent
