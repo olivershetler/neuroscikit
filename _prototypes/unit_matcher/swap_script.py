@@ -77,11 +77,15 @@ def batch_swap(study, settings, workdir, swap_df):
     for animal in study.animals:
         max_matched_cell_count = max(list(map(lambda x: max(animal.sessions[x].get_cell_data()['cell_ensemble'].get_label_ids()), animal.sessions)))
         map_dict = {}
+        for i in range(len(list(animal.sessions.keys()))):
+            seskey = 'session_' + str(i+1)
+            if seskey not in map_dict:
+                map_dict[seskey] = {}
         for cell_label in range(1,int(max_matched_cell_count)+1):
             for i in range(len(list(animal.sessions.keys()))):
                 seskey = 'session_' + str(i+1)
-                if seskey not in map_dict:
-                    map_dict[seskey] = {}
+                # if seskey not in map_dict:
+                #     map_dict[seskey] = {}
                 # print(seskey)
                 ses = animal.sessions[seskey]
                 path = ses.session_metadata.file_paths['tet']
@@ -109,13 +113,38 @@ def batch_swap(study, settings, workdir, swap_df):
                             # format: "X to Y for sesZ"
                             # print(row)
                             row = str(row)
-                            origin = row.split(' to ')[0]
-                            target = row.split(' to ')[1].split(' for ')[0]
-                            # ses_id_to_move = row.split(' to ')[1].split(' for ')[1]
-                            # ses_id_to_move = ses_id_to_move.split('ses')[1]
-                            ses_id_to_move = row.split('ses')[1]
+                            if 'DOUBLE' in row:
+                                var = 'DOUBLE'
+                            if 'TRIPLE' in row:
+                                var = 'TRIPLE'
 
-                            map_dict['session_' + str(ses_id_to_move)][int(origin)] = int(target)
+                            if 'DOUBLE' in row or 'TRIPLE' in row:
+                                # format: "DOUBLE: X to Y for sesZ and X2 to y2 for sesZ2"
+                                origin1 = row.split(var + ': ')[1].split(' and ')[0].split(' to ')[0]
+                                target1 = row.split(var + ': ')[1].split(' and ')[0].split(' to ')[1].split(' for ')[0]
+                                ses_id_to_move1 = row.split(var + ': ')[1].split(' and ')[0].split(' to ')[1].split(' for ')[1].split('ses')[1]
+                                origin2 = row.split(var + ': ')[1].split(' and ')[1].split(' to ')[0]
+                                target2 = row.split(var + ': ')[1].split(' and ')[1].split(' to ')[1].split(' for ')[0]
+                                ses_id_to_move2 = row.split(var + ': ')[1].split(' and ')[1].split(' to ')[1].split(' for ')[1].split('ses')[1]
+                    
+                                map_dict['session_' + str(ses_id_to_move1)][int(origin1)] = int(target1)
+                                map_dict['session_' + str(ses_id_to_move2)][int(origin2)] = int(target2)
+                                if 'TRIPLE' in row:
+                                    # origin3 = row.split(var + ': ')[1].split(' and ')[1].split(' to ')[0]
+                                    # target3 = row.split(var + ': ')[1].split(' and ')[1].split(' to ')[1].split(' for ')[0]
+                                    # ses_id_to_move3 = row.split(var + ': ')[1].split(' and ')[1].split(' to ')[1].split(' for ')[1].split('ses')[1]
+                                    origin3 = row.split(var + ': ')[1].split(' and ')[2].split(' to ')[0]
+                                    target3 = row.split(var + ': ')[1].split(' and ')[2].split(' to ')[1].split(' for ')[0]
+                                    ses_id_to_move3 = row.split(var + ': ')[1].split(' and ')[2].split(' to ')[1].split(' for ')[1].split('ses')[1]
+                                    map_dict['session_' + str(ses_id_to_move3)][int(origin3)] = int(target3)
+                            else:
+                                origin = row.split(' to ')[0]
+                                target = row.split(' to ')[1].split(' for ')[0]
+                                # ses_id_to_move = row.split(' to ')[1].split(' for ')[1]
+                                # ses_id_to_move = ses_id_to_move.split('ses')[1]
+                                ses_id_to_move = row.split('ses')[1]
+                                print(row, map_dict)
+                                map_dict['session_' + str(ses_id_to_move)][int(origin)] = int(target)
                             # print('print')
                             # print(map_dict)
         for i in range(len(list(animal.sessions.keys()))):
@@ -213,7 +242,7 @@ if __name__ == '__main__':
     """ OPTION 3 """
     """ RUNS EACH SUBFOLDER ONE AT A TIME """
     subdirs = np.sort([ f.path for f in os.scandir(data_dir) if f.is_dir() ])
-    swap_df_path = r"E:\all_lec_data\Sifting_Through_Cells.xlsx" 
+    swap_df_path = r"C:\Users\aaoun\OneDrive - cumc.columbia.edu\Desktop\HussainiLab\neuroscikit_test_data\Sifting_Through_Cells.xlsx"
     swap_df_ANT = pd.read_excel(swap_df_path, sheet_name='ANT')
     swap_df_B6 = pd.read_excel(swap_df_path, sheet_name='B6')
     swap_df_NON = pd.read_excel(swap_df_path, sheet_name='NON')
