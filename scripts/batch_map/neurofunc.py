@@ -471,7 +471,7 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None, sum_sheet_count=N
                         cell_stats['binary_map'] = binmap
                         # cell_stats['binary_map_im'] = binmap_im
 
-                    # print('Autocorr Img')
+                    # print('Autocorr Img') 
                     if tasks['autocorrelation_map']:
                         cell_stats['autocorr_map'] = autocorr_map
                         if tasks['disk_arena']:
