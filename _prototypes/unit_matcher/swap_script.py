@@ -213,7 +213,7 @@ if __name__ == '__main__':
     """ OPTION 3 """
     """ RUNS EACH SUBFOLDER ONE AT A TIME """
     subdirs = np.sort([ f.path for f in os.scandir(data_dir) if f.is_dir() ])
-    swap_df_path = r"E:\all_lec_data\Sifting_Through_Cells.xlsx"
+    swap_df_path = r"E:\all_lec_data\Sifting_Through_Cells.xlsx" 
     swap_df_ANT = pd.read_excel(swap_df_path, sheet_name='ANT')
     swap_df_B6 = pd.read_excel(swap_df_path, sheet_name='B6')
     swap_df_NON = pd.read_excel(swap_df_path, sheet_name='NON')
