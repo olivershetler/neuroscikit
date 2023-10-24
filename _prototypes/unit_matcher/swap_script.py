@@ -213,7 +213,7 @@ if __name__ == '__main__':
     """ OPTION 3 """
     """ RUNS EACH SUBFOLDER ONE AT A TIME """
     subdirs = np.sort([ f.path for f in os.scandir(data_dir) if f.is_dir() ])
-    swap_df_path = r"C:\Users\aaoun\OneDrive - cumc.columbia.edu\Desktop\HussainiLab\neuroscikit_test_data\Sifting_Through_Cells.xlsx"
+    swap_df_path = r"E:\all_lec_data\Sifting_Through_Cells.xlsx"
     swap_df_ANT = pd.read_excel(swap_df_path, sheet_name='ANT')
     swap_df_B6 = pd.read_excel(swap_df_path, sheet_name='B6')
     swap_df_NON = pd.read_excel(swap_df_path, sheet_name='NON')
@@ -224,6 +224,16 @@ if __name__ == '__main__':
         subdir = str(subdir)
         subdirs2 = np.sort([ f.path for f in os.scandir(subdir) if f.is_dir() ])
         for subdir2 in subdirs2:
-            study = make_study(subdir2,settings_dict=settings)
-            study.make_animals()
-            batch_swap(study, settings, subdir2, swap_df)
+            aid = str(subdir).split("\\")[-1]
+            date = str(subdir2).split("\\")[-1]
+            if len(date) != 8:
+                date = str(subdir2).split("\\")[-1].split('_')[1][:8]
+
+            check_if_contains = aid + '_' + date
+            sample_df = swap_df[swap_df['CATEGORY'].str.contains(check_if_contains) & (swap_df['Instructions'].notna())]
+            if not sample_df.empty:
+                # print(sample_df)
+                # stop()
+                study = make_study(subdir2,settings_dict=settings)
+                study.make_animals()
+                batch_swap(study, settings, subdir2, swap_df)
