@@ -30,7 +30,11 @@ def apply_remapping(cut_data, map_dict: dict):
     all_labels = np.unique(cut_data)
     for label in all_labels:
         if label not in map_dict:
-            map_dict[label] = label
+            if label not in np.unique(map_dict.values()):
+                map_dict[label] = label
+            else:
+                assert label in np.unique(map_dict.values())
+                map_dict[label] = 0
     new_cut_data = list(map(map_dict.get, cut_data))
 
     if len(map_dict)!= 0:
@@ -126,7 +130,9 @@ def batch_swap(study, settings, workdir, swap_df):
                                 origin2 = row.split(var + ': ')[1].split(' and ')[1].split(' to ')[0]
                                 target2 = row.split(var + ': ')[1].split(' and ')[1].split(' to ')[1].split(' for ')[0]
                                 ses_id_to_move2 = row.split(var + ': ')[1].split(' and ')[1].split(' to ')[1].split(' for ')[1].split('ses')[1]
-                    
+                                ses_id_to_move1 = ses_id_to_move1.strip(' ')
+                                ses_id_to_move2 = ses_id_to_move2.strip(' ')
+
                                 map_dict['session_' + str(ses_id_to_move1)][int(origin1)] = int(target1)
                                 map_dict['session_' + str(ses_id_to_move2)][int(origin2)] = int(target2)
                                 if 'TRIPLE' in row:
@@ -136,6 +142,7 @@ def batch_swap(study, settings, workdir, swap_df):
                                     origin3 = row.split(var + ': ')[1].split(' and ')[2].split(' to ')[0]
                                     target3 = row.split(var + ': ')[1].split(' and ')[2].split(' to ')[1].split(' for ')[0]
                                     ses_id_to_move3 = row.split(var + ': ')[1].split(' and ')[2].split(' to ')[1].split(' for ')[1].split('ses')[1]
+                                    ses_id_to_move3 = ses_id_to_move3.strip(' ')
                                     map_dict['session_' + str(ses_id_to_move3)][int(origin3)] = int(target3)
                             else:
                                 origin = row.split(' to ')[0]
@@ -143,6 +150,8 @@ def batch_swap(study, settings, workdir, swap_df):
                                 # ses_id_to_move = row.split(' to ')[1].split(' for ')[1]
                                 # ses_id_to_move = ses_id_to_move.split('ses')[1]
                                 ses_id_to_move = row.split('ses')[1]
+                                # remove whitespaces
+                                ses_id_to_move = ses_id_to_move.strip(' ')
                                 print(row, map_dict)
                                 map_dict['session_' + str(ses_id_to_move)][int(origin)] = int(target)
                             # print('print')
@@ -242,7 +251,7 @@ if __name__ == '__main__':
     """ OPTION 3 """
     """ RUNS EACH SUBFOLDER ONE AT A TIME """
     subdirs = np.sort([ f.path for f in os.scandir(data_dir) if f.is_dir() ])
-    swap_df_path = r"C:\Users\aaoun\OneDrive - cumc.columbia.edu\Desktop\HussainiLab\neuroscikit_test_data\Sifting_Through_Cells.xlsx"
+    swap_df_path = r"E:\all_lec_data\Sifting_Through_Cells.xlsx" 
     swap_df_ANT = pd.read_excel(swap_df_path, sheet_name='ANT')
     swap_df_B6 = pd.read_excel(swap_df_path, sheet_name='B6')
     swap_df_NON = pd.read_excel(swap_df_path, sheet_name='NON')
