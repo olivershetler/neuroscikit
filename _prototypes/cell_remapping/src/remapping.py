@@ -183,6 +183,8 @@ def compute_remapping(study, settings, data_dir):
                                     prev_pts = scale_points(prev_pts)
                                     spike_dens_wass = pot_sliced_wasserstein(prev_pts, curr_pts, n_projections=settings['n_projections'])
                                     animal_ref_dist[animal_id][ses_comp]['ref_spike_density'].append(spike_dens_wass)
+                                    coord_buckets_curr = scale_points(coord_buckets_curr)
+                                    coord_buckets_prev = scale_points(coord_buckets_prev)
                                     wass = pot_sliced_wasserstein(coord_buckets_prev, coord_buckets_curr, source_weights, target_weights, n_projections=settings['n_projections'])
                                     animal_ref_dist[animal_id][ses_comp]['ref_whole'].append(wass)
                                     animal_ref_dist[animal_id][ses_comp]['ref_weights'].append([source_weights, target_weights])
@@ -190,6 +192,8 @@ def compute_remapping(study, settings, data_dir):
                                 if settings['runTemporal']:
                                     prev_spike_times = prev_spatial_spike_train.spike_times
                                     curr_spike_times = curr_spatial_spike_train.spike_times
+                                    prev_spike_times = (prev_spike_times - prev_spike_times[0]) / (prev_spike_times[-1] - prev_spike_times[0])
+                                    curr_spike_times = (curr_spike_times - curr_spike_times[0]) / (curr_spike_times[-1] - curr_spike_times[0])
                                     observed_emd = compute_emd(prev_spike_times, curr_spike_times, settings['temporal_bin_size'])
                                     animal_ref_dist[animal_id][ses_comp]['ref_temporal'].append(observed_emd)
                                 
@@ -887,6 +891,11 @@ def compute_remapping(study, settings, data_dir):
                             sd_quantile = wasserstein_quantile(spike_dens_wass, null_spike_dens_wass)
                         
                         if 'whole' in settings['rate_scores']:
+                            coord_buckets_curr = scale_points(coord_buckets_curr)
+                            coord_buckets_prev = scale_points(coord_buckets_prev)
+                            # assert has been scaled
+                            assert np.max(coord_buckets_curr) <= 1 and np.min(coord_buckets_curr) >= 0, 'coord buckets curr not scaled'
+                            assert np.max(coord_buckets_prev) <= 1 and np.min(coord_buckets_prev) >= 0, 'coord buckets prev not scaled'
                             print('doing whole map wasserstein')
                             wass = pot_sliced_wasserstein(coord_buckets_prev, coord_buckets_curr, source_weights, target_weights, n_projections=settings['n_projections'])
                             print('doing ref wasserstein')
@@ -1157,6 +1166,10 @@ def compute_remapping(study, settings, data_dir):
                         #     ref_emd_dist.append(ref_emd)
                         # Compute the observed EMD score between the original spike trains
                         # observed_emd = emd(prev_spikes.squeeze(), curr_spikes.squeeze(), distance_matrix)
+                        
+                        # scale spike times to be between 0 and 1
+                        prev_spike_times = (prev_spike_times - prev_spike_times[0]) / (prev_spike_times[-1] - prev_spike_times[0])
+                        curr_spike_times = (curr_spike_times - curr_spike_times[0]) / (curr_spike_times[-1] - curr_spike_times[0])
                         observed_emd = compute_emd(prev_spike_times, curr_spike_times, settings['temporal_bin_size'])
                         ref_emd_dist = animal_ref_dist[animal_id][ses_comp]['ref_temporal']
                         ref_emd_mean = np.mean(ref_emd_dist)
