@@ -177,14 +177,21 @@ def compute_remapping(study, settings, data_dir):
 
                                     source_weights = source_weights / np.sum(source_weights)
                                     target_weights = target_weights / np.sum(target_weights)
+                                    
+                                    prev_height_bucket_midpoints = (prev_height_bucket_midpoints - np.min(prev_height_bucket_midpoints)) / (np.max(prev_height_bucket_midpoints) - np.min(prev_height_bucket_midpoints))
+                                    prev_width_bucket_midpoints = (prev_width_bucket_midpoints - np.min(prev_width_bucket_midpoints)) / (np.max(prev_width_bucket_midpoints) - np.min(prev_width_bucket_midpoints))
+                                    curr_height_bucket_midpoints = (curr_height_bucket_midpoints - np.min(curr_height_bucket_midpoints)) / (np.max(curr_height_bucket_midpoints) - np.min(curr_height_bucket_midpoints))
+                                    curr_width_bucket_midpoints = (curr_width_bucket_midpoints - np.min(curr_width_bucket_midpoints)) / (np.max(curr_width_bucket_midpoints) - np.min(curr_width_bucket_midpoints))
+                        
+                        
                                     coord_buckets_curr = np.array(list(map(lambda x, y: [curr_height_bucket_midpoints[x],curr_width_bucket_midpoints[y]], row_curr, col_curr)))
                                     coord_buckets_prev = np.array(list(map(lambda x, y: [prev_height_bucket_midpoints[x],prev_width_bucket_midpoints[y]], row_prev, col_prev)))
                                     curr_pts = scale_points(curr_pts)
                                     prev_pts = scale_points(prev_pts)
                                     spike_dens_wass = pot_sliced_wasserstein(prev_pts, curr_pts, n_projections=settings['n_projections'])
                                     animal_ref_dist[animal_id][ses_comp]['ref_spike_density'].append(spike_dens_wass)
-                                    coord_buckets_curr = scale_points(coord_buckets_curr)
-                                    coord_buckets_prev = scale_points(coord_buckets_prev)
+                                    # coord_buckets_curr = scale_points(coord_buckets_curr)
+                                    # coord_buckets_prev = scale_points(coord_buckets_prev)
                                     wass = pot_sliced_wasserstein(coord_buckets_prev, coord_buckets_curr, source_weights, target_weights, n_projections=settings['n_projections'])
                                     animal_ref_dist[animal_id][ses_comp]['ref_whole'].append(wass)
                                     animal_ref_dist[animal_id][ses_comp]['ref_weights'].append([source_weights, target_weights])
@@ -257,6 +264,13 @@ def compute_remapping(study, settings, data_dir):
 
                                         source_weights = source_weights / np.sum(source_weights)
                                         target_weights = target_weights / np.sum(target_weights)
+
+                                        # prev_height_bucket_midpoints = (prev_height_bucket_midpoints - np.min(prev_height_bucket_midpoints)) / (np.max(prev_height_bucket_midpoints) - np.min(prev_height_bucket_midpoints))
+                                        # prev_width_bucket_midpoints = (prev_width_bucket_midpoints - np.min(prev_width_bucket_midpoints)) / (np.max(prev_width_bucket_midpoints) - np.min(prev_width_bucket_midpoints))
+                                        # curr_height_bucket_midpoints = (curr_height_bucket_midpoints - np.min(curr_height_bucket_midpoints)) / (np.max(curr_height_bucket_midpoints) - np.min(curr_height_bucket_midpoints))
+                                        # curr_width_bucket_midpoints = (curr_width_bucket_midpoints - np.min(curr_width_bucket_midpoints)) / (np.max(curr_width_bucket_midpoints) - np.min(curr_width_bucket_midpoints))
+                                        
+                                        
                                         coord_buckets_curr = np.array(list(map(lambda x, y: [curr_height_bucket_midpoints[x],curr_width_bucket_midpoints[y]], row_curr, col_curr)))
                                         coord_buckets_prev = np.array(list(map(lambda x, y: [prev_height_bucket_midpoints[x],prev_width_bucket_midpoints[y]], row_prev, col_prev)))
                                         curr_pts = scale_points(curr_pts)
@@ -872,6 +886,13 @@ def compute_remapping(study, settings, data_dir):
                         target_weights = np.array(list(map(lambda x, y: curr_ratemap[x,y], row_curr, col_curr)))
                         source_weights = source_weights / np.sum(source_weights)
                         target_weights = target_weights / np.sum(target_weights)
+
+                        prev_height_bucket_midpoints = (prev_height_bucket_midpoints - np.min(prev_height_bucket_midpoints)) / (np.max(prev_height_bucket_midpoints) - np.min(prev_height_bucket_midpoints))
+                        prev_width_bucket_midpoints = (prev_width_bucket_midpoints - np.min(prev_width_bucket_midpoints)) / (np.max(prev_width_bucket_midpoints) - np.min(prev_width_bucket_midpoints))
+                        curr_height_bucket_midpoints = (curr_height_bucket_midpoints - np.min(curr_height_bucket_midpoints)) / (np.max(curr_height_bucket_midpoints) - np.min(curr_height_bucket_midpoints))
+                        curr_width_bucket_midpoints = (curr_width_bucket_midpoints - np.min(curr_width_bucket_midpoints)) / (np.max(curr_width_bucket_midpoints) - np.min(curr_width_bucket_midpoints))
+                        
+                        
                         coord_buckets_curr = np.array(list(map(lambda x, y: [curr_height_bucket_midpoints[x],curr_width_bucket_midpoints[y]], row_curr, col_curr)))
                         coord_buckets_prev = np.array(list(map(lambda x, y: [prev_height_bucket_midpoints[x],prev_width_bucket_midpoints[y]], row_prev, col_prev)))
 
@@ -891,8 +912,6 @@ def compute_remapping(study, settings, data_dir):
                             sd_quantile = wasserstein_quantile(spike_dens_wass, null_spike_dens_wass)
                         
                         if 'whole' in settings['rate_scores']:
-                            coord_buckets_curr = scale_points(coord_buckets_curr)
-                            coord_buckets_prev = scale_points(coord_buckets_prev)
                             # assert has been scaled
                             assert np.max(coord_buckets_curr) <= 1 and np.min(coord_buckets_curr) >= 0, 'coord buckets curr not scaled'
                             assert np.max(coord_buckets_prev) <= 1 and np.min(coord_buckets_prev) >= 0, 'coord buckets prev not scaled'
