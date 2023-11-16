@@ -1204,8 +1204,8 @@ def compute_remapping(study, settings, data_dir):
                         prev_duration = prev_spatial_spike_train.session_metadata.session_object.get_spike_data()['spike_cluster'].duration
                         curr_duration = curr_spatial_spike_train.session_metadata.session_object.get_spike_data()['spike_cluster'].duration
 
-                        curr_fr_rate = len(curr_spike_times) / prev_duration
-                        prev_fr_rate = len(prev_spike_times) / curr_duration
+                        curr_fr_rate = len(curr_spike_times) / curr_duration
+                        prev_fr_rate = len(prev_spike_times) / prev_duration
                         fr_rate_ratio = curr_fr_rate / prev_fr_rate
                         fr_rate_change = curr_fr_rate - prev_fr_rate
 
