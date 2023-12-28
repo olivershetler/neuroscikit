@@ -12,8 +12,8 @@ import pandas as pd
 
 def _check_angle(angle):
     valid_angles = ['0','90','180','270','NO','noobject','no','zero', 'NO2', 'no2', '0_2','0_1','90_2','90_1','180_2',
-                    '180_1','270_2','270_1', 'NO_1', 'NO_2','position0', 'position90', 'position180', 'position270', '0banana']
-    conv_angles = {'noobject': 'NO','no': 'NO','zero': '0', 'NO2': 'NO', 'no2': 'NO', 
+                    '180_1','270_2','270_1', 'NO_1', 'NO_2','position0', 'position90', 'position180', 'position270', '0banana', 'NOobject']
+    conv_angles = {'noobject': 'NO','no': 'NO','zero': '0', 'NO2': 'NO', 'no2': 'NO', 'NOobject': 'NO',
                    'position0': '0', 'position90': '90', 'position180': '180', 'position270': '270',
                    '0banana': '0', 
                    '0_2': '0', '0_1': '0', '90_2': '90', '90_1': '90', '180_2': '180', '180_1': '180', '270_2': '270', '270_1': '270', 'NO_1': 'NO', 'NO_2': 'NO'}
