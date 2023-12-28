@@ -232,7 +232,7 @@ def _gkern(kernlen: int, std: int) -> np.ndarray:
     gkern2d = np.outer(gkern1d, gkern1d)
     return gkern2d
 
-def _temp_occupancy_map(position: Position2D, smoothing_factor, interp_size=(64,64)) -> np.ndarray:
+def _temp_occupancy_map(position: Position2D, smoothing_factor, interp_size=(64,64), useMinMaxPos=False) -> np.ndarray:
 
     '''
         Computes the position, or occupancy map, which is a 2D numpy array
@@ -259,12 +259,22 @@ def _temp_occupancy_map(position: Position2D, smoothing_factor, interp_size=(64,
     else:
         arena_size = position.arena_size
 
-    min_x = min(pos_x)
-    max_x = max(pos_x)
-    min_y = min(pos_y)
-    max_y = max(pos_y)
+    if useMinMaxPos:
+        min_x = min(pos_x)
+        max_x = max(pos_x)
+        min_y = min(pos_y)
+        max_y = max(pos_y)
+    else:
+        min_x = [-arena_size[1]/2]
+        max_x = [arena_size[1]/2] # width 
+        min_y = [-arena_size[0]/2]
+        max_y = [arena_size[0]/2] # height
 
-    arena_size = (abs(max_y-min_y), abs(max_x - min_x)) # (height, width)
+    # arena_size = (abs(max_y-min_y), abs(max_x - min_x)) # (height, width)
+
+    print('search here')
+    print(arena_size, min_x, max_x, min_y, max_y)
+    print(pos_x, pos_y)
 
     # Resize ratio
     # row_resize, column_resize = _compute_resize_ratio(arena_size, base_resolution=interp_size[0])
@@ -326,12 +336,16 @@ def _temp_spike_map(pos_x: np.ndarray, pos_y: np.ndarray, pos_t: np.ndarray,
 
 
     # Min and max dimensions of arena for scaling
-    min_x = min(pos_x)
-    max_x = max(pos_x)
-    min_y = min(pos_y)
-    max_y = max(pos_y)
+    # min_x = min(pos_x)
+    # max_x = max(pos_x)
+    # min_y = min(pos_y)
+    # max_y = max(pos_y)
+    min_x = 0
+    max_x = arena_size[1] # width 
+    min_y = 0
+    max_y = arena_size[0] # height
 
-    arena_size = (abs(max_y - min_y), abs(max_x - min_x)) # (height, width)
+    # arena_size = (abs(max_y - min_y), abs(max_x - min_x)) # (height, width)
 
     # Resize ratio
     # row_resize, column_resize = _compute_resize_ratio(arena_size, base_resolution=interp_size[0])
@@ -367,14 +381,29 @@ def _temp_spike_map(pos_x: np.ndarray, pos_y: np.ndarray, pos_t: np.ndarray,
 
     return spike_map_smooth, spike_map_raw
    
-def _temp_spike_map_new(pos_x, pos_y, pos_t, arena_size, spike_x, spike_y, smoothing_factor, interp_size=(64, 64)):
+def _temp_spike_map_new(pos_x, pos_y, pos_t, arena_size, spike_x, spike_y, smoothing_factor, interp_size=(64, 64), useMinMaxPos=False):
     kernlen = int(smoothing_factor * 8)
     std = int(0.2 * kernlen)
-    min_x, max_x = np.min(pos_x), np.max(pos_x)
-    min_y, max_y = np.min(pos_y), np.max(pos_y)
-    arena_height = abs(max_y - min_y)
-    arena_width = abs(max_x - min_x)
-    arena_size = (abs(max_y - min_y), abs(max_x - min_x)) # (height, width)
+
+    if useMinMaxPos:
+        min_x, max_x = np.min(pos_x), np.max(pos_x)
+        min_y, max_y = np.min(pos_y), np.max(pos_y)
+        # arena_height = abs(max_y - min_y)
+        # arena_width = abs(max_x - min_x)
+        # arena_size = (abs(max_y - min_y), abs(max_x - min_x)) # (height, width)
+    else:
+        min_x = [-arena_size[1]/2]
+        max_x = [arena_size[1]/2] # width 
+        min_y = [-arena_size[0]/2]
+        max_y = [arena_size[0]/2] # height
+    # print('search here')
+    # print(arena_height, arena_width)
+    # print(arena_size, min_x, max_x, min_y, max_y)
+    # print('a')
+    # print(pos_x, pos_y)
+    # stop()
+
+
     row_resize, column_resize = interp_size
     spike_map_raw = np.zeros((row_resize, column_resize))
     row_values = np.linspace(max_x, min_x, row_resize)

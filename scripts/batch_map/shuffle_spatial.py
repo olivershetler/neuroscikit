@@ -203,19 +203,23 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None, sum_sheet_count=N
                 # Create save_folder
                 save_path = os.path.join(root_path, 'session_' + signature) 
 
-                if not os.path.isdir(save_path):
-                    os.mkdir(save_path)
+                # if not os.path.isdir(save_path):
+                #     os.mkdir(save_path)
+
+                pt = os.path.join(root_path,'shuffled_dist_plots')
+                if not os.path.isdir(pt):
+                    os.mkdir(pt)
 
                 directory = 'Tetrode_' + tet_file[-1]
 
-                # Building save directories for tetrodes
-                tetrode_directory_paths = dict()
-                # for directory in tetrode_directories:
-                path = os.path.join(save_path, directory)
+                # # Building save directories for tetrodes
+                # tetrode_directory_paths = dict()
+                # # for directory in tetrode_directories:
+                # path = os.path.join(save_path, directory)
 
-                if not os.path.isdir(path):
-                    os.mkdir(path)
-                tetrode_directory_paths[directory] = path
+                # if not os.path.isdir(path):
+                #     os.mkdir(path)
+                # tetrode_directory_paths[directory] = path
 
                 # # CREATING EXCEL SHEET FOR STATISTIC SCORES
                 # wb = animal_workbooks[animal_id]
@@ -323,10 +327,19 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None, sum_sheet_count=N
                     current_statistics_sheet[headers_dict['shuffled_coherence_mean'] + str(excel_cell_index+1)] = np.mean(shuffled_coherence)
                     current_statistics_sheet[headers_dict['shuffled_coherence_std'] + str(excel_cell_index+1)] = np.std(shuffled_coherence)
 
-                    p_value_information = (np.sum(shuffled_information_content >= spatial_information_content)) / (len(shuffled_information_content))
-                    p_value_sparsity = (np.sum(shuffled_sparsity >= ratemap_stats_dict['sparsity'])) / (len(shuffled_sparsity))
-                    p_value_selectivity = (np.sum(shuffled_selectivity >= ratemap_stats_dict['selectivity'])) / (len(shuffled_selectivity))
-                    p_value_coherence = (np.sum(shuffled_coherence >= coherence)) / (len(shuffled_coherence))
+                    p_value_information = (np.sum(shuffled_information_content < spatial_information_content)) / (len(shuffled_information_content))
+                    p_value_sparsity = (np.sum(shuffled_sparsity > ratemap_stats_dict['sparsity'])) / (len(shuffled_sparsity))
+                    p_value_selectivity = (np.sum(shuffled_selectivity < ratemap_stats_dict['selectivity'])) / (len(shuffled_selectivity))
+                    p_value_coherence = (np.sum(shuffled_coherence < coherence)) / (len(shuffled_coherence))
+
+
+                    dists = [shuffled_information_content, shuffled_sparsity, shuffled_selectivity, shuffled_coherence]
+                    quants = [spatial_information_content, ratemap_stats_dict['sparsity'], ratemap_stats_dict['selectivity'], coherence]
+                    order = ['Information','Sparsity','Selectivity','Coherence']
+                    file_end = str(animal_id) + '_' + str(date) + '_' + str(session_key) + str(tet_file[-1]) + str(cell.cluster.cluster_label) + '.png'
+
+                    plot_shuffled_dist(root_path, dists, quants, order, file_end)
+
 
                     current_statistics_sheet[headers_dict['p_value_information'] + str(excel_cell_index+1)] = p_value_information
                     current_statistics_sheet[headers_dict['p_value_sparsity'] + str(excel_cell_index+1)] = p_value_sparsity
@@ -336,7 +349,7 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None, sum_sheet_count=N
                     sptimes = spatial_spike_train.spike_times
                     t_stop = max(sptimes)
                     t_start = min(sptimes)
-                    offset_lim = 20
+                    offset_lim = 20/60
                     if offset_lim >= 0.5 * (t_stop - t_start):
                         offset_lim = int(0.5 * (t_stop - t_start))
                         if offset_lim == 0.5 * (t_stop - t_start):
@@ -377,6 +390,42 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None, sum_sheet_count=N
 
     if settings_dict['saveMethod'] == 'one_for_parent':
         _save_wb(wb, root_path, sum_sheet_count=sum_sheet_count)
+
+
+def plot_shuffled_dist(root_path, dists, quants, order, file_end):
+    fig = plt.figure(figsize=(12,6))
+
+    c = 0 
+    for i in [1,3,5,7]:
+        ax = plt.subplot(4,2,i)
+        out = ax.hist(dists[c], bins=100, color='grey')
+        ax.vlines(quants[c],0,np.max(out[0]), color='r')
+        ax.set_xlabel(order[c])
+        ax.set_ylabel('Count')
+        ax.set_title('Non-log')
+        
+
+        ax_log = plt.subplot(4,2,i+1)
+        try:
+            out = ax_log.hist(np.log(dists[c]), bins=100, color='k')
+            ax_log.vlines(np.log(quants[c]),0,np.max(out[0]), color='r')
+        except:
+            pass
+        ax_log.set_xlabel(order[c])
+        ax_log.set_ylabel('Count')
+        ax_log.set_title('Post log')
+
+        c += 1
+
+    fig.tight_layout()
+
+    pth = root_path + '/shuffled_dist_plots/' + str(file_end)
+
+    fig.savefig(pth)
+
+    plt.close()
+
+
 
 def _save_wb(wb, root_path, animal_id=None, sum_sheet_count=None):
     wb._sheets = sorted(wb._sheets, key=lambda x: x.title)
@@ -488,33 +537,33 @@ if __name__ == '__main__':
     # study.make_animals()
     # batch_map(study, settings, data_dir)
 
-    # """ OPTION 2 """
-    # """ RUNS EACH SUBFOLDER ONE AT A TIME """
-    # subdirs = np.sort([ f.path for f in os.scandir(data_dir) if f.is_dir() ])
-    # count = 1
-    # for subdir in subdirs:
-    #     try:
-    #         study = make_study(subdir,settings_dict=settings)
-    #         study.make_animals()
-    #         batch_map(study, settings, subdir, sum_sheet_count=count)
-    #         count += 1
-    #     except Exception:
-    #         print(traceback.format_exc())
-    #         print('DID NOT WORK FOR DIRECTORY ' + str(subdir))
-
-    """ OPTION 3 """
+    """ OPTION 2 """
     """ RUNS EACH SUBFOLDER ONE AT A TIME """
     subdirs = np.sort([ f.path for f in os.scandir(data_dir) if f.is_dir() ])
     count = 1
     for subdir in subdirs:
-        subdir = str(subdir)
-        subdirs2 = np.sort([ f.path for f in os.scandir(subdir) if f.is_dir() ])
-        for subdir2 in subdirs2:
-            try:
-                study = make_study(subdir2,settings_dict=settings)
-                study.make_animals()
-                batch_map(study, settings, subdir2, sum_sheet_count=count)
-                count += 1
-            except Exception:
-                print(traceback.format_exc())
-                print('DID NOT WORK FOR DIRECTORY ' + str(subdir2))
+        try:
+            study = make_study(subdir,settings_dict=settings)
+            study.make_animals()
+            batch_map(study, settings, subdir, sum_sheet_count=count)
+            count += 1
+        except Exception:
+            print(traceback.format_exc())
+            print('DID NOT WORK FOR DIRECTORY ' + str(subdir))
+
+    # """ OPTION 3 """
+    # """ RUNS EACH SUBFOLDER ONE AT A TIME """
+    # subdirs = np.sort([ f.path for f in os.scandir(data_dir) if f.is_dir() ])
+    # count = 1
+    # for subdir in subdirs:
+    #     subdir = str(subdir)
+    #     subdirs2 = np.sort([ f.path for f in os.scandir(subdir) if f.is_dir() ])
+    #     for subdir2 in subdirs2:
+    #         try:
+    #             study = make_study(subdir2,settings_dict=settings)
+    #             study.make_animals()
+    #             batch_map(study, settings, subdir2, sum_sheet_count=count)
+    #             count += 1
+    #         except Exception:
+    #             print(traceback.format_exc())
+    #             print('DID NOT WORK FOR DIRECTORY ' + str(subdir2))

@@ -21,10 +21,12 @@ def _get_ratemap_bucket_midpoints(arena_size, y, x):
     """
     arena_height, arena_width = arena_size
 
-    if len(arena_height) > 0:
-        arena_height = arena_height[0]
-    if len(arena_width) > 0:
-        arena_width = arena_width[0]
+    if isinstance(arena_height, list):
+        if len(arena_height) > 0:
+            arena_height = arena_height[0]
+    if isinstance(arena_width, list):
+        if len(arena_width) > 0:
+            arena_width = arena_width[0]
 
     # this is the step size between each bucket, so 0 to height step is first bucket, height_step to height_step*2 is next and so one
     height_step = arena_height/x

@@ -262,7 +262,7 @@ def _get_position(pos_fpath, ppm=None, method='', flip_y=True):
     return x.reshape((len(x), 1)), y.reshape((len(y), 1)), t.reshape((len(t), 1)), sample_rate, ppm
 
 
-def grab_position_data(pos_path: str, ppm=None) -> tuple:
+def grab_position_data(pos_path: str, ppm=None, override_arena_size=None) -> tuple:
 
     '''
         Extracts position data from .pos file
@@ -330,5 +330,10 @@ def grab_position_data(pos_path: str, ppm=None) -> tuple:
 
     pos_x_width = max(pos_x) - min(pos_x)
     pos_y_width = max(pos_y) - min(pos_y)
+
+    if override_arena_size is not None:
+        # override_arena_size is (height, width)
+        pos_x_width = override_arena_size[1] # width
+        pos_y_width = override_arena_size[0] # height
 
     return {"t": pos_t, "x": pos_x, "y": pos_y, "arena_width":pos_x_width, "arena_height":pos_y_width, "sample_rate":pos_data[3], "ppm":file_ppm}
