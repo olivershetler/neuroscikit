@@ -72,6 +72,18 @@ def _downsample(img, downsample_factor):
 
 def compute_remapping(study, settings, data_dir):
 
+    stack_dict = {}
+    stack_dict['control'] = {}
+    stack_dict['app_ki'] = {}
+    stack_dict['control']['session_1'] = []
+    stack_dict['control']['session_2'] = []
+    stack_dict['control']['session_3'] = []
+    stack_dict['control']['session_4'] = []
+    stack_dict['app_ki']['session_1'] = []
+    stack_dict['app_ki']['session_2'] = []
+    stack_dict['app_ki']['session_3'] = []
+    stack_dict['app_ki']['session_4'] = []
+
     # c = 0
     isStart = True
     context_paths = {}
@@ -178,16 +190,18 @@ def compute_remapping(study, settings, data_dir):
                                     source_weights = source_weights / np.sum(source_weights)
                                     target_weights = target_weights / np.sum(target_weights)
                                     
-                                    prev_height_bucket_midpoints = (prev_height_bucket_midpoints - np.min(prev_height_bucket_midpoints)) / (np.max(prev_height_bucket_midpoints) - np.min(prev_height_bucket_midpoints))
-                                    prev_width_bucket_midpoints = (prev_width_bucket_midpoints - np.min(prev_width_bucket_midpoints)) / (np.max(prev_width_bucket_midpoints) - np.min(prev_width_bucket_midpoints))
-                                    curr_height_bucket_midpoints = (curr_height_bucket_midpoints - np.min(curr_height_bucket_midpoints)) / (np.max(curr_height_bucket_midpoints) - np.min(curr_height_bucket_midpoints))
-                                    curr_width_bucket_midpoints = (curr_width_bucket_midpoints - np.min(curr_width_bucket_midpoints)) / (np.max(curr_width_bucket_midpoints) - np.min(curr_width_bucket_midpoints))
+                                    if settings['normalizePos']:
+                                        prev_height_bucket_midpoints = (prev_height_bucket_midpoints - np.min(prev_height_bucket_midpoints)) / (np.max(prev_height_bucket_midpoints) - np.min(prev_height_bucket_midpoints))
+                                        prev_width_bucket_midpoints = (prev_width_bucket_midpoints - np.min(prev_width_bucket_midpoints)) / (np.max(prev_width_bucket_midpoints) - np.min(prev_width_bucket_midpoints))
+                                        curr_height_bucket_midpoints = (curr_height_bucket_midpoints - np.min(curr_height_bucket_midpoints)) / (np.max(curr_height_bucket_midpoints) - np.min(curr_height_bucket_midpoints))
+                                        curr_width_bucket_midpoints = (curr_width_bucket_midpoints - np.min(curr_width_bucket_midpoints)) / (np.max(curr_width_bucket_midpoints) - np.min(curr_width_bucket_midpoints))
                         
-                        
+
                                     coord_buckets_curr = np.array(list(map(lambda x, y: [curr_height_bucket_midpoints[x],curr_width_bucket_midpoints[y]], row_curr, col_curr)))
                                     coord_buckets_prev = np.array(list(map(lambda x, y: [prev_height_bucket_midpoints[x],prev_width_bucket_midpoints[y]], row_prev, col_prev)))
-                                    curr_pts = scale_points(curr_pts)
-                                    prev_pts = scale_points(prev_pts)
+                                    if settings['normalizePos']:
+                                        curr_pts = scale_points(curr_pts)
+                                        prev_pts = scale_points(prev_pts)
                                     spike_dens_wass = pot_sliced_wasserstein(prev_pts, curr_pts, n_projections=settings['n_projections'])
                                     animal_ref_dist[animal_id][ses_comp]['ref_spike_density'].append(spike_dens_wass)
                                     # coord_buckets_curr = scale_points(coord_buckets_curr)
@@ -197,11 +211,21 @@ def compute_remapping(study, settings, data_dir):
                                     animal_ref_dist[animal_id][ses_comp]['ref_weights'].append([source_weights, target_weights])
 
                                 if settings['runTemporal']:
-                                    prev_spike_times = prev_spatial_spike_train.spike_times
-                                    curr_spike_times = curr_spatial_spike_train.spike_times
-                                    prev_spike_times = (prev_spike_times - prev_spike_times[0]) / (prev_spike_times[-1] - prev_spike_times[0])
-                                    curr_spike_times = (curr_spike_times - curr_spike_times[0]) / (curr_spike_times[-1] - curr_spike_times[0])
-                                    observed_emd = compute_emd(prev_spike_times, curr_spike_times, settings['temporal_bin_size'])
+                                    prev_spike_times = np.array(prev_spatial_spike_train.spike_times, dtype=np.float32)
+                                    curr_spike_times = np.array(curr_spatial_spike_train.spike_times, dtype=np.float32)
+                                    # prev_spike_times = (prev_spike_times - prev_spike_times[0]) / (prev_spike_times[-1] - prev_spike_times[0])
+                                    # curr_spike_times = (curr_spike_times - curr_spike_times[0]) / (curr_spike_times[-1] - curr_spike_times[0])
+
+                                    print(np.min(prev_spike_times), np.max(prev_spike_times))
+                                    print(np.min(curr_spike_times), np.max(curr_spike_times))
+
+                                    if settings['normalizeTime']:
+                                        prev_spike_times = (prev_spike_times - np.min(prev_spike_times)) / (np.max(prev_spike_times) - np.min(prev_spike_times))
+                                        curr_spike_times = (curr_spike_times - np.min(curr_spike_times)) / (np.max(curr_spike_times) - np.min(curr_spike_times))
+                                    print(np.min(prev_spike_times), np.max(prev_spike_times))
+                                    print(np.min(curr_spike_times), np.max(curr_spike_times))
+                                    observed_emd = compute_emd(prev_spike_times, curr_spike_times, settings['temporal_bin_size'], settings['end_time'])
+                                    print("OBSERVED EMD " + str(observed_emd))
                                     animal_ref_dist[animal_id][ses_comp]['ref_temporal'].append(observed_emd)
                                 
                                 prev_duration = prev_spatial_spike_train.session_metadata.session_object.get_spike_data()['spike_cluster'].duration
@@ -273,8 +297,10 @@ def compute_remapping(study, settings, data_dir):
                                         
                                         coord_buckets_curr = np.array(list(map(lambda x, y: [curr_height_bucket_midpoints[x],curr_width_bucket_midpoints[y]], row_curr, col_curr)))
                                         coord_buckets_prev = np.array(list(map(lambda x, y: [prev_height_bucket_midpoints[x],prev_width_bucket_midpoints[y]], row_prev, col_prev)))
-                                        curr_pts = scale_points(curr_pts)
-                                        prev_pts = scale_points(prev_pts)
+                                        
+                                        if settings['normalizePos']:
+                                            curr_pts = scale_points(curr_pts)
+                                            prev_pts = scale_points(prev_pts)
                                         spike_dens_wass = pot_sliced_wasserstein(prev_pts, curr_pts, n_projections=settings['n_projections'])
                                         animal_ref_dist[animal_id][ses_comp]['ref_spike_density'].append(spike_dens_wass)
                                         wass = pot_sliced_wasserstein(coord_buckets_prev, coord_buckets_curr, source_weights, target_weights, n_projections=settings['n_projections'])
@@ -283,7 +309,7 @@ def compute_remapping(study, settings, data_dir):
                                     if settings['runUniqueOnlyTemporal']:
                                         prev_spike_times = prev_spatial_spike_train.spike_times
                                         curr_spike_times = curr_spatial_spike_train.spike_times
-                                        observed_emd = compute_emd(prev_spike_times, curr_spike_times, settings['temporal_bin_size'])
+                                        observed_emd = compute_emd(prev_spike_times, curr_spike_times, settings['temporal_bin_size'], settings['end_time'])
                                         animal_ref_dist[animal_id][ses_comp]['ref_temporal'].append(observed_emd)
                                         prev_duration = prev_spatial_spike_train.session_metadata.session_object.get_spike_data()['spike_cluster'].duration
                                         curr_duration = curr_spatial_spike_train.session_metadata.session_object.get_spike_data()['spike_cluster'].duration
@@ -442,6 +468,25 @@ def compute_remapping(study, settings, data_dir):
                     curr_key = seskey
                     curr_path = ses.session_metadata.file_paths['tet'].split('/')[-1].split('.')[0]
                     curr_id = str(animal.animal_id) + '_' + str(seskey) + '_' + str(cell.cluster.cluster_label)
+
+                    # # REMOVE
+                    # app = ['1-13','1-14','1a-27', '1-30', '1-35', '1a-37']
+                    # control = ['1-20','1-24','1-25', '1-28', '1-34', '1a23-S30-31', '1a-40']
+
+                    # aiduse = str(animal.animal_id)
+                    # aiduse = aiduse.split('_tet')[0].replace('_','-')
+                    # if aiduse in control:
+                    #     control_or_app = 'control'
+                    # else:
+                    #     assert aiduse in app, 'Animal id not in app ' + aiduse
+                    #     control_or_app = 'app_ki'
+                    # cts, _ = np.histogram(cell.event_times, bins=np.arange(0,1205,1))
+                    # binned_times = cts / np.mean(cts)
+                    # if len(stack_dict[control_or_app][seskey]) == 0:
+                    #     stack_dict[control_or_app][seskey] = binned_times
+                    # else:
+                    #     stack_dict[control_or_app][seskey] = np.vstack((stack_dict[control_or_app][seskey], binned_times))
+                    # # REMOVE
 
                     y, x = curr.shape
                     h, w = rate_map_obj.arena_size
@@ -887,10 +932,11 @@ def compute_remapping(study, settings, data_dir):
                         source_weights = source_weights / np.sum(source_weights)
                         target_weights = target_weights / np.sum(target_weights)
 
-                        prev_height_bucket_midpoints = (prev_height_bucket_midpoints - np.min(prev_height_bucket_midpoints)) / (np.max(prev_height_bucket_midpoints) - np.min(prev_height_bucket_midpoints))
-                        prev_width_bucket_midpoints = (prev_width_bucket_midpoints - np.min(prev_width_bucket_midpoints)) / (np.max(prev_width_bucket_midpoints) - np.min(prev_width_bucket_midpoints))
-                        curr_height_bucket_midpoints = (curr_height_bucket_midpoints - np.min(curr_height_bucket_midpoints)) / (np.max(curr_height_bucket_midpoints) - np.min(curr_height_bucket_midpoints))
-                        curr_width_bucket_midpoints = (curr_width_bucket_midpoints - np.min(curr_width_bucket_midpoints)) / (np.max(curr_width_bucket_midpoints) - np.min(curr_width_bucket_midpoints))
+                        if settings['normalizePos']:
+                            prev_height_bucket_midpoints = (prev_height_bucket_midpoints - np.min(prev_height_bucket_midpoints)) / (np.max(prev_height_bucket_midpoints) - np.min(prev_height_bucket_midpoints))
+                            prev_width_bucket_midpoints = (prev_width_bucket_midpoints - np.min(prev_width_bucket_midpoints)) / (np.max(prev_width_bucket_midpoints) - np.min(prev_width_bucket_midpoints))
+                            curr_height_bucket_midpoints = (curr_height_bucket_midpoints - np.min(curr_height_bucket_midpoints)) / (np.max(curr_height_bucket_midpoints) - np.min(curr_height_bucket_midpoints))
+                            curr_width_bucket_midpoints = (curr_width_bucket_midpoints - np.min(curr_width_bucket_midpoints)) / (np.max(curr_width_bucket_midpoints) - np.min(curr_width_bucket_midpoints))
                         
                         
                         coord_buckets_curr = np.array(list(map(lambda x, y: [curr_height_bucket_midpoints[x],curr_width_bucket_midpoints[y]], row_curr, col_curr)))
@@ -898,8 +944,9 @@ def compute_remapping(study, settings, data_dir):
 
                         if 'spike_density' in settings['rate_scores']:
                             print('doing spike density wasserstein')
-                            curr_pts = scale_points(curr_pts)
-                            prev_pts = scale_points(prev_pts)
+                            if settings['normalizePos']:
+                                curr_pts = scale_points(curr_pts)
+                                prev_pts = scale_points(prev_pts)
                             spike_dens_wass = pot_sliced_wasserstein(prev_pts, curr_pts, n_projections=settings['n_projections'])
                             print('doing null spike density wasserstein')
                             null_spike_dens_wass = animal_ref_dist[animal_id][ses_comp]['ref_spike_density']
@@ -913,8 +960,8 @@ def compute_remapping(study, settings, data_dir):
                         
                         if 'whole' in settings['rate_scores']:
                             # assert has been scaled
-                            assert np.max(coord_buckets_curr) <= 1 and np.min(coord_buckets_curr) >= 0, 'coord buckets curr not scaled'
-                            assert np.max(coord_buckets_prev) <= 1 and np.min(coord_buckets_prev) >= 0, 'coord buckets prev not scaled'
+                            # assert np.max(coord_buckets_curr) <= 1 and np.min(coord_buckets_curr) >= 0, 'coord buckets curr not scaled'
+                            # assert np.max(coord_buckets_prev) <= 1 and np.min(coord_buckets_prev) >= 0, 'coord buckets prev not scaled'
                             print('doing whole map wasserstein')
                             wass = pot_sliced_wasserstein(coord_buckets_prev, coord_buckets_curr, source_weights, target_weights, n_projections=settings['n_projections'])
                             print('doing ref wasserstein')
@@ -1187,9 +1234,15 @@ def compute_remapping(study, settings, data_dir):
                         # observed_emd = emd(prev_spikes.squeeze(), curr_spikes.squeeze(), distance_matrix)
                         
                         # scale spike times to be between 0 and 1
-                        prev_spike_times = (prev_spike_times - prev_spike_times[0]) / (prev_spike_times[-1] - prev_spike_times[0])
-                        curr_spike_times = (curr_spike_times - curr_spike_times[0]) / (curr_spike_times[-1] - curr_spike_times[0])
-                        observed_emd = compute_emd(prev_spike_times, curr_spike_times, settings['temporal_bin_size'])
+                        # prev_spike_times = (prev_spike_times - prev_spike_times[0]) / (prev_spike_times[-1] - prev_spike_times[0])
+                        # curr_spike_times = (curr_spike_times - curr_spike_times[0]) / (curr_spike_times[-1] - curr_spike_times[0])
+                        
+                        if settings['normalizeTime']:
+                            prev_spike_times = (prev_spike_times - np.min(prev_spike_times)) / (np.max(prev_spike_times) - np.min(prev_spike_times))
+                            curr_spike_times = (curr_spike_times - np.min(curr_spike_times)) / (np.max(curr_spike_times) - np.min(curr_spike_times))
+
+                        observed_emd = compute_emd(prev_spike_times, curr_spike_times, settings['temporal_bin_size'], settings['end_time'])
+                        print("OBSERVED EMD " + str(observed_emd))
                         ref_emd_dist = animal_ref_dist[animal_id][ses_comp]['ref_temporal']
                         ref_emd_mean = np.mean(ref_emd_dist)
                         ref_emd_std = np.std(ref_emd_dist)
@@ -1405,8 +1458,9 @@ def compute_remapping(study, settings, data_dir):
                                     coord_buckets_curr = np.array(list(map(lambda x, y: [curr_height_bucket_midpoints[x],curr_width_bucket_midpoints[y]], row_curr, col_curr)))
                                     coord_buckets_prev = np.array(list(map(lambda x, y: [prev_height_bucket_midpoints[x],prev_width_bucket_midpoints[y]], row_prev, col_prev)))
 
-                                    curr_pts = scale_points(curr_pts)
-                                    prev_pts = scale_points(prev_pts)
+                                    if settings['normalizePos']:
+                                        curr_pts = scale_points(curr_pts)
+                                        prev_pts = scale_points(prev_pts)
                                     spike_dens_wass = pot_sliced_wasserstein(prev_pts, curr_pts, n_projections=settings['n_projections'])
                                         # elif rate_score == 'whole':
                                             # This is EMD on whole map for normalized/unnormalized rate remapping
@@ -1523,7 +1577,7 @@ def compute_remapping(study, settings, data_dir):
 
                 
                                     print('computing shuffled temporal emd')
-                                    observed_emd = compute_emd(prev_spike_times, curr_spike_times, settings['temporal_bin_size'])
+                                    observed_emd = compute_emd(prev_spike_times, curr_spike_times, settings['temporal_bin_size'], settings['end_time'])
                                     ref_emd_dist = animal_ref_dist[animal_id][ses_comp]['ref_temporal']
                                     emd_mean = np.mean(ref_emd_dist)
                                     emd_std = np.std(ref_emd_dist)
@@ -1774,6 +1828,16 @@ def compute_remapping(study, settings, data_dir):
             
             isStart = False
 
+    np.save(data_dir + '/control_ses1.npy', stack_dict['control']['session_1'])
+    np.save(data_dir + '/control_ses2.npy', stack_dict['control']['session_2'])
+    np.save(data_dir + '/control_ses3.npy', stack_dict['control']['session_3'])
+    np.save(data_dir + '/control_ses3.npy', stack_dict['control']['session_4'])
+
+    np.save(data_dir + '/app_ses1.npy', stack_dict['app_ki']['session_1'])
+    np.save(data_dir + '/app_ses2.npy', stack_dict['app_ki']['session_2'])
+    np.save(data_dir + '/app_ses3.npy', stack_dict['app_ki']['session_3'])
+    np.save(data_dir + '/app_ses3.npy', stack_dict['app_ki']['session_4'])
+
     # return {'regular': regular_dict, 'object': obj_dict, 'centroid': centroid_dict, 'context': dict}
 
 def wasserstein_quantile(true_distance, random_distances):
@@ -1828,7 +1892,7 @@ def scale_points(pts):
 
     return scaled_pts
 
-def compute_null_emd(spike_train_a, spike_train_b, num_iterations, bin_size):
+def compute_null_emd(spike_train_a, spike_train_b, num_iterations, bin_size, end_time):
     np.random.seed(0)
     combined_spike_train = np.concatenate([spike_train_a, spike_train_b])
     num_spikes = len(spike_train_a)
@@ -1847,16 +1911,23 @@ def compute_null_emd(spike_train_a, spike_train_b, num_iterations, bin_size):
 
     emd_values = np.empty(num_iterations)
     for i in range(num_iterations):
-        emd_values[i] = compute_emd(shuffled_spike_train_a[i], shuffled_spike_train_b[i], bin_size)
+        emd_values[i] = compute_emd(shuffled_spike_train_a[i], shuffled_spike_train_b[i], bin_size, end_time)
 
     return emd_values
 
-def compute_emd(spike_train_a, spike_train_b, bin_size):
+def compute_emd(spike_train_a, spike_train_b, bin_size, end_time=None):
     # Determine the start and end times for aligning the spike trains
-    start_time = np.min([np.min(spike_train_a), np.min(spike_train_b)])
-    end_time = np.max([np.max(spike_train_a), np.max(spike_train_b)])
+    if end_time is not None:
+        start_time = 0
+        mx = np.max([np.max(spike_train_a), np.max(spike_train_b)])
+        assert mx <= end_time, 'Max spike time {} greater than recording session length {}'.format(str(mx), str(end_time))
+    else:
+        start_time = np.min([np.min(spike_train_a), np.min(spike_train_b)])
+        end_time = np.max([np.max(spike_train_a), np.max(spike_train_b)])
 
-    bins = np.arange(start_time, end_time + 1, bin_size)
+    # bins = np.arange(start_time, end_time + 1, bin_size)
+    bins = np.arange(start_time, end_time + bin_size, bin_size)
+
     # Create aligned spike trains
     aligned_a, _ = np.histogram(spike_train_a, bins=bins)
     aligned_b, _ = np.histogram(spike_train_b, bins=bins)
