@@ -9,38 +9,80 @@ PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
 
 from _prototypes.cell_remapping.src.backend import get_backend, NumpyBackend
-from _prototypes.cell_remapping.src.utils import list_to_array
+from _prototypes.cell_remapping.src.utils import list_to_array, _get_ratemap_bucket_midpoints
 from _prototypes.cell_remapping.src.masks import flat_disk_mask
 
 
-def _get_ratemap_bucket_midpoints(arena_size, y, x):
-    """
-    Helper function to create array of height and width bucket midpoints
-    
-    Takes in arena dimensions (tuple) and y and x (64,64) dims of ratemap
-    """
-    arena_height, arena_width = arena_size
 
-    if isinstance(arena_height, list):
-        if len(arena_height) > 0:
-            arena_height = arena_height[0]
-    if isinstance(arena_width, list):
-        if len(arena_width) > 0:
-            arena_width = arena_width[0]
 
-    # this is the step size between each bucket, so 0 to height step is first bucket, height_step to height_step*2 is next and so one
-    height_step = arena_height/x
-    width_step = arena_width/y
+# move to stats or stats_utils
+def compute_null_spike_density(prev_pts, curr_pts, num_iterations, n_projections):
+    np.random.seed(0)
+    combined_spike_train = np.concatenate([prev_pts, curr_pts])
+    num_spikes = len(prev_pts)
+    num_total_spikes = len(combined_spike_train)
 
-    # convert height/width to arrayswith 64 bins, this gets us our buckets
-    height = np.arange(0,arena_height, height_step)
-    width = np.arange(0,arena_width, width_step)
+    # Repeat the combined spike train for the desired number of iterations
+    repeated_spike_train = np.tile(combined_spike_train, (num_iterations, 1, 1))
 
-    # because they are buckets, i figured I will use the midpoint of the pocket when computing euclidean distances
-    height_bucket_midpoints = height + height_step/2
-    width_bucket_midpoints = width + width_step/2
+    for i in range(num_iterations):
+        # Shuffle the spike trains along the second axis (columns)
+        np.random.shuffle(repeated_spike_train[i])
 
-    return height_bucket_midpoints, width_bucket_midpoints
+    # Extract the shuffled spike trains for A and B
+    shuffled_prev = repeated_spike_train[:, :num_spikes]
+    shuffled_curr = repeated_spike_train[:, num_spikes:num_total_spikes]
+
+    emd_values = np.empty(num_iterations)
+    for i in range(num_iterations):
+        emd_values[i] = pot_sliced_wasserstein(shuffled_prev[i], shuffled_curr[i], n_projections=n_projections)
+
+    return emd_values
+
+# same as above
+def compute_null_emd(spike_train_a, spike_train_b, num_iterations, bin_size):
+    np.random.seed(0)
+    combined_spike_train = np.concatenate([spike_train_a, spike_train_b])
+    num_spikes = len(spike_train_a)
+    num_total_spikes = len(combined_spike_train)
+
+    # Repeat the combined spike train for the desired number of iterations
+    repeated_spike_train = np.tile(combined_spike_train, (num_iterations, 1))
+
+    for i in range(100):
+        # Shuffle the spike trains along the second axis (columns)
+        np.apply_along_axis(np.random.shuffle, axis=1, arr=repeated_spike_train)
+
+    # Extract the shuffled spike trains for A and B
+    shuffled_spike_train_a = repeated_spike_train[:, :num_spikes]
+    shuffled_spike_train_b = repeated_spike_train[:, num_spikes:num_total_spikes]
+
+    emd_values = np.empty(num_iterations)
+    for i in range(num_iterations):
+        emd_values[i] = compute_temporal_emd(shuffled_spike_train_a[i], shuffled_spike_train_b[i], bin_size)
+
+    return emd_values
+
+
+# change to temporal emd and move to wasserstein_distance
+def compute_temporal_emd(spike_train_a, spike_train_b, bin_size):
+    # Determine the start and end times for aligning the spike trains
+    start_time = np.min([np.min(spike_train_a), np.min(spike_train_b)])
+    end_time = np.max([np.max(spike_train_a), np.max(spike_train_b)])
+
+    bins = np.arange(start_time, end_time + 1, bin_size)
+    # Create aligned spike trains
+    aligned_a, _ = np.histogram(spike_train_a, bins=bins)
+    aligned_b, _ = np.histogram(spike_train_b, bins=bins)
+
+    # Compute the cumulative distribution functions (CDFs)
+    cdf_a = np.cumsum(aligned_a) / len(spike_train_a)
+    cdf_b = np.cumsum(aligned_b) / len(spike_train_b)
+
+    # Compute the EMD by integrating the absolute difference between CDFs
+    emd = np.sum(np.abs(cdf_a - cdf_b))
+
+    return emd
 
 
 def compute_centroid_remapping(label_t, label_s, spatial_spike_train_t, spatial_spike_train_s, centroids_t, centroids_s, settings, cylinder=False):
