@@ -16,6 +16,7 @@ GLOBAL SETTINGS
 """
 # settings_dict['single_tet'] = 7
 settings_dict['session']['channel_count'] = 4
+settings_dict['arena_size'] = None
 settings_dict['ppm'] = None # EDIT HERE (will auto read from file if None, otherwise will override with this value)
 settings_dict['smoothing_factor'] = 3 # EDIT HERE (for plotting)
 settings_dict['speed_lowerbound'] = 0
@@ -29,6 +30,8 @@ settings_dict['type'] = 'object' # EDIT HERE # Currently only 'object' is suppor
 settings_dict['ratemap_dims'] = (32,32) # EDIT HERE (16,16) is default, (32,32) is slower but more accurate,
 settings_dict['disk_arena'] = True # EDIT HERE. IF TRUE WILL FORCE DISK. IF FALSE WILL CHECK FILE NAME TO SEE IF TRUE OR NOT
 settings_dict['normalizeRate'] = True # EDIT HERE --> NORMALIZED FOR ALL CASES 
+settings_dict['normalizePos'] = False
+settings_dict['normalizeTime'] = False
 settings_dict['naming_type'] = 'LEC' # EDIT HERE --> 'MEC' or 'LEC' or 'LC'
 settings_dict['rotate_evening'] = False
 settings_dict['rotate_angle'] = 90
@@ -43,19 +46,19 @@ settings_dict['rotate_angle'] = 90
 IF YOU ARE DOING REGULAR REMAPPING
 """
 
-settings_dict['runRegular'] = False # EDIT HERE
-settings_dict['plotRegular'] = False # EDIT HERE
+settings_dict['runRegular'] = True # EDIT HERE
+settings_dict['plotRegular'] = True # EDIT HERE
 settings_dict['rate_scores'] = ['whole','spike_density']
 # ['whole', 'spike_density']
 settings_dict['n_repeats'] = 1000 # EDIT HERE 
-settings_dict['plotShuffled'] = False # EDIT HERE
-settings_dict['plotMatchedWaveforms'] = False # EDIT HERE
+settings_dict['plotShuffled'] = True # EDIT HERE
+settings_dict['plotMatchedWaveforms'] = True # EDIT HERE
 
 """ 
 IF YOU ARE DOING OBJECT REMAPPING
 """
 
-settings_dict['hasObject'] = True # EDIT HERE
+settings_dict['hasObject'] = False # EDIT HERE
 settings_dict['plotObject'] = True # EDIT HERE
 settings_dict['object_scores'] = ['whole', 'field', 'binary', 'centroid', 'spike_density']
 # settings_dict['grid_sample_threshold'] = 3.2 # EDIT HERE, euclidean distance
@@ -89,9 +92,10 @@ session_comp_categories = {'morning': [1,3], 'afternoon': [2,4]} # EDIT HERE
 IF YOU ARE DOING TEMPORAL REMAPPING
 """
 
-settings_dict['runTemporal'] = False # EDIT HERE
+settings_dict['runTemporal'] = True # EDIT HERE
 settings_dict['n_temporal_shuffles'] = 1000 # EDIT HERE
 settings_dict['temporal_bin_size'] = 10
+settings_dict['end_time'] = None
 
 ##############################################################################################################################################################################
 # NO NEED TO EDIT BELOW # 
@@ -111,7 +115,7 @@ temporal_keys = ['signature','depth', 'name', 'date', 'tetrode','unit_id', 'sess
             'fr', 'fr_ratio', 'fr_change', 'fr_ratio_z', 'fr_ratio_q', 'fr_ratio_mean', 'fr_ratio_std',
             'fr_change_z', 'fr_change_q', 'fr_change_mean', 'fr_change_std','spike_count',
             'n_repeats',
-            'arena_size']
+            'arena_size', 'temporal_bin_size']
 
 keys = ['signature','depth', 'name', 'date', 'tetrode','unit_id', 'session_ids', 
         'whole_wass','z_score', 'base_mean', 'base_std', 'mod_z_score', 'median', 'mad', 

@@ -9,6 +9,7 @@ PROJECT_PATH = os.getcwd()
 sys.path.append(PROJECT_PATH)
 
 from library.maps.map_utils import _interpolate_matrix, disk_mask
+from _prototypes.cell_remapping.src.utils import _downsample
 
 # adapted from https://gis.stackexchange.com/questions/436908/selecting-n-samples-uniformly-from-a-grid-points
 def _sample_grid(ids, threshold=3):
@@ -105,8 +106,6 @@ def generate_grid(arena_height, arena_width, spacing, is_hexagonal=False, is_cyl
     return list(chain.from_iterable(grid))
 
             
-
-
 def make_object_ratemap(object_location, new_size=16):
     #arena_height, arena_width = rate_map_obj.arena_size
     #arena_height = arena_height[0]
@@ -180,24 +179,20 @@ def make_object_ratemap(object_location, new_size=16):
         return arena, {'x':id_x, 'y':id_y}
 
 
-def check_disk_arena(path):
-    variations = [r'cylinder', r'round', r'circle', r'CYLINDER', r'ROUND', r'CIRCLE', r'Cylinder', r'Round', r'Circle']
-    var_bool = []
-    true_var = None
-    for var in variations:
-        if re.search(var, path) is not None:
-            var_bool.append(True)
-            true_var = var
-        else:
-            var_bool.append(False)
-    # if re.search(r'cylinder', path) is not None or re.search(r'round', path) is not None:
-    if np.array(var_bool).any() == True:
-        cylinder = True
+def binary_mask(curr_labels, label_id, disk_ids, cylinder):
+    #     # TAKE ONLY MAIN FIELD --> already sorted by size
+    row, col = np.where(curr_labels == label_id)
+    field_ids = np.array([row, col]).T
+    if cylinder:
+        # take ids that are both in disk and in field
+        print('IT IS A CYLINDER, TAKING ONLY IDS IN FIELD AND IN DISK')
+        field_disk_ids = np.array([x for x in field_ids if x in disk_ids])
     else:
-        cylinder = False
-    # print(cylinder, true_var, path)
-    return cylinder, true_var
-
+        field_disk_ids = field_ids
+    curr_masked = np.zeros((curr_labels.shape))
+    curr_masked[field_disk_ids[:,0], field_disk_ids[:,1]] = 1
+    return curr_masked, field_disk_ids
+                                        
 
 def flat_disk_mask(rate_map):
     masked_rate_map = disk_mask(rate_map)
@@ -209,3 +204,27 @@ def flat_disk_mask(rate_map):
     copy[masked_rate_map.mask] = np.nan
     return copy
     # return masked_rate_map
+
+
+
+# Apply disk mask ratemap
+def apply_disk_mask(rate_map, settings, cylinder):
+    if cylinder:
+        curr = flat_disk_mask(rate_map)
+        if settings['downsample']:
+            curr_ratemap = _downsample(rate_map, settings['downsample_factor'])
+            curr_ratemap = flat_disk_mask(curr_ratemap)
+        else:
+            curr_ratemap = curr
+        row, col = np.where(~np.isnan(curr_ratemap))
+        disk_ids = np.array([row, col]).T
+    else:
+        curr = rate_map
+        if settings['downsample']:
+            curr_ratemap = _downsample(rate_map, settings['downsample_factor']) 
+        else:
+            curr_ratemap = curr
+        disk_ids = None
+
+    return curr, curr_ratemap, disk_ids
+                    

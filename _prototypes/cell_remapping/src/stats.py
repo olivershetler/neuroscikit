@@ -30,7 +30,7 @@ sys.path.append(PROJECT_PATH)
 from library.hafting_spatial_maps import SpatialSpikeTrain2D
 from _prototypes.cell_remapping.src.rate_map_plots import plot_obj_remapping, plot_regular_remapping, plot_fields_remapping, plot_shuffled_regular_remapping, plot_matched_sesssion_waveforms
 from _prototypes.cell_remapping.src.wasserstein_distance import sliced_wasserstein, single_point_wasserstein, pot_sliced_wasserstein, compute_centroid_remapping, _get_ratemap_bucket_midpoints
-from _prototypes.cell_remapping.src.masks import make_object_ratemap, check_disk_arena, flat_disk_mask, generate_grid, _sample_grid
+from _prototypes.cell_remapping.src.masks import make_object_ratemap, flat_disk_mask, generate_grid, _sample_grid
 from library.maps import map_blobs
 
 # unused/commented out
@@ -103,16 +103,16 @@ def get_ref_change_stats(ref_rate_change_dist, fr_rate_change):
     fr_change_z = (fr_rate_change - fr_change_mean) / (fr_change_std)
     return fr_change_mean, fr_change_std, fr_change_z
                     
-def get_vector_from_map(map_to_use, arena_size, obj_y, obj_x, mode):
-    y, x = map_to_use.shape
+def get_vector_from_map(map_to_use, arena_size, y, x, obj_y, obj_x, mode):
     height_bucket_midpoints, width_bucket_midpoints = _get_ratemap_bucket_midpoints(arena_size, y, x)
                                         
-    if mode == 'whole':
+    if mode == 'field':
+        
         centroids = map_to_use
         r, c = centroids[0]
         r = height_bucket_midpoints[int(np.round(r))]
         c = width_bucket_midpoints[int(np.round(c))]
-    elif mode == 'field':
+    elif mode == 'whole':
         # find row col of peak firing rate bin
         r, c = np.where(map_to_use == np.nanmax(map_to_use))
         r = height_bucket_midpoints[r[0]]
@@ -152,6 +152,8 @@ def get_rate_stats(prev_pts, prev_t, curr_pts, curr_t, prev_duration=None, curr_
     if prev_duration is not None or curr_duration is not None:
         assert prev_duration is not None and curr_duration is not None, 'Must provide both durations or neither'
         use_duration = True
+    else:
+        use_duration = None
     if use_duration is None:
         prev_fr_rate = len(prev_pts) / (prev_t[-1] - prev_t[0])
         curr_fr_rate = len(curr_pts) / (curr_t[-1] - curr_t[0])

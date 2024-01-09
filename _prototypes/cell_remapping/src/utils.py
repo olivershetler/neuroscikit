@@ -235,10 +235,10 @@ def list_to_array(*lst):
         return np.array(lst[0]) if isinstance(lst[0], list) else lst[0]
 
 
-def read_data_from_fname(fname, naming_type):
+def read_data_from_fname(fname, naming_type, typ):
     if naming_type == 'LEC':
         group, name = extract_name_lec(fname)
-        formats = LEC_naming_format[group][name][naming_type]
+        formats = LEC_naming_format[group][name][typ]
     elif naming_type == 'MEC':
         name = extract_name_mec(fname)
         formats = MEC_naming_format
@@ -292,7 +292,8 @@ def check_object_location(stim, hasObject):
         object_location = stim 
         if object_location != 'NO' and '_' not in object_location:
             object_location = int(object_location)
-    
+    else:
+        object_location = None
     return object_location
 
 def check_cylinder(fname, isDisk):

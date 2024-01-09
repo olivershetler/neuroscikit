@@ -29,12 +29,12 @@ sys.path.append(PROJECT_PATH)
 # from neuroscikit 
 from library.hafting_spatial_maps import SpatialSpikeTrain2D
 from _prototypes.cell_remapping.src.rate_map_plots import plot_obj_remapping, plot_regular_remapping, plot_fields_remapping, plot_shuffled_regular_remapping, plot_matched_sesssion_waveforms
-from _prototypes.cell_remapping.src.wasserstein_distance import compute_temporal_emd, single_point_wasserstein, pot_sliced_wasserstein, compute_centroid_remapping, _get_ratemap_bucket_midpoints, compute_modified_zscore, wasserstein_quantile
-from _prototypes.cell_remapping.src.masks import make_object_ratemap, flat_disk_mask, generate_grid, _sample_grid, apply_disk_mask
+from _prototypes.cell_remapping.src.wasserstein_distance import compute_temporal_emd, single_point_wasserstein, pot_sliced_wasserstein, compute_centroid_remapping, _get_ratemap_bucket_midpoints
+from _prototypes.cell_remapping.src.masks import binary_mask, make_object_ratemap, flat_disk_mask, generate_grid, _sample_grid, apply_disk_mask
 from library.maps import map_blobs
-from _prototypes.cell_remapping.src.processing import aggregate_map_blobs, collect_shuffled_ratemaps, make_obj_map_dict, get_rate_map, apply_disk_mask, get_vector_from_map
-from _prototypes.cell_remapping.src.utils import check_disk_arena, _fill_centroid_dict, _copy_labels, _downsample, _get_spk_pts, read_data_from_fname, check_cylinder, check_object_location, _get_valid_weight_bins, _get_valid_midpoints, _check_object_coords, _check_rotate_evening, scale_points, binary_mask
-from _prototypes.cell_remapping.src.stats import get_ref_change_stats, get_ref_ratio_stats, compute_cumulative_blob_stats, get_max_matched_cell_count, _copy_labels, _get_spk_pts, _get_valid_weight_bins, _get_valid_midpoints, _get_ratemap_bucket_midpoints, compute_modified_zscore, wasserstein_quantile, get_reference_dist_stats, get_rate_stats, _check_rotate_evening, scale_points, binary_mask
+from _prototypes.cell_remapping.src.processing import aggregate_map_blobs, collect_shuffled_ratemaps, make_obj_map_dict, get_rate_map
+from _prototypes.cell_remapping.src.utils import scale_points, _check_rotate_evening, _get_spk_pts, _get_valid_weight_bins,_get_valid_midpoints, _get_ratemap_bucket_midpoints, check_disk_arena, _fill_centroid_dict, _copy_labels, _downsample, _get_spk_pts, read_data_from_fname, check_cylinder, check_object_location, _get_valid_weight_bins, _get_valid_midpoints, _check_object_coords, _check_rotate_evening
+from _prototypes.cell_remapping.src.stats import get_vector_from_map, wasserstein_quantile, compute_modified_zscore, get_ref_change_stats, get_ref_ratio_stats, compute_cumulative_blob_stats, get_max_matched_cell_count, wasserstein_quantile, get_reference_dist_stats, get_rate_stats
 
 # unused/commented out
 from scripts.batch_map.batch_map import batch_map 
@@ -44,7 +44,7 @@ from library.shuffle_spikes import shuffle_spikes
 from _prototypes.cell_remapping.src.settings import obj_output, centroid_output, tasks, session_comp_categories, regular_output, context_output, variations, temporal_output, context_temporal_output
 
 
-                              
+                            
 def compute_remapping(study, settings, data_dir):
 
     # aside
@@ -117,7 +117,7 @@ def compute_remapping(study, settings, data_dir):
 
                 cylinder = check_cylinder(fname, settings['disk_arena'])
         
-                stim, depth, name, date = read_data_from_fname(fname, settings['naming_type'])
+                stim, depth, name, date = read_data_from_fname(fname, settings['naming_type'], settings['type'])
 
                 object_location = check_object_location(stim, settings['hasObject'])
 
@@ -214,7 +214,7 @@ def compute_remapping(study, settings, data_dir):
 
                                     obj_x, obj_y = _check_object_coords(object_pos, height_bucket_midpoints, width_bucket_midpoints)
 
-                                    # y, x = curr.shape
+                                    y, x = curr.shape
                                     # height_bucket_midpoints, width_bucket_midpoints = _get_ratemap_bucket_midpoints(curr_spatial_spike_train.arena_size, y, x)
 
                                     # lid 0 we do whole/spike density once and don't repeat forl ater lid
@@ -229,7 +229,7 @@ def compute_remapping(study, settings, data_dir):
                                             resampled_wass = list(map(lambda x: single_point_wasserstein(x, curr_ratemap, rate_map_obj.arena_size, ids=disk_ids, use_pos_directly=True), resampled_positions))
                                         quantile = (resampled_wass < obj_wass).mean()
                         
-                                        mag, angle, pt1, pt2 = get_vector_from_map(curr, rate_map_obj.arena_size, obj_y, obj_x, 'whole')
+                                        mag, angle, pt1, pt2 = get_vector_from_map(curr, rate_map_obj.arena_size, y, x, obj_y, obj_x, 'whole')
 
                                     elif obj_score == 'field':
 
@@ -251,7 +251,7 @@ def compute_remapping(study, settings, data_dir):
                                             resampled_wass = list(map(lambda x: single_point_wasserstein(x, curr_ratemap, rate_map_obj.arena_size, ids=field_disk_ids, use_pos_directly=True), resampled_positions))
                                         quantile = (resampled_wass < obj_wass).mean()
 
-                                        mag, angle, pt1, pt2 = get_vector_from_map(centroids, rate_map_obj.arena_size, obj_y, obj_x, 'field')
+                                        mag, angle, pt1, pt2 = get_vector_from_map(centroids, rate_map_obj.arena_size, y, x, obj_y, obj_x, 'field')
 
                                     elif obj_score == 'spike_density' and lid == 0:
 
@@ -260,8 +260,10 @@ def compute_remapping(study, settings, data_dir):
                                         # curr_spike_pos_x += np.abs(np.min(curr_spike_pos_x))
                                         # curr_spike_pos_y += np.abs(np.min(curr_spike_pos_y))
 
-                                        curr_spike_pos_x += np.min(curr_spike_pos_x)
-                                        curr_spike_pos_y += np.min(curr_spike_pos_y)
+                                        if np.min(curr_spike_pos_x) < 0:
+                                            curr_spike_pos_x += np.abs(np.min(curr_spike_pos_x))
+                                        if np.min(curr_spike_pos_y) < 0:
+                                            curr_spike_pos_y += np.abs(np.min(curr_spike_pos_y))
                                         assert np.min(curr_spike_pos_x) >= 0 and np.min(curr_spike_pos_y) >= 0, 'Negative spike positions'
                                 
                                         curr_pts = np.array([curr_spike_pos_y, curr_spike_pos_x]).T
@@ -273,7 +275,7 @@ def compute_remapping(study, settings, data_dir):
                                             resampled_wass = list(map(lambda x: single_point_wasserstein(x, curr_ratemap, rate_map_obj.arena_size, density=True, density_map=curr_pts, use_pos_directly=True), resampled_positions))
                                         quantile = (resampled_wass < obj_wass).mean()
 
-                                        mag, angle, pt1, pt2 = get_vector_from_map([curr_spike_pos_y, curr_spike_pos_x], rate_map_obj.arena_size, obj_y, obj_x, 'spike_density')
+                                        mag, angle, pt1, pt2 = get_vector_from_map([curr_spike_pos_y, curr_spike_pos_x], rate_map_obj.arena_size, y, x, obj_y, obj_x, 'spike_density')
 
                                     elif obj_score == 'binary':
 
@@ -286,7 +288,7 @@ def compute_remapping(study, settings, data_dir):
                                             resampled_wass = list(map(lambda x: single_point_wasserstein(x, curr_masked, rate_map_obj.arena_size, ids=field_disk_ids, use_pos_directly=True), resampled_positions))
                                         quantile = (resampled_wass < obj_wass).mean()
 
-                                        mag, angle, pt1, pt2 = get_vector_from_map(curr_masked, rate_map_obj.arena_size, obj_y, obj_x, 'binary')
+                                        mag, angle, pt1, pt2 = get_vector_from_map(curr_masked, rate_map_obj.arena_size, y, x, obj_y, obj_x, 'binary')
 
                                     elif obj_score == 'centroid':
 
@@ -300,7 +302,7 @@ def compute_remapping(study, settings, data_dir):
                                             resampled_wass = list(map(lambda x: np.linalg.norm(np.array((obj_y, obj_x)) - np.array((x[0],x[1]))), resampled_positions))
                                         quantile = (resampled_wass < obj_wass).mean()
 
-                                        mag, angle, pt1, pt2 = get_vector_from_map(centroids,rate_map_obj.arena_size, obj_y, obj_x, 'centroid')
+                                        mag, angle, pt1, pt2 = get_vector_from_map(main_centroid,rate_map_obj.arena_size, y, x, obj_y, obj_x, 'centroid')
 
                                     if lid != 0 and (obj_score == 'whole' or obj_score == 'spike_density') == True:
                                         pass 
@@ -405,7 +407,7 @@ def compute_remapping(study, settings, data_dir):
                             
 
                             null_spike_dens_wass = animal_ref_dist[animal_id][ses_comp]['ref_spike_density']
-                            null_spike_dens_wass_mean, null_spike_dens_wass_std, spike_dens_z_score, spike_dens_mod_z_score, median, mad = get_reference_dist_stats(null_spike_dens_wass)
+                            null_spike_dens_wass_mean, null_spike_dens_wass_std, spike_dens_z_score, spike_dens_mod_z_score, median, mad = get_reference_dist_stats(spike_dens_wass, null_spike_dens_wass)
                             sd_quantile = wasserstein_quantile(spike_dens_wass, null_spike_dens_wass)
                         
                         if 'whole' in settings['rate_scores']:
@@ -415,7 +417,7 @@ def compute_remapping(study, settings, data_dir):
                             # ref_wass_dist = list(map(lambda x, y: pot_sliced_wasserstein(coord_buckets_prev, coord_buckets_curr, x/np.sum(x), y/np.sum(y), n_projections=settings['n_shuffle_projections']), prev_shuffled, curr_shuffled))
                             ref_wass_dist = animal_ref_dist[animal_id][ses_comp]['ref_whole']
 
-                            ref_wass_mean, ref_wass_std, z_score, mod_z_score, median, mad = get_reference_dist_stats(wass,ref_wass_dist)
+                            ref_wass_mean, ref_wass_std, z_score, mod_z_score, median, mad = get_reference_dist_stats(wass, ref_wass_dist)
                             
                             print('doing modified z score')
                             mod_z_score, median, mad = compute_modified_zscore(wass, ref_wass_dist)
@@ -456,8 +458,10 @@ def compute_remapping(study, settings, data_dir):
                             regular_dict['sd_median'].append(median)
                             regular_dict['sd_mad'].append(mad)
                             regular_dict['sd_quantile'].append(sd_quantile)
- 
-                        prev_fr_rate, curr_fr_rate, fr_rate_ratio, fr_rate_change = get_rate_stats(prev_pts, prev_spike_times, curr_pts, curr_spike_times)
+
+                        pre_post = prev_spatial_spike_train.new_spike_times
+                        curr_post = curr_spatial_spike_train.new_spike_times
+                        prev_fr_rate, curr_fr_rate, fr_rate_ratio, fr_rate_change = get_rate_stats(prev_pts, pre_post, curr_pts, curr_post)
                         
                         ref_rate_ratio_dist = animal_ref_dist[animal_id][ses_comp]['ref_rate_ratio']                       
                         fr_ratio_mean, fr_ratio_std, fr_ratio_z = get_ref_ratio_stats(ref_rate_ratio_dist, fr_rate_ratio)

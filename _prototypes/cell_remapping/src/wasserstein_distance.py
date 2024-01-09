@@ -65,23 +65,25 @@ def compute_null_emd(spike_train_a, spike_train_b, num_iterations, bin_size):
 
 
 # change to temporal emd and move to wasserstein_distance
-def compute_temporal_emd(spike_train_a, spike_train_b, bin_size):
+def compute_temporal_emd(spike_train_a, spike_train_b, bin_size, end_time=None):
     # Determine the start and end times for aligning the spike trains
-    start_time = np.min([np.min(spike_train_a), np.min(spike_train_b)])
-    end_time = np.max([np.max(spike_train_a), np.max(spike_train_b)])
-
-    bins = np.arange(start_time, end_time + 1, bin_size)
+    if end_time is not None:
+        start_time = 0
+        mx = np.max([np.max(spike_train_a), np.max(spike_train_b)])
+        assert mx <= end_time, 'Max spike time {} greater than recording session length {}'.format(str(mx), str(end_time))
+    else:
+        start_time = np.min([np.min(spike_train_a), np.min(spike_train_b)])
+        end_time = np.max([np.max(spike_train_a), np.max(spike_train_b)])
+    # bins = np.arange(start_time, end_time + 1, bin_size)
+    bins = np.arange(start_time, end_time + bin_size, bin_size)
     # Create aligned spike trains
     aligned_a, _ = np.histogram(spike_train_a, bins=bins)
     aligned_b, _ = np.histogram(spike_train_b, bins=bins)
-
     # Compute the cumulative distribution functions (CDFs)
     cdf_a = np.cumsum(aligned_a) / len(spike_train_a)
     cdf_b = np.cumsum(aligned_b) / len(spike_train_b)
-
     # Compute the EMD by integrating the absolute difference between CDFs
     emd = np.sum(np.abs(cdf_a - cdf_b))
-
     return emd
 
 

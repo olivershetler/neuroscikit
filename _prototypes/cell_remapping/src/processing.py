@@ -10,9 +10,9 @@ sys.path.append(PROJECT_PATH)
 from library.hafting_spatial_maps import SpatialSpikeTrain2D
 from _prototypes.cell_remapping.src.rate_map_plots import plot_obj_remapping, plot_regular_remapping, plot_fields_remapping, plot_shuffled_regular_remapping, plot_matched_sesssion_waveforms
 from _prototypes.cell_remapping.src.wasserstein_distance import pot_sliced_wasserstein, _get_ratemap_bucket_midpoints, single_point_wasserstein, compute_temporal_emd
-from _prototypes.cell_remapping.src.masks import make_object_ratemap, check_disk_arena, flat_disk_mask, generate_grid, _sample_grid
+from _prototypes.cell_remapping.src.masks import make_object_ratemap, flat_disk_mask, generate_grid, _sample_grid
 from library.maps import map_blobs
-from _prototypes.cell_remapping.src.utils import _sort_filter_centroids_by_field_size, _get_valid_weight_bins, _get_valid_midpoints, _get_spk_pts, scale_points, _downsample
+from _prototypes.cell_remapping.src.utils import check_disk_arena, _sort_filter_centroids_by_field_size, _get_valid_weight_bins, _get_valid_midpoints, _get_spk_pts, scale_points, _downsample
 from _prototypes.cell_remapping.src.stats import compute_rate_change
 from _prototypes.cell_remapping.src.settings import session_comp_categories
 
