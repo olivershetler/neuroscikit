@@ -129,7 +129,7 @@ class SpatialSpikeTrain2D():
         # return np.array(self.x)[spike_index], np.array(self.y)[spike_index]
 
         v = _speed2D(self.x, self.y, self.t)
-        print('Using speed bounds {} to {}'.format(self.speed_bounds[0], self.speed_bounds[1]))
+        # print('Using speed bounds {} to {}'.format(self.speed_bounds[0], self.speed_bounds[1]))
         x, y, t = _speed_bins(self.speed_bounds[0], self.speed_bounds[1], v, self.x, self.y, self.t)
 
         cPost = np.copy(t)
@@ -298,10 +298,10 @@ class HaftingSpikeMap():
 
             if shuffle:
                 # print('USING SHUFFLED SPIKES')
-                print('shuffling spikes')
+                # print('shuffling spikes')
                 # spike_x, spike_y, new_spike_times = shuffle_spikes(self.spatial_spike_train.spike_times,self.spike_x, self.spike_y, self.new_spike_times)
                 spike_x, spike_y, new_spike_times = shuffle_spikes_new(self.spatial_spike_train.spike_times,self.spike_x, self.spike_y, self.new_spike_times, iters=n_repeats)
-                print(spike_x.shape, spike_y.shape, new_spike_times.shape)
+                # print(spike_x.shape, spike_y.shape, new_spike_times.shape)
                 # assert np.asarray(shuffled_spikes).shape == np.asarray(self.spatial_spike_train.spike_times).shape,'Shuffled spikes {} are not the same shape as original spikes {}'.format(np.asarray(shuffled_spikes).shape, np.asarray(self.spatial_spike_train.spike_times).shape)
                 # spike_x, spike_y, new_spike_times = self.spatial_spike_train.get_spike_positions(shuffled_spikes=shuffled_spikes)
             else:
@@ -413,23 +413,29 @@ class HaftingRateMap():
         self.smoothing_factor = self.session_metadata.session_object.smoothing_factor
 
         if 'smoothing_factor' in kwargs:
-            print('overriding session smoothing factor for input smoothing facator')
+            pass
+            # print('overriding session smoothing factor for input smoothing facator')
             self.smoothing_factor = kwargs['smoothing_factor']
         elif 'settings' in kwargs and 'smoothing_factor' in kwargs['settings']:
             self.smoothing_factor = kwargs['settings']['smoothing_factor']
-            print('overriding session smoothing factor for input smoothing facator')
+            # print('overriding session smoothing factor for input smoothing facator')
+            pass
 
     def get_rate_map(self, smoothing_factor=None, new_size=None, shuffle=False, n_repeats=None, settings_arena_size=None):
         if self.map_data is None or (self.map_data is not None and new_size != self.map_data.shape[0]) == True or shuffle == True:
             if self.map_data is None:
-                print('computing rate map bcs map_data is None')
+                # print('computing rate map bcs map_data is None')
+                pass
             elif new_size != self.map_data.shape[0]:
             # and new_size != len(self.map_data[0]):
-                print('computing rate map bcs new_size {} != self.map_data.shape[0] {}'.format(new_size, self.map_data.shape[0]))
+                # print('computing rate map bcs new_size {} != self.map_data.shape[0] {}'.format(new_size, self.map_data.shape[0]))
+                pass
             elif shuffle == True:
-                print('computing rate map bcs shuffle == True')
+                # print('computing rate map bcs shuffle == True')
+                pass
             elif new_size != len(self.map_data[0]):
-                print('computing unshuffled rate map bcs self.var is set to shuffled dist')
+                # print('computing unshuffled rate map bcs self.var is set to shuffled dist')
+                pass
             
             # elif shuffle == True and new_size != len(self.map_data[0]):
             #     print('computing rate map bcs shuffle == True and new_size {} != len(self.map_data[0]) {}'.format(new_size, len(self.map_data[0])))
@@ -561,9 +567,9 @@ class HaftingRateMap():
                 spike_map_data, spike_map_data_raw = spike_map.get_spike_map(3, shuffle=shuffle, n_repeats=n_repeats, useMinMaxPos=useMinMaxPos)
         else:
             if self.smoothing_factor != None:
-                print('getting occ map')
+                # print('getting occ map')
                 occ_map_data, raw_occ, coverage = occupancy_map.get_occupancy_map(self.smoothing_factor, new_size=new_size, useMinMaxPos=useMinMaxPos)
-                print('getting spike map')
+                # print('getting spike map')
                 spike_map_data, spike_map_data_raw = spike_map.get_spike_map(self.smoothing_factor, new_size=new_size, shuffle=shuffle, n_repeats=n_repeats, useMinMaxPos=useMinMaxPos)
             else:
                 print('No smoothing factor provided, proceeding with value of 3')
@@ -573,7 +579,7 @@ class HaftingRateMap():
 
         # assert occ_map_data.shape == spike_map_data.shape
 
-        print('Computing rate map')
+        # print('Computing rate map')
         if not shuffle:
             rate_map_raw = np.where(raw_occ<0.0001, 0, spike_map_data_raw/raw_occ)
             rate_map = np.where(occ_map_data<0.0001, 0, spike_map_data/occ_map_data)

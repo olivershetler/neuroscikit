@@ -106,9 +106,19 @@ def compute_remapping(study, settings, data_dir):
             curr_shuffled = None
             cell_session_appearances = []
             
+            if settings['ses_limit'] is None:
+                ses_limit = len(list(animal.sessions.keys()))
+            else:
+                if settings['ses_limit'] >= len(list(animal.sessions.keys())):
+                    ses_limit = len(list(animal.sessions.keys()))
+                else:
+                    ses_limit = settings['ses_limit']
+
             # for every session
-            for i in range(len(list(animal.sessions.keys()))):
-                seskey = 'session_' + str(i+1)
+            # for i in range(len(list(animal.sessions.keys()))):
+            for i in range(ses_limit):
+                # seskey = 'session_' + str(i+1)
+                seskey = list(animal.sessions.keys())[i]
                 print(seskey)
                 ses = animal.sessions[seskey]
                 path = ses.session_metadata.file_paths['tet']
@@ -122,7 +132,7 @@ def compute_remapping(study, settings, data_dir):
                 object_location = check_object_location(stim, settings['hasObject'])
 
                 ensemble = ses.get_cell_data()['cell_ensemble']
-
+                print(cell_label, ensemble.get_cell_label_dict())
                 # Check if cell id we're iterating through is present in the ensemble of this sessions
                 if cell_label in ensemble.get_cell_label_dict():
                     
@@ -369,6 +379,8 @@ def compute_remapping(study, settings, data_dir):
                     if prev is not None:
                         ses_1 = prev_key.split('_')[1]
                         ses_2 = seskey.split('_')[1]
+                        print('search here')
+                        print(prev_key, seskey)
                         ses_comp = str(ses_1) + '_' + str(ses_2)
         
                     # If prev ratemap is not None (= we are at session2 or later, session1 has no prev session to compare)
@@ -415,11 +427,15 @@ def compute_remapping(study, settings, data_dir):
 
                             # line below for circular shuffling
                             # ref_wass_dist = list(map(lambda x, y: pot_sliced_wasserstein(coord_buckets_prev, coord_buckets_curr, x/np.sum(x), y/np.sum(y), n_projections=settings['n_shuffle_projections']), prev_shuffled, curr_shuffled))
+                            print('search3')
+                            print(animal_id, ses_comp)
+                            print(animal_ref_dist[animal_id].keys())
+
                             ref_wass_dist = animal_ref_dist[animal_id][ses_comp]['ref_whole']
 
                             ref_wass_mean, ref_wass_std, z_score, mod_z_score, median, mad = get_reference_dist_stats(wass, ref_wass_dist)
                             
-                            print('doing modified z score')
+                            # print('doing modified z score')
                             mod_z_score, median, mad = compute_modified_zscore(wass, ref_wass_dist)
 
                             quantile = wasserstein_quantile(wass, ref_wass_dist)
@@ -585,7 +601,7 @@ def compute_remapping(study, settings, data_dir):
                             curr_spike_times = (curr_spike_times - np.min(curr_spike_times)) / (np.max(curr_spike_times) - np.min(curr_spike_times))
 
                         observed_emd = compute_temporal_emd(prev_spike_times, curr_spike_times, settings['temporal_bin_size'], settings['end_time'])
-                        print("OBSERVED EMD " + str(observed_emd))
+                        # print("OBSERVED EMD " + str(observed_emd))
 
                         ref_emd_dist = animal_ref_dist[animal_id][ses_comp]['ref_temporal']
                         ref_emd_mean, ref_emd_std, z_score, mod_z_score, median, mad = get_reference_dist_stats(observed_emd, ref_emd_dist)
@@ -894,7 +910,7 @@ def compute_remapping(study, settings, data_dir):
                                     num_shuffles = settings['n_temporal_shuffles']
 
                 
-                                    print('computing shuffled temporal emd')
+                                    # print('computing shuffled temporal emd')
                                     observed_emd = compute_temporal_emd(prev_spike_times, curr_spike_times, settings['temporal_bin_size'], settings['end_time'])
                                     ref_emd_dist = animal_ref_dist[animal_id][ses_comp]['ref_temporal']
                                     emd_mean = np.mean(ref_emd_dist)
@@ -902,7 +918,7 @@ def compute_remapping(study, settings, data_dir):
                                     emd_z = (observed_emd - emd_mean) / (emd_std)
                                     emd_quantile = wasserstein_quantile(observed_emd, ref_emd_dist)
 
-                                    print('doing modified z score')
+                                    # print('doing modified z score')
                                     prev_duration = prev_spatial.session_metadata.session_object.get_spike_data()['spike_cluster'].duration
                                     curr_duration = curr_spatial.session_metadata.session_object.get_spike_data()['spike_cluster'].duration
 
