@@ -148,7 +148,6 @@ def run_temporal_map(study, settings, ses_wins, ses_cts, ses_ids, ses_ctypes, se
     remapping_df = remapping_df[remapping_df['score'] == 'whole']
 
     for animal in study.animals:
-        aid = animal.animal_id.split('_tet')[0]
         tetrode = animal.animal_id.split('_tet')[1]
 
         max_matched_cell_count = get_max_matched_cell_count(animal)
@@ -175,6 +174,8 @@ def run_temporal_map(study, settings, ses_wins, ses_cts, ses_ids, ses_ctypes, se
         
                 stim, depth, name, date = read_data_from_fname(fname, settings['naming_type'], settings['type'])
 
+                aid = name
+
                 object_location = check_object_location(stim, True)
 
                 ensemble = ses.get_cell_data()['cell_ensemble']
@@ -200,10 +201,10 @@ def run_temporal_map(study, settings, ses_wins, ses_cts, ses_ids, ses_ctypes, se
                                                               (remapping_df['session_id'] == str(seskey))]
                     
                     # assert that there is only one row per cell
-                    # print(aid, date, tetrode, cell_label, depth, seskey)
-                    # print(remapping_df['name'].dtype, remapping_df['date'].dtype, remapping_df['tetrode'].dtype, remapping_df['unit_id'].dtype, remapping_df['depth'].dtype, remapping_df['session_id'].dtype)
-                    # print(remapping_row)
-                    # print(object_location, remapping_row['object_location'])
+                    print(aid, date, tetrode, cell_label, depth, seskey)
+                    print(remapping_df['name'].dtype, remapping_df['date'].dtype, remapping_df['tetrode'].dtype, remapping_df['unit_id'].dtype, remapping_df['depth'].dtype, remapping_df['session_id'].dtype)
+                    print(remapping_row)
+                    print(object_location, remapping_row['object_location'])
 
                     assert len(remapping_row) == 1
                     remapping_row = remapping_row.iloc[0]
