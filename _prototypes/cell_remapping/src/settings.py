@@ -16,8 +16,9 @@ GLOBAL SETTINGS
 """
 # settings_dict['single_tet'] = 7
 settings_dict['session']['channel_count'] = 4
+settings_dict['ses_limit'] = 3
 settings_dict['arena_size'] = None
-settings_dict['ppm'] = None # EDIT HERE (will auto read from file if None, otherwise will override with this value)
+settings_dict['ppm'] = 485 # EDIT HERE (will auto read from file if None, otherwise will override with this value)
 settings_dict['smoothing_factor'] = 3 # EDIT HERE (for plotting)
 settings_dict['speed_lowerbound'] = 0
 settings_dict['speed_upperbound'] = 100
@@ -47,12 +48,13 @@ IF YOU ARE DOING REGULAR REMAPPING
 """
 
 settings_dict['runRegular'] = True # EDIT HERE
-settings_dict['plotRegular'] = True # EDIT HERE
-settings_dict['rate_scores'] = ['whole','spike_density']
+settings_dict['plotRegular'] = False # EDIT HERE
+settings_dict['rate_scores'] = ['whole']
+# ,'spike_density']
 # ['whole', 'spike_density']
 settings_dict['n_repeats'] = 1000 # EDIT HERE 
-settings_dict['plotShuffled'] = True # EDIT HERE
-settings_dict['plotMatchedWaveforms'] = True # EDIT HERE
+settings_dict['plotShuffled'] = False # EDIT HERE
+settings_dict['plotMatchedWaveforms'] = False # EDIT HERE
 
 """ 
 IF YOU ARE DOING OBJECT REMAPPING
@@ -94,7 +96,7 @@ IF YOU ARE DOING TEMPORAL REMAPPING
 
 settings_dict['runTemporal'] = True # EDIT HERE
 settings_dict['n_temporal_shuffles'] = 1000 # EDIT HERE
-settings_dict['temporal_bin_size'] = 10
+settings_dict['temporal_bin_size'] = 10/60
 settings_dict['end_time'] = None
 
 ##############################################################################################################################################################################

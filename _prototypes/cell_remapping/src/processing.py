@@ -48,10 +48,14 @@ def _aggregate_cell_info(animal, settings):
     for k in range(int(max_matched_cell_count)):
         cell_label = k + 1
         prev_field_size_len = None 
+        print('search2')
+        print(animal.animal_id, max_matched_cell_count, animal.sessions.keys())
         for i in range(len(list(animal.sessions.keys()))):
-            seskey = 'session_' + str(i+1)
-            if i+1 not in ratemap_session_groups:
-                ratemap_session_groups[i+1] = {}
+            seskey = list(animal.sessions.keys())[i]
+            # seskey = 'session_' + str(i+1)
+            seskey_id = seskey.split('_')[-1]
+            if seskey_id not in ratemap_session_groups:
+                ratemap_session_groups[seskey_id] = {}
             ses = animal.sessions[seskey]
             ensemble = ses.get_cell_data()['cell_ensemble']
             pos_obj = ses.get_position_data()['position']
@@ -88,7 +92,7 @@ def _aggregate_cell_info(animal, settings):
                 id = str(animal.animal_id) + '_' + str(seskey) + '_' + str(cell.cluster.cluster_label)
                 assert id not in blobs_dict, 'Duplicate cell id ' + str(id)
 
-                ratemap_session_groups[i+1][cell_label] = [rate_map, spatial_spike_train]
+                ratemap_session_groups[seskey_id][cell_label] = [rate_map, spatial_spike_train]
                     
                 if settings['hasObject'] or settings['runFields']:
                     image, n_labels, labels, centroids, field_sizes = map_blobs(spatial_spike_train, ratemap_size=ratemap_size, cylinder=cylinder, downsample=settings['downsample'], downsample_factor=settings['downsample_factor'])
@@ -255,10 +259,11 @@ def collect_shuffled_ratemaps(animal_cell_ratemaps, settings):
                                 animal_ref_dist[animal_id][ses_comp]['ref_rate_ratio'].append(fr_rate_ratio)
                                 animal_ref_dist[animal_id][ses_comp]['ref_rate_change'].append(fr_rate_change)
                             else:
-                                if cell_label_1 == cell_label_2:
-                                    print('SAME CELL, omitting from ref dist {} {}'.format(cell_label_1, cell_label_2))
-                                else:
-                                    print('CELL PAIR ALREADY VISITED, e.g tet1_cell1 + tet2_cell2 == tet2_cell2 + tet1_cell1')
+                                pass
+                                # if cell_label_1 == cell_label_2:
+                                    # print('SAME CELL, omitting from ref dist {} {}'.format(cell_label_1, cell_label_2))
+                                # else:
+                                    # print('CELL PAIR ALREADY VISITED, e.g tet1_cell1 + tet2_cell2 == tet2_cell2 + tet1_cell1')
                 prev_ses_id = ses_id
 
         # custom case for non sequential sessions, repetition of code above with chosen session pairs
@@ -336,7 +341,8 @@ def collect_shuffled_ratemaps(animal_cell_ratemaps, settings):
                                         animal_ref_dist[animal_id][ses_comp]['ref_rate_ratio'].append(fr_rate_ratio)
                                         animal_ref_dist[animal_id][ses_comp]['ref_rate_change'].append(fr_rate_change)
                                 else:
-                                    print('SAME CELL, omitting from ref dist {} {}'.format(cell_label_1, cell_label_2))
+                                    # print('SAME CELL, omitting from ref dist {} {}'.format(cell_label_1, cell_label_2))
+                                    pass
 
                     prev_ses_id_categs = ses_id_categs
         
