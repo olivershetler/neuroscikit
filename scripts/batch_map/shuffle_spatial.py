@@ -14,7 +14,7 @@ import tkinter as tk
 from tkinter import filedialog
 import time
 from library.hafting_spatial_maps import SpatialSpikeTrain2D
-from library.scores import rate_map_stats, rate_map_coherence
+from library.scores import rate_map_stats, rate_map_coherence, border_score, grid_score
 from openpyxl.utils.cell import get_column_letter, column_index_from_string
 from library.maps.map_utils import disk_mask
 from PIL import Image
@@ -279,6 +279,20 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None, sum_sheet_count=N
                     rate_map, rate_map_raw = rate_obj.get_rate_map(new_size=settings_dict['ratemap_dims'][0])
                     occ_obj = spatial_spike_train.get_map('occupancy')
                     occ_map, _, _ = occ_obj.get_occupancy_map(new_size=settings_dict['ratemap_dims'][0])
+                    b_score = border_score(spatial_spike_train)
+                    b_score_top = b_score[0]
+                    b_score_bottom = b_score[1]
+                    b_score_left = b_score[2]
+                    b_score_right = b_score[3]
+
+                    gr_score = grid_score(spatial_spike_train)
+
+                    current_statistics_sheet[headers_dict['border_score_top'] + str(excel_cell_index+1)] = b_score_top
+                    current_statistics_sheet[headers_dict['border_score_bottom'] + str(excel_cell_index+1)] = b_score_bottom
+                    current_statistics_sheet[headers_dict['border_score_left'] + str(excel_cell_index+1)] = b_score_left
+                    current_statistics_sheet[headers_dict['border_score_right'] + str(excel_cell_index+1)] = b_score_right
+                    current_statistics_sheet[headers_dict['grid_score'] + str(excel_cell_index+1)] = gr_score
+
                     # if settings['normalizeRate']:
                     #     rate_map, _ = rate_obj.get_rate_map()
                     # else:
@@ -307,6 +321,11 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None, sum_sheet_count=N
                     shuffled_sparsity = []
                     shuffled_selectivity = []
                     shuffled_coherence = []
+                    shuffled_border_score_top = []
+                    shuffled_border_score_bottom = []
+                    shuffled_border_score_left = []
+                    shuffled_border_score_right = []
+                    shuffled_grid_score = []
                     for i in range(len(shuffled_rate_maps)):
                         shuffled_map = shuffled_rate_maps[i]
                         shuffled_map_raw = shuffled_rate_map_raw[i]
@@ -317,6 +336,19 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None, sum_sheet_count=N
                         shuffled_selectivity.append(ratemap_stats_dict['selectivity'])
                         shuffled_coherence.append(rate_map_coherence(shuffled_map_raw, smoothing_factor=3))
 
+                        b_score = border_score(None, ratemap=shuffled_map, occmap=occ_map, override=True)
+                        b_score_top = b_score[0]
+                        b_score_bottom = b_score[1]
+                        b_score_left = b_score[2]
+                        b_score_right = b_score[3]
+                        shuffled_border_score_top.append(b_score_top)
+                        shuffled_border_score_bottom.append(b_score_bottom)
+                        shuffled_border_score_left.append(b_score_left)
+                        shuffled_border_score_right.append(b_score_right)
+
+                        gr_score = grid_score(None, ratemap=shuffled_map, occmap=occ_map, override=True)
+                        shuffled_grid_score.append(gr_score)
+
 
                     current_statistics_sheet[headers_dict['shuffled_information_mean'] + str(excel_cell_index+1)] = np.mean(shuffled_information_content)
                     current_statistics_sheet[headers_dict['shuffled_information_std'] + str(excel_cell_index+1)] = np.std(shuffled_information_content)
@@ -326,16 +358,32 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None, sum_sheet_count=N
                     current_statistics_sheet[headers_dict['shuffled_selectivity_std'] + str(excel_cell_index+1)] = np.std(shuffled_selectivity)
                     current_statistics_sheet[headers_dict['shuffled_coherence_mean'] + str(excel_cell_index+1)] = np.mean(shuffled_coherence)
                     current_statistics_sheet[headers_dict['shuffled_coherence_std'] + str(excel_cell_index+1)] = np.std(shuffled_coherence)
+                    current_statistics_sheet[headers_dict['shuffled_border_score_top_mean'] + str(excel_cell_index+1)] = np.mean(shuffled_border_score_top)
+                    current_statistics_sheet[headers_dict['shuffled_border_score_top_std'] + str(excel_cell_index+1)] = np.std(shuffled_border_score_top)
+                    current_statistics_sheet[headers_dict['shuffled_border_score_bottom_mean'] + str(excel_cell_index+1)] = np.mean(shuffled_border_score_bottom)
+                    current_statistics_sheet[headers_dict['shuffled_border_score_bottom_std'] + str(excel_cell_index+1)] = np.std(shuffled_border_score_bottom)
+                    current_statistics_sheet[headers_dict['shuffled_border_score_left_mean'] + str(excel_cell_index+1)] = np.mean(shuffled_border_score_left)
+                    current_statistics_sheet[headers_dict['shuffled_border_score_left_std'] + str(excel_cell_index+1)] = np.std(shuffled_border_score_left)
+                    current_statistics_sheet[headers_dict['shuffled_border_score_right_mean'] + str(excel_cell_index+1)] = np.mean(shuffled_border_score_right)
+                    current_statistics_sheet[headers_dict['shuffled_border_score_right_std'] + str(excel_cell_index+1)] = np.std(shuffled_border_score_right)
+                    current_statistics_sheet[headers_dict['shuffled_grid_score_mean'] + str(excel_cell_index+1)] = np.mean(shuffled_grid_score)
+                    current_statistics_sheet[headers_dict['shuffled_grid_score_std'] + str(excel_cell_index+1)] = np.std(shuffled_grid_score)
 
                     p_value_information = (np.sum(shuffled_information_content < spatial_information_content)) / (len(shuffled_information_content))
                     p_value_sparsity = (np.sum(shuffled_sparsity > ratemap_stats_dict['sparsity'])) / (len(shuffled_sparsity))
                     p_value_selectivity = (np.sum(shuffled_selectivity < ratemap_stats_dict['selectivity'])) / (len(shuffled_selectivity))
                     p_value_coherence = (np.sum(shuffled_coherence < coherence)) / (len(shuffled_coherence))
 
+                    p_value_border_score_top = (np.sum(shuffled_border_score_top > b_score_top)) / (len(shuffled_border_score_top))
+                    p_value_border_score_bottom = (np.sum(shuffled_border_score_bottom > b_score_bottom)) / (len(shuffled_border_score_bottom))
+                    p_value_border_score_left = (np.sum(shuffled_border_score_left > b_score_left)) / (len(shuffled_border_score_left))
+                    p_value_border_score_right = (np.sum(shuffled_border_score_right > b_score_right)) / (len(shuffled_border_score_right))
+                    p_value_grid_score = (np.sum(shuffled_grid_score > gr_score)) / (len(shuffled_grid_score))
 
-                    dists = [shuffled_information_content, shuffled_sparsity, shuffled_selectivity, shuffled_coherence]
-                    quants = [spatial_information_content, ratemap_stats_dict['sparsity'], ratemap_stats_dict['selectivity'], coherence]
-                    order = ['Information','Sparsity','Selectivity','Coherence']
+
+                    dists = [shuffled_information_content, shuffled_sparsity, shuffled_selectivity, shuffled_coherence, shuffled_grid_score, shuffled_border_score_top, shuffled_border_score_bottom, shuffled_border_score_left, shuffled_border_score_right]
+                    quants = [spatial_information_content, ratemap_stats_dict['sparsity'], ratemap_stats_dict['selectivity'], coherence, gr_score, b_score_top, b_score_bottom, b_score_left, b_score_right]
+                    order = ['Information','Sparsity','Selectivity','Coherence', 'Grid Score', 'Border Score Top', 'Border Score Bottom', 'Border Score Left', 'Border Score Right']
                     file_end = str(animal_id) + '_' + str(date) + '_' + str(session_key) + str(tet_file[-1]) + str(cell.cluster.cluster_label) + '.png'
 
                     plot_shuffled_dist(root_path, dists, quants, order, file_end)
@@ -345,6 +393,11 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None, sum_sheet_count=N
                     current_statistics_sheet[headers_dict['p_value_sparsity'] + str(excel_cell_index+1)] = p_value_sparsity
                     current_statistics_sheet[headers_dict['p_value_selectivity'] + str(excel_cell_index+1)] = p_value_selectivity
                     current_statistics_sheet[headers_dict['p_value_coherence'] + str(excel_cell_index+1)] = p_value_coherence
+                    current_statistics_sheet[headers_dict['p_value_grid_score'] + str(excel_cell_index+1)] = p_value_grid_score
+                    current_statistics_sheet[headers_dict['p_value_border_score_top'] + str(excel_cell_index+1)] = p_value_border_score_top
+                    current_statistics_sheet[headers_dict['p_value_border_score_bottom'] + str(excel_cell_index+1)] = p_value_border_score_bottom
+                    current_statistics_sheet[headers_dict['p_value_border_score_left'] + str(excel_cell_index+1)] = p_value_border_score_left
+                    current_statistics_sheet[headers_dict['p_value_border_score_right'] + str(excel_cell_index+1)] = p_value_border_score_right
 
                     sptimes = spatial_spike_train.spike_times
                     t_stop = max(sptimes)
@@ -393,11 +446,11 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None, sum_sheet_count=N
 
 
 def plot_shuffled_dist(root_path, dists, quants, order, file_end):
-    fig = plt.figure(figsize=(12,6))
+    fig = plt.figure(figsize=(16,8))
 
     c = 0 
-    for i in [1,3,5,7]:
-        ax = plt.subplot(4,2,i)
+    for i in [1,3,5,7,9,11]:
+        ax = plt.subplot(6,2,i)
         out = ax.hist(dists[c], bins=100, color='grey')
         ax.vlines(quants[c],0,np.max(out[0]), color='r')
         ax.set_xlabel(order[c])
@@ -405,7 +458,7 @@ def plot_shuffled_dist(root_path, dists, quants, order, file_end):
         ax.set_title('Non-log')
         
 
-        ax_log = plt.subplot(4,2,i+1)
+        ax_log = plt.subplot(6,2,i+1)
         try:
             out = ax_log.hist(np.log(dists[c]), bins=100, color='k')
             ax_log.vlines(np.log(quants[c]),0,np.max(out[0]), color='r')
@@ -479,12 +532,17 @@ if __name__ == '__main__':
                        'selectivity', 'shuffled_selectivity_mean', 'shuffled_selectivity_std', 'p_value_selectivity',
                        'sparsity', 'shuffled_sparsity_mean', 'shuffled_sparsity_std', 'p_value_sparsity',
                        'coherence', 'shuffled_coherence_mean', 'shuffled_coherence_std', 'p_value_coherence',
+                       'grid_score', 'shuffled_grid_score_mean', 'shuffled_grid_score_std', 'p_value_grid_score',
+                       'border_score_top', 'shuffled_border_score_top_mean', 'shuffled_border_score_top_std', 'p_value_border_score_top',
+                        'border_score_bottom', 'shuffled_border_score_bottom_mean', 'shuffled_border_score_bottom_std', 'p_value_border_score_bottom',
+                        'border_score_left', 'shuffled_border_score_left_mean', 'shuffled_border_score_left_std', 'p_value_border_score_left',
+                        'border_score_right', 'shuffled_border_score_right_mean', 'shuffled_border_score_right_std', 'p_value_border_score_right',
                        'shuffled_offset']
     for key in csv_header_keys:
         csv_header[key] = True
 
     tasks = {}
-    task_keys = ['information']
+    task_keys = ['information', 'sparsity', 'selectivity', 'coherence', 'grid_score', 'border_score']
     for key in task_keys:
         tasks[key] = True
 
@@ -500,7 +558,7 @@ if __name__ == '__main__':
     session_settings = {'channel_count': 4, 'animal': animal, 'devices': devices, 'implant': implant}
 
     """ FOR YOU TO EDIT """
-    settings = {'ppm': 485, 'session':  session_settings, 'smoothing_factor': 3, 'useMatchedCut': True}
+    settings = {'ppm': None, 'session':  session_settings, 'smoothing_factor': 2, 'useMatchedCut': False}
     """ FOR YOU TO EDIT """
 
     tasks['disk_arena'] = True # -->
@@ -509,7 +567,7 @@ if __name__ == '__main__':
     settings['header'] = csv_header # --> change csv_header header to change tasks that are saved to csv
 
     """ FOR YOU TO EDIT """
-    settings['naming_type'] = 'LEC'
+    settings['naming_type'] = 'MEC'
     settings['speed_lowerbound'] = 0
     settings['speed_upperbound'] = 99
     settings['end_cell'] = None
