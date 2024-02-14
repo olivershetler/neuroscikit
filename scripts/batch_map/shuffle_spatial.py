@@ -15,6 +15,7 @@ from tkinter import filedialog
 import time
 from library.hafting_spatial_maps import SpatialSpikeTrain2D
 from library.scores import rate_map_stats, rate_map_coherence, border_score, grid_score
+from library.maps.autocorrelation import autocorrelation
 from openpyxl.utils.cell import get_column_letter, column_index_from_string
 from library.maps.map_utils import disk_mask
 from PIL import Image
@@ -279,7 +280,7 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None, sum_sheet_count=N
                     rate_map, rate_map_raw = rate_obj.get_rate_map(new_size=settings_dict['ratemap_dims'][0])
                     occ_obj = spatial_spike_train.get_map('occupancy')
                     occ_map, _, _ = occ_obj.get_occupancy_map(new_size=settings_dict['ratemap_dims'][0])
-                    b_score = border_score(spatial_spike_train)
+                    b_score = border_score(spatial_spike_train, smoothing_factor=settings_dict['smoothing_factor'])
                     b_score_top = b_score[0]
                     b_score_bottom = b_score[1]
                     b_score_left = b_score[2]
@@ -336,7 +337,13 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None, sum_sheet_count=N
                         shuffled_selectivity.append(ratemap_stats_dict['selectivity'])
                         shuffled_coherence.append(rate_map_coherence(shuffled_map_raw, smoothing_factor=3))
 
-                        b_score = border_score(None, ratemap=shuffled_map, occmap=occ_map, override=True)
+
+                        shuffled_binmap = np.copy(shuffled_map)
+                        shuffled_binmap[  shuffled_binmap >= np.percentile(shuffled_binmap.flatten(), 75)  ] = 1
+                        shuffled_binmap[  shuffled_binmap < np.percentile(shuffled_binmap.flatten(), 75)  ] = 0  
+
+                        b_score = border_score(None, smoothing_factor=settings_dict['smoothing_factor'], use_objects_directly=True, rate_map = shuffled_map, bin_map = shuffled_binmap)
+
                         b_score_top = b_score[0]
                         b_score_bottom = b_score[1]
                         b_score_left = b_score[2]
@@ -346,7 +353,9 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None, sum_sheet_count=N
                         shuffled_border_score_left.append(b_score_left)
                         shuffled_border_score_right.append(b_score_right)
 
-                        gr_score = grid_score(None, ratemap=shuffled_map, occmap=occ_map, override=True)
+                        shuffled_autocorr = autocorrelation(shuffled_map, use_map_directly=True, smoothing_factor=settings_dict['smoothing_factor'], arena_size=settings_dict['arena_size'])
+
+                        gr_score = grid_score(None, use_autocorr_direclty=True, autocorr=shuffled_autocorr)
                         shuffled_grid_score.append(gr_score)
 
 
@@ -568,8 +577,9 @@ if __name__ == '__main__':
 
     """ FOR YOU TO EDIT """
     settings['naming_type'] = 'MEC'
-    settings['speed_lowerbound'] = 0
-    settings['speed_upperbound'] = 99
+    settings['speed_lowerbound'] = 3
+    settings['speed_upperbound'] = 100
+    settings['arena_size'] = (50,50)
     settings['end_cell'] = None
     settings['start_cell'] = None
     settings['saveData'] = True

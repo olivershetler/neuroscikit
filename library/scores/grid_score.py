@@ -46,17 +46,21 @@ def grid_score(spatial_spike_train: SpatialSpikeTrain2D, **kwargs):
                 kernel size and standard deviation of kernel for convolutional smoothing.
     '''
 
-    if 'smoothing_factor' in kwargs:
-        smoothing_factor = kwargs['smoothing_factor']
+    if 'use_autocorr_direclty' in kwargs:
+        if kwargs['use_autocorr_direclty'] == True:
+            autocorr = kwargs['autocorr']
     else:
-        smoothing_factor = spatial_spike_train.session_metadata.session_object.smoothing_factor
+        if 'smoothing_factor' in kwargs:
+            smoothing_factor = kwargs['smoothing_factor']
+        else:
+            smoothing_factor = spatial_spike_train.session_metadata.session_object.smoothing_factor
 
-    ratemap, _ = spatial_spike_train.get_map('rate').get_rate_map(smoothing_factor)
+        ratemap, _ = spatial_spike_train.get_map('rate').get_rate_map(smoothing_factor)
 
-    if spatial_spike_train.get_map('autocorr') is None:
-        autocorr = autocorrelation(spatial_spike_train)
-        spatial_spike_train.add_map_to_stats('autocorr', autocorr)
-    autocorr = spatial_spike_train.get_map('autocorr')
+        if spatial_spike_train.get_map('autocorr') is None:
+            autocorr = autocorrelation(spatial_spike_train)
+            spatial_spike_train.add_map_to_stats('autocorr', autocorr)
+        autocorr = spatial_spike_train.get_map('autocorr')
 
     grid_score_object = opexebo_grid_score(autocorr)
     true_grid_score = grid_score_object[0]

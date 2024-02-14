@@ -44,13 +44,18 @@ def autocorrelation(spatial_map: SpatialSpikeTrain2D | HaftingRateMap, **kwargs)
     else:
         smoothing_factor = spatial_map.session_metadata.session_object.smoothing_factor
 
-    if isinstance(spatial_map, HaftingRateMap):
-        ratemap, _ = spatial_map.get_rate_map(smoothing_factor)
-    elif isinstance(spatial_map, SpatialSpikeTrain2D):
-        ratemap, _ = spatial_map.get_map('rate').get_rate_map(smoothing_factor)
+    if 'use_map_directly' in kwargs:
+        if kwargs['use_map_directly']:
+            ratemap = spatial_map
+            arena_size = kwargs['arena_size']
+    else:
+        if isinstance(spatial_map, HaftingRateMap):
+            ratemap, _ = spatial_map.get_rate_map(smoothing_factor)
+        elif isinstance(spatial_map, SpatialSpikeTrain2D):
+            ratemap, _ = spatial_map.get_map('rate').get_rate_map(smoothing_factor)
 
 
-    arena_size = spatial_map.arena_size
+        arena_size = spatial_map.arena_size
 
     x_resize, y_resize = _compute_resize_ratio(arena_size)
     autocorr_OPEXEBO = opexebo_autocorrelation(ratemap)
