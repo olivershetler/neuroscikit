@@ -24,6 +24,8 @@ from PIL import Image
 import numpy as np
 from matplotlib import cm
 import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
+
 #import random
 import openpyxl as xl
 from openpyxl.worksheet.dimensions import ColumnDimension
@@ -198,6 +200,7 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None, sum_sheet_count=N
         animal = study.get_animal_by_id(animalID)
 
         animal_id = animal.animal_id.split('_tet')[0]
+        tet_id = animal.animal_id.split('_tet')[1]
         if animal_id not in animal_tet_count:
             animal_tet_count[animal_id] = 1
             # animal_sessions_tets_events[animal_id] = {}
@@ -725,6 +728,25 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None, sum_sheet_count=N
                             plt.savefig(tetrode_directory_paths[directory] + '/spikes_over_position_cell_' + str(cell.cluster.cluster_label) + '.png', dpi=300, bbox_inches = 'tight')
                             plt.close(fig)
 
+                        if plotTasks['Waveforms_Across_Channels']:
+                            fig = WaveformTemplateFig()
+
+                            for i in range(4):
+                                ch = cell.signal[:,i,:]
+                                idx = np.random.choice(len(ch), size=200)
+                                waves = ch[idx, :]
+                                avg_wave = np.mean(ch, axis=0)
+
+                                fig.waveform_channel_plot(waves, avg_wave, str(i+1), fig.ax[str(i+1)])
+
+                            cell_id = cell.cluster.cluster_label
+                            title = str(animal_id) + '_tetrode_' + str(tet_id) + '_' + str(session_key) + '_unit_' + str(cell_id)
+
+                            fig.f.suptitle(title, ha='center', fontweight='bold', fontsize='large')
+                            plt.savefig(tetrode_directory_paths[directory] + '/waveforms_across_channels' + str(cell.cluster.cluster_label) + '.png', dpi=300, bbox_inches = 'tight')
+                            plt.close(fig.f)
+
+
                         # Auto-resize columns to width of header text
                         #current_statistics_sheet.autofit(axis="columns")
                         ColumnDimension(current_statistics_sheet, bestFit=True)
@@ -829,6 +851,32 @@ def get_hd_score_for_cluster(hd_hist):
     r = np.sqrt(totx*totx + toty*toty)
     return r
 
+class WaveformTemplateFig():
+    def __init__(self):
+        self.f = plt.figure(figsize=(12, 6))
+        # mpl.rc('font', **{'size': 20})
+
+
+        self.gs = {
+            'all': gridspec.GridSpec(1, 4, left=0.05, right=0.95, bottom=0.1, top=0.85, figure=self.f),
+        }
+
+        self.ax = {
+            '1': self.f.add_subplot(self.gs['all'][:, :1]),
+            '2': self.f.add_subplot(self.gs['all'][:, 1:2]),
+            '3': self.f.add_subplot(self.gs['all'][:, 2:3]),
+            '4': self.f.add_subplot(self.gs['all'][:, 3:]),
+        }
+
+    def waveform_channel_plot(self, waveforms, avg_waveform, channel, ax):
+
+        ax.plot(waveforms.T, color='grey')
+
+        ax.plot(avg_waveform, c='k', lw=2)
+
+        ax.set_title('Channel ' + str(int(channel)))
+
+
 if __name__ == '__main__':
 
     ######################################################## EDIT BELOW HERE ########################################################
@@ -846,7 +894,7 @@ if __name__ == '__main__':
         tasks[key] = True
 
     plotTasks = {}
-    plot_task_keys = ['Spikes_Over_Position_Map', 'Tuning_Curve_Plots', 'Firing_Rate_vs_Speed_Plots', 'Firing_Rate_vs_Time_Plots','autocorr_map', 'binary_map','rate_map', 'occupancy_map']
+    plot_task_keys = ['Waveforms_Across_Channels', 'Spikes_Over_Position_Map', 'Tuning_Curve_Plots', 'Firing_Rate_vs_Speed_Plots', 'Firing_Rate_vs_Time_Plots','autocorr_map', 'binary_map','rate_map', 'occupancy_map']
     for key in plot_task_keys:
         plotTasks[key] = True
 
