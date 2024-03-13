@@ -59,7 +59,7 @@ def autocorrelation(spatial_map: SpatialSpikeTrain2D | HaftingRateMap, **kwargs)
 
     x_resize, y_resize = _compute_resize_ratio(arena_size)
     autocorr_OPEXEBO = opexebo_autocorrelation(ratemap)
-    autocorr_OPEXEBO = _interpolate_matrix(autocorr_OPEXEBO, cv2_interpolation_method=cv2.INTER_NEAREST) #_resize_numpy2D(autocorr_OPEXEBO, x_resize, y_resize)
+    # autocorr_OPEXEBO = _interpolate_matrix(autocorr_OPEXEBO, cv2_interpolation_method=cv2.INTER_NEAREST) #_resize_numpy2D(autocorr_OPEXEBO, x_resize, y_resize)
 
     if isinstance(spatial_map, HaftingRateMap):
         spatial_map.spatial_spike_train.add_map_to_stats('autocorr', autocorr_OPEXEBO)

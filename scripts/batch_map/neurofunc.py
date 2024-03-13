@@ -17,7 +17,9 @@ from library.hafting_spatial_maps import HaftingOccupancyMap, HaftingRateMap, Ha
 from library.scores import hd_score, grid_score, border_score
 from library.scores import rate_map_stats, rate_map_coherence, speed_score
 from openpyxl.utils.cell import get_column_letter, column_index_from_string
-from library.maps.map_utils import disk_mask
+# from library.maps.map_utils import disk_mask
+from _prototypes.cell_remapping.src.utils import check_cylinder
+from _prototypes.cell_remapping.src.masks import flat_disk_mask
 from PIL import Image
 import numpy as np
 from matplotlib import cm
@@ -397,10 +399,9 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None, sum_sheet_count=N
                     cell_stats = {}
 
                     # print('Map Stats')
-                    ratemap_stats_dict  = rate_map_stats(spatial_spike_train)
 
                     # UNDO COMMENT
-                    autocorr_map = autocorrelation(spatial_spike_train)
+                    # autocorr_map = autocorrelation(spatial_spike_train)
 
                     occ_obj = spatial_spike_train.get_map('occupancy')
                     occ_map, _, _ = occ_obj.get_occupancy_map()
@@ -442,17 +443,30 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None, sum_sheet_count=N
                         cell_stats['firing_rate'] = firing_rate
                         cell_stats['spike_width'] = spike_width
 
-                    # print('Check Disk')
-                    # if 'disk_arena' in tasks and tasks['disk_arena'] == False:
-                    fp = session.session_metadata.file_paths['cut']
-                    possible_names = ['round', 'cylinder', 'circle']
-                    isDisk = False
-                    for name in possible_names:
-                        if name in fp.lower():
-                            # isDisk = True
-                            tasks['disk_arena'] = True
+                    # # print('Check Disk')
+                    # # if 'disk_arena' in tasks and tasks['disk_arena'] == False:
+                    # fp = session.session_metadata.file_paths['cut']
+                    # possible_names = ['round', 'cylinder', 'circle']
+                    # isDisk = False
+                    # for name in possible_names:
+                    #     if name in fp.lower():
+                    #         # isDisk = True
+                    #         tasks['disk_arena'] = True
+                    
+                    path = session.session_metadata.file_paths['tet']
+                    fname = path.split('/')[-1].split('.')[0]
+                    cylinder = check_cylinder(fname, settings['disk_arena'])
+                    if cylinder:
+                        tasks['disk_arena'] = True
+                        rate_map = flat_disk_mask(rate_map)
+                        occ_map = flat_disk_mask(occ_map)
+                        rate_map_raw = flat_disk_mask(rate_map_raw)
+                    else:
+                        tasks['disk_arena'] = False
 
-                    # if not isDisk
+                    autocorr_map = autocorrelation(rate_map, use_map_directly=True, smoothing_factor=settings['smoothing_factor'], arena_size=spatial_spike_train.arena_size)
+                    ratemap_stats_dict  = rate_map_stats(None, ratemap=rate_map, occmap=occ_map, override=True)
+
 
                     # print(fp, tasks['disk_arena'])
 
@@ -464,7 +478,8 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None, sum_sheet_count=N
 
                     # print('Binary')
                     if tasks['binary_map']:
-                        binmap = binary_map(spatial_spike_train)
+                        # binmap = binary_map(spatial_spike_train)
+                        binmap = binary_map(rate_map, use_map_directly=True, smoothing_factor=settings['smoothing_factor'])
                         # if tasks['disk_arena']:
                         #     binmap = disk_mask(binmap)
                         # binmap_im = Image.fromarray(np.uint8(binmap*255))
@@ -474,8 +489,8 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None, sum_sheet_count=N
                     # print('Autocorr Img') 
                     if tasks['autocorrelation_map']:
                         cell_stats['autocorr_map'] = autocorr_map
-                        if tasks['disk_arena']:
-                            autocorr_map = disk_mask(autocorr_map)
+                        # if tasks['disk_arena']:
+                        #     autocorr_map = disk_mask(autocorr_map)
                         # autocorr_map_im = Image.fromarray(np.uint8(cm.jet(autocorr_map)*255))
                         # cell_stats['autocorr_map_im'] = autocorr_map_im
 
@@ -490,7 +505,7 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None, sum_sheet_count=N
 
                     # print('Coherence')
                     if tasks['coherence']:
-                        coherence = rate_map_coherence(spatial_spike_train)
+                        coherence = rate_map_coherence(rate_map_raw, smoothing_factor=settings['smoothing_factor'])
                         cell_stats['coherence'] = coherence
 
                     # print('Speed Score')
@@ -537,21 +552,21 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None, sum_sheet_count=N
                     if settings_dict['saveData'] == True:
 
                         if plotTasks['rate_map']:
-                            if tasks['disk_arena']:
-                                rate_map = disk_mask(rate_map)
+                            # if tasks['disk_arena']:
+                            #     rate_map = disk_mask(rate_map)
                             colored_ratemap = Image.fromarray(np.uint8(cm.jet(rate_map)*255))
                             colored_ratemap.save(tetrode_directory_paths[directory] + '/ratemap_cell_' + str(cell.cluster.cluster_label) + '.png')
                         
                         if plotTasks['occupancy_map']:
-                            if tasks['disk_arena']:
-                                occ_map = disk_mask(occ_map)
+                            # if tasks['disk_arena']:
+                            #     occ_map = disk_mask(occ_map)
                             colored_occupancy_map = Image.fromarray(np.uint8(cm.jet(occ_map)*255))
                             colored_occupancy_map.save(root_directory_paths['Occupancy_Map'] + '/pospdf_cell' + str(cell.cluster.cluster_label) + '.png')
 
                         # Binary ratemap
                         if plotTasks['binary_map']:
-                            if tasks['disk_arena']:
-                                binmap = disk_mask(binmap)
+                            # if tasks['disk_arena']:
+                            #     binmap = disk_mask(binmap)
                             im = Image.fromarray(np.uint8(binmap*255))
                             im.save(tetrode_directory_paths[directory] + '/Binary_Map_Cell_' + str(cell.cluster.cluster_label) + '.png')
 
@@ -845,12 +860,15 @@ if __name__ == '__main__':
     settings = {'ppm': 485, 'session':  session_settings, 'smoothing_factor': 3, 'useMatchedCut': True}
     """ FOR YOU TO EDIT """
 
-    tasks['disk_arena'] = True # -->
+    settings['disk_arena'] = True # -->
+
     settings['tasks'] = tasks # --> change tasks array to change tasks are run
     settings['plotTasks'] = plotTasks # --> change plot tasks array to change asks taht are plotted
     settings['header'] = csv_header # --> change csv_header header to change tasks that are saved to csv
 
     """ FOR YOU TO EDIT """
+    settings['naming_type'] = 'LEC'
+    settings['arena_size'] = None
     settings['speed_lowerbound'] = 0
     settings['speed_upperbound'] = 99
     settings['end_cell'] = None

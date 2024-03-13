@@ -13,10 +13,14 @@ from _prototypes.cell_remapping.src.MEC_naming import MEC_naming_format, extract
 import tkinter as tk
 from tkinter import filedialog
 import time
+from library.spatial import place_field
 from library.hafting_spatial_maps import SpatialSpikeTrain2D
 from library.scores import rate_map_stats, rate_map_coherence, border_score, grid_score
 from library.maps.autocorrelation import autocorrelation
 from openpyxl.utils.cell import get_column_letter, column_index_from_string
+from _prototypes.cell_remapping.src.utils import check_cylinder
+from _prototypes.cell_remapping.src.masks import flat_disk_mask
+from library.maps.map_blobs import map_blobs
 from library.maps.map_utils import disk_mask
 from PIL import Image
 import numpy as np
@@ -119,6 +123,24 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None, sum_sheet_count=N
     sum_sheet['A' + str(1)] = 'Session'
     sum_sheet['B' + str(1)] = 'Tetrode'
     sum_sheet['C' + str(1)] = 'Cell ID'
+
+    # grid_control_npy = []  
+    # border_control_npy = [] 
+
+    grid_path = r"/home/apollo/Desktop/GusRemapDataSes1Control/grid_control_dist.npy"
+    if os.path.exists(grid_path):
+        grid_control_npy = np.load(grid_path)
+        assert len(grid_control_npy) > 0
+    else:
+        grid_control_npy = []
+
+    border_path = r"/home/apollo/Desktop/GusRemapDataSes1Control/border_control_dist.npy"
+    if os.path.exists(border_path):
+        border_control_npy = np.load(border_path)
+        assert len(border_control_npy) > 0
+    else:
+        border_control_npy = []
+
 
     for animalID in sorted_animal_ids:
         animal = study.get_animal_by_id(animalID)
@@ -280,7 +302,22 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None, sum_sheet_count=N
                     rate_map, rate_map_raw = rate_obj.get_rate_map(new_size=settings_dict['ratemap_dims'][0])
                     occ_obj = spatial_spike_train.get_map('occupancy')
                     occ_map, _, _ = occ_obj.get_occupancy_map(new_size=settings_dict['ratemap_dims'][0])
-                    b_score = border_score(spatial_spike_train, smoothing_factor=settings_dict['smoothing_factor'])
+
+                    
+                    path = session.session_metadata.file_paths['tet']
+                    fname = path.split('/')[-1].split('.')[0]
+                    cylinder = check_cylinder(fname, settings['disk_arena'])
+                    if cylinder:
+                        rate_map = flat_disk_mask(rate_map)
+                        occ_map = flat_disk_mask(occ_map)
+                        rate_map_raw = flat_disk_mask(rate_map_raw)
+
+                    if not cylinder:
+                        b_score = border_score(spatial_spike_train, smoothing_factor=settings_dict['smoothing_factor'])
+                    else:
+                        print('cant do border score on circular arena')
+                        b_score = [np.nan, np.nan, np.nan, np.nan]
+
                     b_score_top = b_score[0]
                     b_score_bottom = b_score[1]
                     b_score_left = b_score[2]
@@ -327,22 +364,53 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None, sum_sheet_count=N
                     shuffled_border_score_left = []
                     shuffled_border_score_right = []
                     shuffled_grid_score = []
+                    shuffled_border_score_agg = []
                     for i in range(len(shuffled_rate_maps)):
                         shuffled_map = shuffled_rate_maps[i]
                         shuffled_map_raw = shuffled_rate_map_raw[i]
+                        if cylinder:
+                            shuffled_map = flat_disk_mask(shuffled_map)
+                            shuffled_map_raw = flat_disk_mask(shuffled_map_raw)
                         ratemap_stats_dict  = rate_map_stats(None, ratemap=shuffled_map, occmap=occ_map, override=True)
                         spatial_information_content = ratemap_stats_dict['spatial_information_content']
                         shuffled_information_content.append(spatial_information_content)
                         shuffled_sparsity.append(ratemap_stats_dict['sparsity'])
                         shuffled_selectivity.append(ratemap_stats_dict['selectivity'])
-                        shuffled_coherence.append(rate_map_coherence(shuffled_map_raw, smoothing_factor=3))
+                        shuffled_coherence.append(rate_map_coherence(shuffled_map_raw, smoothing_factor=settings['smoothing_factor']))
 
 
-                        shuffled_binmap = np.copy(shuffled_map)
-                        shuffled_binmap[  shuffled_binmap >= np.percentile(shuffled_binmap.flatten(), 75)  ] = 1
-                        shuffled_binmap[  shuffled_binmap < np.percentile(shuffled_binmap.flatten(), 75)  ] = 0  
+                        # shuffled_binmap = np.zeros(shuffled_map.shape)
+                        # shuffled_binmap[  shuffled_map >= np.percentile(shuffled_map.flatten(), 75)  ] = 1
+                        
+                        image, n_labels, labels, centroids, field_sizes = map_blobs(shuffled_map, ratemap_size=32, cylinder=cylinder, 
+                                                                                downsample=False, downsample_factor=None, smoothing_factor=settings_dict['smoothing_factor'])
 
-                        b_score = border_score(None, smoothing_factor=settings_dict['smoothing_factor'], use_objects_directly=True, rate_map = shuffled_map, bin_map = shuffled_binmap)
+                        if len(labels[labels > 1]) > 0:
+                            shuffled_binmap = np.copy(labels)
+                            shuffled_binmap[shuffled_binmap > 1] = 1
+                        else:
+                            shuffled_binmap = np.copy(shuffled_map_raw)
+                            shuffled_binmap[  shuffled_map_raw >= np.percentile(shuffled_map_raw.flatten(), 60)  ] = 1
+                            shuffled_binmap[  shuffled_map_raw < np.percentile(shuffled_map_raw.flatten(), 60)  ] = 0 
+
+                        # _, shuffled_binmap = place_field(shuffled_map)
+                        # shuffled_binmap[shuffled_binmap >= 1] = 1
+                        # print(len(np.unique(shuffled_binmap)))
+                        # assert len(np.unique(shuffled_binmap)) == 2
+
+                        # fig = plt.figure(figsize=(12,5))
+                        # ax = plt.subplot(1,3,1)
+                        # ax.imshow(rate_map) 
+                        # ax=plt.subplot(1,3,2)
+                        # ax.imshow(shuffled_map)
+                        # ax = plt.subplot(1,3,3)
+                        # ax.imshow(shuffled_binmap)
+                        # fig.tight_layout()
+                        # plt.show()
+
+
+                        b_score = border_score(None, smoothing_factor=settings_dict['smoothing_factor'], 
+                        use_objects_directly=True, rate_map = shuffled_map_raw, bin_map = shuffled_binmap)
 
                         b_score_top = b_score[0]
                         b_score_bottom = b_score[1]
@@ -352,8 +420,12 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None, sum_sheet_count=N
                         shuffled_border_score_bottom.append(b_score_bottom)
                         shuffled_border_score_left.append(b_score_left)
                         shuffled_border_score_right.append(b_score_right)
+                        shuffled_border_score_agg.append(b_score)
 
-                        shuffled_autocorr = autocorrelation(shuffled_map, use_map_directly=True, smoothing_factor=settings_dict['smoothing_factor'], arena_size=settings_dict['arena_size'])
+                        if settings_dict['arena_size'] is not None:
+                            assert spatial_spike_train.arena_size == settings_dict['arena_size']
+
+                        shuffled_autocorr = autocorrelation(shuffled_map, use_map_directly=True, smoothing_factor=settings_dict['smoothing_factor'], arena_size=spatial_spike_train.arena_size)
 
                         gr_score = grid_score(None, use_autocorr_direclty=True, autocorr=shuffled_autocorr)
                         shuffled_grid_score.append(gr_score)
@@ -397,6 +469,16 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None, sum_sheet_count=N
 
                     plot_shuffled_dist(root_path, dists, quants, order, file_end)
 
+                    grid_control_npy = np.hstack((grid_control_npy, shuffled_grid_score))
+                    print('SHAPE HERE')
+                    print(grid_control_npy.shape)
+                    if len(border_control_npy) == 0:
+                        border_control_npy = np.array(shuffled_border_score_agg).reshape((len(shuffled_grid_score),4))
+                    else:
+                        toadd = np.array(shuffled_border_score_agg).reshape((len(shuffled_grid_score),4))
+                        border_control_npy = np.vstack((border_control_npy, toadd))
+                    print('SHAPE2 HERE')
+                    print(border_control_npy.shape)
 
                     current_statistics_sheet[headers_dict['p_value_information'] + str(excel_cell_index+1)] = p_value_information
                     current_statistics_sheet[headers_dict['p_value_sparsity'] + str(excel_cell_index+1)] = p_value_sparsity
@@ -419,15 +501,17 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None, sum_sheet_count=N
                     
                     current_statistics_sheet[headers_dict['shuffled_offset'] + str(excel_cell_index+1)] = offset_lim
 
-                    # print('Check Disk')
-                    # if 'disk_arena' in tasks and tasks['disk_arena'] == False:
-                    fp = session.session_metadata.file_paths['cut']
-                    possible_names = ['round', 'cylinder', 'circle']
-                    isDisk = False
-                    for nm in possible_names:
-                        if nm in fp.lower():
-                            # isDisk = True
-                            tasks['disk_arena'] = True
+                    # # print('Check Disk')
+                    # # if 'disk_arena' in tasks and tasks['disk_arena'] == False:
+                    # fp = session.session_metadata.file_paths['cut']
+                    # possible_names = ['round', 'cylinder', 'circle']
+                    # isDisk = False
+                    # for nm in possible_names:
+                    #     if nm in fp.lower():
+                    #         isDisk = True
+                    #         # tasks['disk_arena'] = True
+
+
 
                         # Auto-resize columns to width of header text
                         #current_statistics_sheet.autofit(axis="columns")
@@ -452,6 +536,10 @@ def batch_map(study: Study, settings_dict: dict, saveDir=None, sum_sheet_count=N
 
     if settings_dict['saveMethod'] == 'one_for_parent':
         _save_wb(wb, root_path, sum_sheet_count=sum_sheet_count)
+
+    np.save(grid_path, grid_control_npy)
+
+    np.save(border_path, border_control_npy)
 
 
 def plot_shuffled_dist(root_path, dists, quants, order, file_end):
@@ -551,9 +639,11 @@ if __name__ == '__main__':
         csv_header[key] = True
 
     tasks = {}
-    task_keys = ['information', 'sparsity', 'selectivity', 'coherence', 'grid_score', 'border_score']
+    task_keys = ['information', 'sparsity', 'selectivity', 'coherence','grid_score', 'border_score']
     for key in task_keys:
         tasks[key] = True
+
+
 
     plotTasks = {}
     plot_task_keys = ['Spikes_Over_Position_Map', 'Tuning_Curve_Plots', 'Firing_Rate_vs_Speed_Plots', 'Firing_Rate_vs_Time_Plots','autocorr_map', 'binary_map','rate_map', 'occupancy_map']
@@ -570,7 +660,7 @@ if __name__ == '__main__':
     settings = {'ppm': None, 'session':  session_settings, 'smoothing_factor': 2, 'useMatchedCut': False}
     """ FOR YOU TO EDIT """
 
-    tasks['disk_arena'] = True # -->
+    settings['disk_arena'] = False # -->
     settings['tasks'] = tasks # --> change tasks array to change tasks are run
     settings['plotTasks'] = plotTasks # --> change plot tasks array to change asks taht are plotted
     settings['header'] = csv_header # --> change csv_header header to change tasks that are saved to csv

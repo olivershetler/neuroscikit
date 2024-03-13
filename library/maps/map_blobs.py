@@ -61,11 +61,15 @@ def map_blobs(spatial_map: SpatialSpikeTrain2D | HaftingRateMap, nofilter=False,
             ratemap, _ = spatial_map.get_rate_map(smoothing_factor, new_size=ratemap_size)
         elif isinstance(spatial_map, SpatialSpikeTrain2D):
             ratemap, _ = spatial_map.get_map('rate').get_rate_map(smoothing_factor, new_size=ratemap_size)
+        else:
+            ratemap = spatial_map
     else:
         if isinstance(spatial_map, HaftingRateMap):
             ratemap, _ = spatial_map.get_rate_map(smoothing_factor)
         elif isinstance(spatial_map, SpatialSpikeTrain2D):
             ratemap, _ = spatial_map.get_map('rate').get_rate_map(smoothing_factor)
+        else:
+            ratemap = spatial_map
 
     if 'downsample' in kwargs:
         if kwargs['downsample'] == True:
@@ -73,8 +77,13 @@ def map_blobs(spatial_map: SpatialSpikeTrain2D | HaftingRateMap, nofilter=False,
 
     if 'cylinder' in kwargs:
         cylinder = kwargs['cylinder']
-        if cylinder:
-            ratemap = custom_flat_disk_mask(ratemap)
+
+        if len(ratemap[ratemap != ratemap]) > 0:
+            # already disk masked just repalce nan with 0
+            ratemap[ratemap != ratemap] = 0
+        else:
+            if cylinder:
+                ratemap = custom_flat_disk_mask(ratemap)
 
     
 
@@ -136,6 +145,5 @@ def map_blobs(spatial_map: SpatialSpikeTrain2D | HaftingRateMap, nofilter=False,
     elif isinstance(spatial_map, SpatialSpikeTrain2D):
         spatial_map.add_map_to_stats('map_blobs', map_blobs_dict)
 
-    # print('AQUI', n_labels, np.unique(labels), len(centroids), len(field_sizes))
     return image, n_labels, labels, centroids, field_sizes
 
