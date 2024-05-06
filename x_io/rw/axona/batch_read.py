@@ -495,6 +495,9 @@ def _fill_implant_data(implant_data_dict, tetrode_data, cut_data, ch_count):
     implant_data_dict['duration'] = tetrode_data[-1]['duration']
     implant_data_dict['waveform_sample_rate'] = tetrode_data[-1]['sample_rate']
 
+    implant_data_dict['spikeparam'] = tetrode_data[-1]
+
+
     implant_data_dict['datetime'] = tetrode_data[-1]['datetime']
 
     for ch in range(ch_count):
