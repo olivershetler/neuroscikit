@@ -149,12 +149,11 @@ def get_reference_dist_stats(empirical, ref_dist):
 
 
 def get_rate_stats(prev_pts, prev_t, curr_pts, curr_t, prev_duration=None, curr_duration=None):    
+    use_duration = False
     if prev_duration is not None or curr_duration is not None:
         assert prev_duration is not None and curr_duration is not None, 'Must provide both durations or neither'
         use_duration = True
-    else:
-        use_duration = None
-    if use_duration is None:
+    if not use_duration:
         prev_fr_rate = len(prev_pts) / (prev_t[-1] - prev_t[0])
         curr_fr_rate = len(curr_pts) / (curr_t[-1] - curr_t[0])
     else:
