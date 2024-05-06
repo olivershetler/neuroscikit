@@ -158,7 +158,7 @@ class SpikeClusterBatch(Workspace):
         else:
             self.session_metadata = None
 
-        duration, sample_rate, cluster_labels, event_times, waveforms, waveform_sample_rate = self._read_input_dict()
+        duration, sample_rate, cluster_labels, event_times, waveforms, waveform_sample_rate, spikeparam = self._read_input_dict()
 
         assert type(cluster_labels) == list, 'Cluster labels missing'
         assert type(cluster_labels[0]) == int, 'Cluster labels missing'
@@ -169,6 +169,7 @@ class SpikeClusterBatch(Workspace):
         self.time_index = self.session_metadata.session_object.time_index
 
         self.event_times = event_times
+        self.spikeparam = spikeparam
         self.waveform_sample_rate = waveform_sample_rate
         self.cluster_labels = cluster_labels
         self.duration = duration
@@ -203,12 +204,16 @@ class SpikeClusterBatch(Workspace):
     def _read_input_dict(self):
         duration = None
         sample_rate = None
+        spikeparam = None
         if 'duration' in  self._input_dict:
             duration = self._input_dict['duration']
         if 'sample_rate' in  self._input_dict:
             sample_rate = self._input_dict['sample_rate']
         if 'waveform_sample_rate' in self._input_dict:
             waveform_sample_rate = self._input_dict['waveform_sample_rate']
+        if 'spikeparam' in self._input_dict:
+            spikeparam = self._input_dict['spikeparam']
+
         # events_binary = self._input_dict['events_binary']
         cluster_labels = self._input_dict['event_labels']
         # assert type(events_binary) == list, 'Binary spikes are not a list, check inputs'
@@ -220,7 +225,7 @@ class SpikeClusterBatch(Workspace):
         #     spike_data_present = True
         # assert spike_data_present == True, 'No spike times or binary spikes provided'
         waveforms = self._extract_waveforms()
-        return duration, sample_rate, cluster_labels, event_times, waveforms, waveform_sample_rate
+        return duration, sample_rate, cluster_labels, event_times, waveforms, waveform_sample_rate, spikeparam
 
     # uses InputKeys() to get channel bychannel waveforms
     def _extract_waveforms(self):
