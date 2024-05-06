@@ -12,7 +12,7 @@ from library.hafting_spatial_maps import HaftingRateMap, SpatialSpikeTrain2D
 # from library.spatial_spike_train import SpatialSpikeTrain2D
 
 
-def binary_map(spatial_map: HaftingRateMap | SpatialSpikeTrain2D, percentile=.75, **kwargs):
+def binary_map(spatial_map: HaftingRateMap | SpatialSpikeTrain2D, percentile=75, **kwargs):
 
     '''
         Produces a binary map of place fields from a ratemap based on [1].
@@ -37,17 +37,23 @@ def binary_map(spatial_map: HaftingRateMap | SpatialSpikeTrain2D, percentile=.75
     else:
         smoothing_factor = spatial_map.session_metadata.session_object.smoothing_factor
 
-    if isinstance(spatial_map, HaftingRateMap):
-        ratemap, _ = spatial_map.get_rate_map(smoothing_factor)
-    elif isinstance(spatial_map, SpatialSpikeTrain2D):
-        ratemap, _ = spatial_map.get_map('rate').get_rate_map(smoothing_factor)
+    if 'use_map_directly' in kwargs:
+        if kwargs['use_map_directly']:
+            ratemap = spatial_map
+    else:
+        if isinstance(spatial_map, HaftingRateMap):
+            ratemap, _ = spatial_map.get_rate_map(smoothing_factor)
+        elif isinstance(spatial_map, SpatialSpikeTrain2D):
+            ratemap, _ = spatial_map.get_map('rate').get_rate_map(smoothing_factor)
 
+    binary_map = np.zeros(ratemap.shape)
+    # percentile = 75 
+    binary_map[  ratemap >= np.percentile(ratemap.flatten(), percentile)  ] = 1
+
+    # binary_map_copy = np.copy(ratemap)
     # binary_map = np.zeros(ratemap.shape)
-    # binary_map[  ratemap >= np.percentile(ratemap.flatten(), percentile)  ] = 1
-
-    binary_map = np.copy(ratemap)
-    binary_map[  binary_map >= np.percentile(binary_map.flatten(), 75)  ] = 1
-    binary_map[  binary_map < np.percentile(binary_map.flatten(), 75)  ] = 0  
+    # binary_map[  binary_map_copy >= np.percentile(binary_map_copy.flatten(), 75)  ] = 1
+    # binary_map[  binary_map_copy < np.percentile(binary_map_copy.flatten(), 75)  ] = 0  
 
     if isinstance(spatial_map, HaftingRateMap):
         spatial_map.spatial_spike_train.add_map_to_stats('binary', binary_map)

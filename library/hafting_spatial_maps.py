@@ -596,8 +596,16 @@ class HaftingRateMap():
             #     ratemaps.append(rate_map)
             rate_map = list(map(lambda i: np.where(occ_map_data < 0.0001, 0, spike_map_data[i] / occ_map_data), range(len(spike_map_data))))
             rate_map_raw = list(map(lambda i: np.where(raw_occ < 0.0001, 0, spike_map_data_raw[i] / raw_occ) / max(spike_map_data_raw[i].flatten()), range(len(spike_map_data_raw))))
-            rate_map = np.array(rate_map)
+            # rate_map = np.array(rate_map)
             rate_map_raw = np.array(rate_map_raw)
+
+            rate_map_copy = []
+            for rmp in rate_map:
+                rate_map_copy.append(rmp/np.max(rmp))
+            rate_map = np.array(rate_map_copy)
+
+            
+
             # print(rate_map.shape)
             # print(rate_map_raw.shape)
 
